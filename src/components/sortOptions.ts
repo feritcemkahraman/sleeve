@@ -1,3 +1,17 @@
+export const catalogSortOptions = [
+  "albums",
+  "rating",
+  "recent",
+  "updated",
+  "name",
+] as const;
+
+export type CatalogSort = (typeof catalogSortOptions)[number];
+
+export function isCatalogSort(value: string): value is CatalogSort {
+  return catalogSortOptions.some((option) => option === value);
+}
+
 const sortLabels = {
   albums: "Most albums",
   rating: "Highest rated",
@@ -11,7 +25,7 @@ const sortLabels = {
 export function renderSortOptions(
   options: readonly (keyof typeof sortLabels)[],
   selected: string,
-) {
+): string {
   return options
     .map(
       (value) =>

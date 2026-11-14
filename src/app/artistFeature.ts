@@ -1,3 +1,5 @@
+import { isCatalogSort, type CatalogSort } from "../components/sortOptions";
+import type { EditorDialog, PickerInteraction } from "./editorContracts";
 import { renderArtistsView } from "../views/artistsView";
 import { updateCatalogImage } from "../components/formFields";
 import type { DraftTarget } from "./editorDrafts";
@@ -21,36 +23,18 @@ import { webUrl } from "../components/presentation";
 import { matches } from "./search";
 import { focusForTyping } from "./device";
 
-type ArtistSort = "albums" | "rating" | "recent" | "updated" | "name";
-
-interface ArtistDialog {
-  element: HTMLDialogElement;
-  show: (
-    title: string,
-    content: string,
-    focusSelector: string,
-    backToSearch?: boolean,
-  ) => void;
-  formError: (message: string, input: HTMLInputElement) => void;
-}
-
-interface ArtistPickerInteraction {
-  deferRender: () => boolean;
-  closeSearch: () => void;
-}
-
 export interface ArtistPickerSnapshot {
   selectedArtists: AlbumArtist[];
   artistChoices: Artist[];
 }
 
 export interface ArtistFeatureDependencies {
-  dialog: ArtistDialog;
+  dialog: EditorDialog;
   drafts: { begin: (target: DraftTarget) => boolean };
   persistence: {
     finishCatalogSave: (message: string, destination: string) => Promise<void>;
   };
-  picker: ArtistPickerInteraction;
+  picker: PickerInteraction;
   library: {
     readonly albums: LibraryData["albums"];
     artists: LibraryData["artists"];
@@ -59,10 +43,6 @@ export interface ArtistFeatureDependencies {
     renderRoute: (focus?: boolean) => void;
     updateCatalogFilters: (id: string) => void;
   };
-}
-
-function isArtistSort(value: string): value is ArtistSort {
-  return ["albums", "rating", "recent", "updated", "name"].includes(value);
 }
 
 function isArtistRole(value: string): value is ArtistRole {
@@ -97,7 +77,7 @@ function renderArtistForm(item?: Artist): string {
 function readArtistForm(
   form: HTMLFormElement,
   artists: Artist[],
-  formError: ArtistDialog["formError"],
+  formError: EditorDialog["formError"],
 ): Artist | void {
   const data = new FormData(form);
   const value = (key: string) => formValue(data, key);
@@ -158,7 +138,7 @@ export class ArtistFeature {
   private artistChoices: Artist[] = [];
   private artistQuery = "";
   private artistUnused = false;
-  private artistSort: ArtistSort = "updated";
+  private artistSort: CatalogSort = "updated";
   private artistPrimary = false;
 
   constructor(dependencies: ArtistFeatureDependencies) {
@@ -504,7 +484,7 @@ export class ArtistFeature {
   }
 
   public change(input: HTMLInputElement): void {
-    if (input.id === "artists-sort" && isArtistSort(input.value)) {
+    if (input.id === "artists-sort" && isCatalogSort(input.value)) {
       this.artistSort = input.value;
       this.updateArtistList();
     }
