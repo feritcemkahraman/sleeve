@@ -18,37 +18,24 @@ function formatDate(date: string) {
 
 function linkDetails(link: Partial<AlbumLink>, parsed = webUrl(link.url)) {
   const domain = parsed?.hostname.replace(/^www\./, "") ?? "";
-  const apple = domain === "music.apple.com";
-  const youtube = [
-    "youtube.com",
-    "music.youtube.com",
-    "m.youtube.com",
-    "youtu.be",
-  ].includes(domain);
-  const wikipedia =
-    domain === "wikipedia.org" || domain.endsWith(".wikipedia.org");
-  const discogs = domain === "discogs.com" || domain.endsWith(".discogs.com");
-  const label = apple
-    ? "Apple Music"
-    : youtube
-      ? "YouTube"
-      : wikipedia
-        ? "Wikipedia"
-        : discogs
-          ? "Discogs"
-          : domain;
-  return {
-    name: link.label || label,
-    icon: apple
-      ? "music"
-      : youtube
-        ? "play"
-        : wikipedia
-          ? "wikipedia"
-          : discogs
-            ? "disc"
-            : "link",
-  };
+  const provider = linkProvider(domain);
+  return { name: link.label || provider.name, icon: provider.icon };
+}
+
+function linkProvider(domain: string): { name: string; icon: string } {
+  if (domain === "music.apple.com")
+    return { name: "Apple Music", icon: "music" };
+  if (
+    ["youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"].includes(
+      domain,
+    )
+  )
+    return { name: "YouTube", icon: "play" };
+  if (domain === "wikipedia.org" || domain.endsWith(".wikipedia.org"))
+    return { name: "Wikipedia", icon: "wikipedia" };
+  if (domain === "discogs.com" || domain.endsWith(".discogs.com"))
+    return { name: "Discogs", icon: "disc" };
+  return { name: domain, icon: "link" };
 }
 
 function externalLinks(links: AlbumLink[]) {
@@ -90,6 +77,43 @@ function historyCard(listen: ListeningEntry) {
     ${listen.notes ? /* HTML */ `<span class="listen-notes">${escapeHtml(listen.notes)}</span>` : ""}
     <span class="listen-edit">${icon("edit", 14)} Edit listen</span>
   </button>`;
+}
+
+function renderAdditionalCredits(additionalArtists: Album["artists"]): string {
+  return /* HTML */ ` ${
+    additionalArtists.length
+      ? /* HTML */ `<section
+          class="additional-credits"
+          aria-labelledby="credits-title"
+        >
+          <div class="detail-heading">
+            ${icon("people", 21)}
+            <h2 id="credits-title">Additional credits</h2>
+          </div>
+          <ul class="additional-credit-list">
+            ${additionalArtists.map((artist) => /* HTML */ `<li><a href="${artistUrl(artist.id)}">${escapeHtml(artist.name)}</a><span class="artist-role-label">${roleLabel(artist.role)}</span></li>`).join("")}
+          </ul>
+        </section>`
+      : ""
+  }`;
+}
+
+function renderInstrumentation(instruments: Album["instruments"]): string {
+  return /* HTML */ ` <section aria-labelledby="instruments-title">
+    <div class="detail-heading">
+      ${icon("music", 21)}
+      <h2 id="instruments-title">Instrumentation</h2>
+      <button
+        type="button"
+        class="button section-edit"
+        data-action="edit-instruments"
+        aria-label="Edit instruments"
+      >
+        ${icon("edit", 14)} Edit
+      </button>
+    </div>
+    ${instruments.length ? /* HTML */ `<div class="tags">${instruments.map((item) => /* HTML */ `<a class="chip" href="${instrumentUrl(item.id)}">${escapeHtml(item.name)}</a>`).join("")}</div>` : /* HTML */ `<p class="muted">No instruments added yet. Add them whenever you know what you heard.</p>`}
+  </section>`;
 }
 
 export function renderAlbumDetailView(album: Album): string {
@@ -180,38 +204,8 @@ export function renderAlbumDetailView(album: Album): string {
         </section>
       </div>
       <div class="album-sidebar">
-        ${
-          additionalArtists.length
-            ? /* HTML */ `<section
-                class="additional-credits"
-                aria-labelledby="credits-title"
-              >
-                <div class="detail-heading">
-                  ${icon("people", 21)}
-                  <h2 id="credits-title">Additional credits</h2>
-                </div>
-                <ul class="additional-credit-list">
-                  ${additionalArtists.map((artist) => /* HTML */ `<li><a href="${artistUrl(artist.id)}">${escapeHtml(artist.name)}</a><span class="artist-role-label">${roleLabel(artist.role)}</span></li>`).join("")}
-                </ul>
-              </section>`
-            : ""
-        }
-
-        <section aria-labelledby="instruments-title">
-          <div class="detail-heading">
-            ${icon("music", 21)}
-            <h2 id="instruments-title">Instrumentation</h2>
-            <button
-              type="button"
-              class="button section-edit"
-              data-action="edit-instruments"
-              aria-label="Edit instruments"
-            >
-              ${icon("edit", 14)} Edit
-            </button>
-          </div>
-          ${album.instruments.length ? /* HTML */ `<div class="tags">${album.instruments.map((item) => /* HTML */ `<a class="chip" href="${instrumentUrl(item.id)}">${escapeHtml(item.name)}</a>`).join("")}</div>` : /* HTML */ `<p class="muted">No instruments added yet. Add them whenever you know what you heard.</p>`}
-        </section>
+        ${renderAdditionalCredits(additionalArtists)}
+        ${renderInstrumentation(album.instruments)}
         <section aria-labelledby="links-title">
           <div class="detail-heading">
             ${icon("link", 21)}

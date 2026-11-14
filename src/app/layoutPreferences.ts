@@ -1,4 +1,4 @@
-type Layout = "grid" | "list";
+export type Layout = "grid" | "list";
 type View = "library" | "artist" | "genre";
 
 const storageKey = (view: View) => `jazzlog:layout:${view}`;

@@ -5,6 +5,72 @@ import { escapeHtml as e } from "../components/html";
 import { ancestors, genreUrl, includesGenre } from "../app/genres";
 import { renderAlbumListHeading } from "../components/albumListHeading";
 import { renderAlbumGrid } from "../components/albumGrid";
+function renderGenreLeaf(genre: Genre, count: number): string {
+  return /* HTML */ `<a class="genre-leaf-link" href="${genreUrl(genre.id)}"
+    ><span>${e(genre.name)}</span><span class="muted">${count} albums</span></a
+  >`;
+}
+
+function renderGenreTree(
+  parent: string | null,
+  genres: Genre[],
+  counts: Map<string, number>,
+): string {
+  return /* HTML */ `<ul>
+    ${genres
+      .filter((genre) => genre.parentGenreId === parent)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(
+        (genre) =>
+          /* HTML */ `<li class="genre-tree-item">
+            ${
+              genres.some((child) => child.parentGenreId === genre.id)
+                ? /* HTML */ `<details>
+                    <summary>
+                      <span class="genre-toggle-label"
+                        ><span>${e(genre.name)}</span
+                        ><span class="muted"
+                          >${counts.get(genre.id) ?? 0} albums</span
+                        ></span
+                      ><a
+                        class="genre-view-link"
+                        href="${genreUrl(genre.id)}"
+                        aria-label="View ${e(genre.name)} details"
+                        >View <span aria-hidden="true">↗</span></a
+                      >
+                    </summary>
+                    ${renderGenreTree(genre.id, genres, counts)}
+                  </details>`
+                : renderGenreLeaf(genre, counts.get(genre.id) ?? 0)
+            }
+          </li>`,
+      )
+      .join("")}
+  </ul>`;
+}
+
+function renderAlphabeticalGenres(
+  results: Genre[],
+  genres: Genre[],
+  counts: Map<string, number>,
+): string {
+  return /* HTML */ `<ul>
+    ${results
+      .map(
+        (genre) =>
+          /* HTML */ `<li>
+            ${renderGenreLeaf(genre, counts.get(genre.id) ?? 0)}
+            <p class="muted">
+              ${ancestors(genre.id, genres)
+                .map((parent) => e(parent.name))
+                .join(" › ")}
+            </p>
+          </li>`,
+      )
+      .join("")}
+  </ul>`;
+}
+
 export function renderGenresView(
   genres: Genre[],
   albums: Album[],
@@ -12,47 +78,20 @@ export function renderGenresView(
   alphabetical: boolean,
   unused: boolean,
 ): string {
-  const count = (g: Genre) =>
-    albums.filter((a) => includesGenre(a, g.id, genres)).length;
-  const row = (g: Genre) =>
-    /* HTML */ `<a class="genre-leaf-link" href="${genreUrl(g.id)}"
-      ><span>${e(g.name)}</span><span class="muted">${count(g)} albums</span></a
-    >`;
-  const tree = (parent: string | null): string =>
-    /* HTML */ `<ul>
-      ${genres
-        .filter((g) => g.parentGenreId === parent)
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map(
-          (g) =>
-            /* HTML */ `<li class="genre-tree-item">
-              ${
-                genres.some((c) => c.parentGenreId === g.id)
-                  ? /* HTML */ `<details>
-                      <summary>
-                        <span class="genre-toggle-label"
-                          ><span>${e(g.name)}</span
-                          ><span class="muted">${count(g)} albums</span></span
-                        ><a
-                          class="genre-view-link"
-                          href="${genreUrl(g.id)}"
-                          aria-label="View ${e(g.name)} details"
-                          >View <span aria-hidden="true">↗</span></a
-                        >
-                      </summary>
-                      ${tree(g.id)}
-                    </details>`
-                  : row(g)
-              }
-            </li>`,
-        )
-        .join("")}
-    </ul>`;
+  const counts = new Map(
+    genres.map((genre) => [
+      genre.id,
+      albums.filter((album) => includesGenre(album, genre.id, genres)).length,
+    ]),
+  );
   const results = genres
     .filter(
-      (g) =>
-        g.name.toLowerCase().includes(query.toLowerCase()) &&
-        (!unused || !albums.some((a) => a.genres.some((c) => c.id === g.id))),
+      (genre) =>
+        genre.name.toLowerCase().includes(query.toLowerCase()) &&
+        (!unused ||
+          !albums.some((album) =>
+            album.genres.some((assigned) => assigned.id === genre.id),
+          )),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
   return /* HTML */ `<section class="instrument-page catalog-page genres-page">
@@ -70,44 +109,35 @@ export function renderGenresView(
     <div class="genre-tree">
       ${
         query || alphabetical || unused
-          ? /* HTML */ `<ul>
-              ${results
-                .map(
-                  (g) =>
-                    /* HTML */ `<li>
-                      ${row(g)}
-                      <p class="muted">
-                        ${ancestors(g.id, genres)
-                          .map((p) => e(p.name))
-                          .join(" › ")}
-                      </p>
-                    </li>`,
-                )
-                .join("")}
-            </ul>`
-          : tree(null)
+          ? renderAlphabeticalGenres(results, genres, counts)
+          : renderGenreTree(null, genres, counts)
       }${!results.length ? /* HTML */ `<p class="muted">No matching genres. Add one here or while editing an album.</p>` : ""}
     </div>
   </section>`;
 }
 export function renderGenreDetail(
-  g: Genre,
+  genre: Genre,
   genres: Genre[],
   albums: Album[],
   layout = "grid",
 ): string {
-  const used = albums.filter((a) => includesGenre(a, g.id, genres));
-  const children = genres.filter((c) => c.parentGenreId === g.id);
-  const direct = albums.some((a) => a.genres.some((c) => c.id === g.id));
+  const used = albums.filter((album) => includesGenre(album, genre.id, genres));
+  const children = genres.filter((child) => child.parentGenreId === genre.id);
+  const direct = albums.some((album) =>
+    album.genres.some((assigned) => assigned.id === genre.id),
+  );
   return /* HTML */ `<section class="instrument-page genre-detail">
     <a class="back-link" href="#genres">Back to genres</a>
     <p class="genre-breadcrumb">
-      ${ancestors(g.id, genres)
-        .map((p) => /* HTML */ `<a href="${genreUrl(p.id)}">${e(p.name)}</a>`)
+      ${ancestors(genre.id, genres)
+        .map(
+          (parent) =>
+            /* HTML */ `<a href="${genreUrl(parent.id)}">${e(parent.name)}</a>`,
+        )
         .join(" › ")}
     </p>
     <div class="instrument-page-heading">
-      <h1 id="page-title">${e(g.name)}</h1>
+      <h1 id="page-title">${e(genre.name)}</h1>
       <button class="button secondary" data-action="edit-catalog-genre">
         Edit genre
       </button>
@@ -120,7 +150,7 @@ export function renderGenreDetail(
           >
             <h2 id="subgenres-title">Subgenres</h2>
             <div class="tags">
-              ${children.map((c) => /* HTML */ `<a class="chip" href="${genreUrl(c.id)}">${e(c.name)}</a>`).join("")}
+              ${children.map((child) => /* HTML */ `<a class="chip" href="${genreUrl(child.id)}">${e(child.name)}</a>`).join("")}
             </div>
           </section>`
         : ""
