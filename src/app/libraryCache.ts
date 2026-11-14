@@ -1,3 +1,4 @@
+import { isLibrarySnapshot } from "./storageValidation.ts";
 import type { LibraryData } from "../types/library";
 
 const prefix = "jazzlog-library-v1:";
@@ -12,55 +13,10 @@ export function readLibraryCache(
   accountId: string,
 ): LibrarySnapshot | undefined {
   try {
-    const value = JSON.parse(
+    const value: unknown = JSON.parse(
       localStorage.getItem(prefix + accountId) ?? "null",
     );
-    if (
-      value?.version !== 1 ||
-      value.accountId !== accountId ||
-      !Number.isFinite(value.syncedAt)
-    )
-      return;
-    if (
-      !["albums", "artists", "genres", "instruments"].every((key) =>
-        Array.isArray(value.data?.[key]),
-      )
-    )
-      return;
-    const named = (rows: unknown): boolean =>
-      Array.isArray(rows) &&
-      rows.every(
-        (row) =>
-          row && typeof row.id === "string" && typeof row.name === "string",
-      );
-    if (
-      !named(value.data.artists) ||
-      !named(value.data.genres) ||
-      !named(value.data.instruments)
-    )
-      return;
-    if (
-      !value.data.instruments.every((row: { categories?: unknown }) =>
-        Array.isArray(row.categories),
-      )
-    )
-      return;
-    if (
-      !value.data.albums.every(
-        (album: LibraryData["albums"][number]) =>
-          album &&
-          typeof album.id === "string" &&
-          typeof album.title === "string" &&
-          typeof album.createdAt === "string" &&
-          typeof album.updatedAt === "string" &&
-          named(album.artists) &&
-          named(album.genres) &&
-          named(album.instruments) &&
-          Array.isArray(album.links) &&
-          Array.isArray(album.listeningEntries),
-      )
-    )
-      return;
+    if (!isLibrarySnapshot(value) || value.accountId !== accountId) return;
     return value;
   } catch {
     return;

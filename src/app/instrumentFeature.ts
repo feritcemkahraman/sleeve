@@ -20,7 +20,7 @@ import type {
 } from "../types/albums";
 import { icon } from "../components/icons";
 import { escapeHtml } from "../components/html";
-import { webUrl } from "../components/presentation";
+import { requiredNameSchema, optionalHttpUrlSchema } from "./formValidation";
 import { albumsUsing, instrumentUrl } from "./instruments";
 import {
   categoryFields,
@@ -85,7 +85,8 @@ function readInstrumentForm(
   )!;
   const name = input.value.trim();
 
-  if (!name) return formError("Enter an instrument name.", input);
+  if (!requiredNameSchema.safeParse(name).success)
+    return formError("Enter an instrument name.", input);
   if (
     instruments.some(
       (item) =>
@@ -97,7 +98,7 @@ function readInstrumentForm(
 
   const data = new FormData(form);
   const imageUrl = String(data.get("catalogImage") ?? "").trim();
-  if (imageUrl && !webUrl(imageUrl))
+  if (!optionalHttpUrlSchema.safeParse(imageUrl).success)
     return formError(
       "Enter an HTTP or HTTPS image URL.",
       form.querySelector('[name="catalogImage"]')!,

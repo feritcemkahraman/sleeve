@@ -1,3 +1,4 @@
+import { routeHistorySchema, routeMarkerSchema } from "./storageValidation";
 import { makeId } from "./id";
 
 export interface RouteHistory {
@@ -17,25 +18,18 @@ export function createRouteHistory(accountId: string): RouteHistory {
   let cursor = -1;
 
   try {
-    const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? "null");
-    const marker = history.state?.[key];
+    const saved = routeHistorySchema.safeParse(
+      JSON.parse(sessionStorage.getItem(storageKey) ?? "null"),
+    );
+    const marker = routeMarkerSchema.safeParse(history.state?.[key]);
     if (
-      typeof saved?.session === "string" &&
-      saved.session === marker?.session &&
-      Number.isInteger(marker.index) &&
-      Array.isArray(saved.entries) &&
-      saved.entries.every(
-        (entry: { hash?: unknown; scroll?: unknown } | null) =>
-          entry !== null &&
-          typeof entry.hash === "string" &&
-          typeof entry.scroll === "number" &&
-          Number.isFinite(entry.scroll) &&
-          entry.scroll >= 0,
-      ) &&
-      saved.entries[marker.index]?.hash === location.hash
+      saved.success &&
+      marker.success &&
+      saved.data.session === marker.data.session &&
+      saved.data.entries[marker.data.index]?.hash === location.hash
     ) {
-      session = saved.session;
-      entries.push(...saved.entries);
+      session = saved.data.session;
+      entries.push(...saved.data.entries);
     }
   } catch {
     // Navigation still works in memory when storage is unavailable or invalid.

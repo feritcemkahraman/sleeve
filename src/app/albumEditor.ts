@@ -1,4 +1,9 @@
 import {
+  albumSubmissionSchema,
+  importMappingsSchema,
+  musicLinkSubmissionSchema,
+} from "./formValidation";
+import {
   isAlbumEditorMode,
   type AlbumEditorMode,
   type EditorDialog,
@@ -95,13 +100,8 @@ function savedArtwork(
 function readMappings(key: string): Record<string, string> {
   try {
     const data: unknown = JSON.parse(localStorage.getItem(key) ?? "{}");
-    if (!data || typeof data !== "object" || Array.isArray(data)) return {};
-
-    return Object.fromEntries(
-      Object.entries(data).filter(
-        (entry): entry is [string, string] => typeof entry[1] === "string",
-      ),
-    );
+    const parsed = importMappingsSchema.safeParse(data);
+    return parsed.success ? parsed.data : {};
   } catch {
     return {};
   }
@@ -121,12 +121,13 @@ function readMusicLinks(
       .value.trim();
     if (!url && !label) continue;
 
-    if (!webUrl(url)) {
+    const parsed = musicLinkSubmissionSchema.safeParse({ url, label });
+    if (!parsed.success) {
       formError("Enter an HTTP or HTTPS URL for each music link.", input);
       return undefined;
     }
 
-    links.push({ id: makeId(), url, label });
+    links.push({ id: makeId(), ...parsed.data });
   }
 
   return links;
@@ -504,21 +505,25 @@ export class AlbumEditor {
     const original = this.originalAlbum(mode, form.dataset.id);
     if ((mode === "edit" || mode === "review") && !original) return;
 
-    const title = value("title");
-    const artwork = value("artwork");
+    const parsed = albumSubmissionSchema.safeParse({
+      title: value("title"),
+      artwork: value("artwork"),
+      year: value("year"),
+      label: value("label"),
+    });
+    if (!parsed.success) {
+      const field =
+        parsed.error.issues[0].path[0] === "title" ? "title" : "artwork";
+      return this.dependencies.dialog.formError(
+        field === "title"
+          ? "Enter an album title."
+          : "Enter an HTTP or HTTPS artwork URL.",
+        form.querySelector<HTMLInputElement>(`[name=${field}]`)!,
+      );
+    }
+
+    const { title, artwork, year, label } = parsed.data;
     const mbid = original?.musicbrainzReleaseGroupId;
-
-    if (!title)
-      return this.dependencies.dialog.formError(
-        "Enter an album title.",
-        form.querySelector<HTMLInputElement>("[name=title]")!,
-      );
-
-    if (artwork && !webUrl(artwork))
-      return this.dependencies.dialog.formError(
-        "Enter an HTTP or HTTPS artwork URL.",
-        form.querySelector<HTMLInputElement>("[name=artwork]")!,
-      );
 
     if (
       mbid &&
@@ -552,11 +557,11 @@ export class AlbumEditor {
       title,
       sortTitle: original?.sortTitle ?? null,
       artists: committedArtists.credits,
-      releaseYear: Number(value("year")) || null,
+      releaseYear: year,
       genres: structuredClone(
         this.dependencies.pickers.selections.selectedGenres,
       ),
-      recordLabel: value("label"),
+      recordLabel: label,
       artworkUrl: savedArtwork(artwork, original?.artworkUrl),
       musicbrainzReleaseGroupId: mbid || null,
       links,

@@ -1,3 +1,4 @@
+import { listeningSubmissionSchema } from "./formValidation";
 import { today } from "./date";
 import type { EditorDialog } from "./editorContracts";
 import type { EditorDrafts } from "./editorDrafts";
@@ -112,13 +113,20 @@ ${escapeHtml(entry?.notes ?? "")}</textarea>
       (item) => item.id === form.dataset.entryId,
     );
     if (form.dataset.entryId && !entry) return;
+    const parsed = listeningSubmissionSchema.safeParse({
+      date: String(data.get("date")),
+      rating: Number(data.get("rating")),
+      notes: String(data.get("notes")),
+    });
+    if (!parsed.success) return;
+
     const now = new Date().toISOString();
     album.updatedAt = now;
     const updates = {
       updatedAt: now,
-      listenedAt: String(data.get("date")),
-      rating: Number(data.get("rating")),
-      notes: String(data.get("notes")).trim(),
+      listenedAt: parsed.data.date,
+      rating: parsed.data.rating,
+      notes: parsed.data.notes,
     };
     if (entry) Object.assign(entry, updates);
     else
