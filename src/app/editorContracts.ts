@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export interface EditorDialog {
   element: HTMLDialogElement;
   show: (
@@ -14,13 +16,14 @@ export interface PickerInteraction {
   closeSearch: () => void;
 }
 
-export type AlbumEditorMode = "manual" | "edit" | "review" | "links";
+export const albumEditorModeSchema = z.enum([
+  "manual",
+  "edit",
+  "review",
+  "links",
+]);
+export type AlbumEditorMode = z.infer<typeof albumEditorModeSchema>;
 
 export function isAlbumEditorMode(value: unknown): value is AlbumEditorMode {
-  return (
-    value === "manual" ||
-    value === "edit" ||
-    value === "review" ||
-    value === "links"
-  );
+  return albumEditorModeSchema.safeParse(value).success;
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isDraft } from "../src/app/draftValidation.ts";
+import { draftSchema } from "../src/app/draftValidation.ts";
 import { mockAlbums } from "../src/data/mockData.ts";
 
 function draft(target = { kind: "album", item: {}, mode: "manual" }) {
@@ -40,7 +40,7 @@ test("version-one drafts retain every editor target and picker snapshot", () => 
   ];
   for (const target of targets) {
     assert.equal(
-      isDraft({
+      draftSchema.safeParse({
         ...draft(target),
         artists: album.artists,
         genres: album.genres,
@@ -48,7 +48,7 @@ test("version-one drafts retain every editor target and picker snapshot", () => 
         artistChoices: album.artists,
         genreChoices: album.genres,
         instrumentChoices: album.instruments,
-      }),
+      }).success,
       true,
       JSON.stringify(target),
     );
@@ -82,5 +82,25 @@ test("damaged targets and nested snapshots are rejected before restoration", () 
     { ...draft(), links: 1001 },
   ];
   for (const value of invalid)
-    assert.equal(isDraft(value), false, JSON.stringify(value));
+    assert.equal(
+      draftSchema.safeParse(value).success,
+      false,
+      JSON.stringify(value),
+    );
+});
+
+test("parsing preserves version-one extras and clones nested picker data", () => {
+  const value = draft({
+    kind: "album",
+    item: { title: "", futureField: "kept" },
+    mode: "manual",
+  });
+  value.artists = structuredClone(mockAlbums[0].artists);
+  value.futureField = { note: "kept" };
+  const result = draftSchema.safeParse(value);
+  assert.equal(result.success, true);
+  assert.deepEqual(result.data, value);
+  result.data.artists[0].name = "Changed parsed selection";
+  assert.notEqual(result.data.artists[0].name, value.artists[0].name);
+  assert.equal(draftSchema.safeParse({ ...value, links: "1" }).success, false);
 });

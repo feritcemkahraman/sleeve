@@ -10,7 +10,7 @@ import type {
   ListeningEntry,
 } from "../types/albums";
 import type { AlbumEditorMode } from "./editorContracts";
-import { isDraft } from "./draftValidation";
+import { draftSchema } from "./draftValidation";
 import { createLifecycle } from "./lifecycle";
 
 export interface EditorDraftsDependencies {
@@ -274,7 +274,8 @@ export class EditorDraftController implements EditorDrafts {
       const stored: unknown = JSON.parse(
         localStorage.getItem(this.draftKey) ?? "null",
       );
-      if (isDraft(stored)) this.draft = stored;
+      const result = draftSchema.safeParse(stored);
+      if (result.success) this.draft = result.data;
     } catch {
       /* An unavailable or damaged draft must not prevent opening the library. */
     }
