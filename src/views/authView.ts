@@ -95,7 +95,9 @@ export function initializeAuthView(
   for (const tab of tabs) {
     tab.addEventListener("click", () => {
       if (busy) return;
-      mode = tab.dataset.authMode as AuthMode;
+      const nextMode = tab.dataset.authMode;
+      if (nextMode !== "signin" && nextMode !== "signup") return;
+      mode = nextMode;
       const signingUp = mode === "signup";
       tabs.forEach((item) =>
         item.setAttribute("aria-pressed", String(item === tab)),

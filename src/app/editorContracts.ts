@@ -13,3 +13,14 @@ export interface PickerInteraction {
   deferRender: () => boolean;
   closeSearch: () => void;
 }
+
+export type AlbumEditorMode = "manual" | "edit" | "review" | "links";
+
+export function isAlbumEditorMode(value: unknown): value is AlbumEditorMode {
+  return (
+    value === "manual" ||
+    value === "edit" ||
+    value === "review" ||
+    value === "links"
+  );
+}

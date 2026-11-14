@@ -13,8 +13,12 @@ state getters, draft cloning, and asynchronous lifecycle guards.
 - [x] Stateful ownership: review metadata search, dialog, and editor drafts for
       class conversion. Metadata search, dialog, and editor drafts are complete.
       Keep small factories as functions; group each remaining batch in one PR.
-- [ ] Domain contracts: tighten draft modes/actions and validate persisted/DOM
-      strings. Reduce casts through shared contracts.
+- [x] Domain contracts: tighten draft modes/actions and validate persisted/DOM
+      strings. Reduce casts through shared contracts. Draft targets now form a
+      discriminated union with validated nested snapshots; album modes are shared
+      across editors and metadata search. DOM auth modes, import suggestion kinds,
+      and image-preview instrument categories are checked before use. Existing
+      action switches already narrow recognized actions and ignore unknown values.
 - [ ] Focused cleanup: review duplicated rendering, long fallback chains,
       dependency scope, HTML annotations, and logical spacing.
 - [ ] Evaluate automated enforcement of objective rules after cleanup; keep

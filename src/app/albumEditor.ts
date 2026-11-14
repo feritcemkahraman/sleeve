@@ -1,4 +1,8 @@
-import type { EditorDialog } from "./editorContracts";
+import {
+  isAlbumEditorMode,
+  type AlbumEditorMode,
+  type EditorDialog,
+} from "./editorContracts";
 import { today } from "./date";
 import type { DraftTarget } from "./editorDrafts";
 import type { LibraryData } from "../types/library";
@@ -28,7 +32,6 @@ import { escapeHtml } from "../components/html";
 import { webUrl, cover } from "../components/presentation";
 import { focusForTyping } from "./device";
 
-export type AlbumEditorMode = "manual" | "edit" | "review" | "links";
 type SuggestionKind = "genre" | "instrument";
 
 interface AlbumEditorDrafts {
@@ -132,7 +135,7 @@ export class AlbumEditor {
   }
 
   private suggestions(
-    kind: "genre" | "instrument",
+    kind: SuggestionKind,
     items: { id: string; name: string }[] = [],
   ): string {
     if (!items.length) return "";
@@ -471,6 +474,7 @@ export class AlbumEditor {
     const value = (name: string) => formValue(data, name);
 
     const mode = form.dataset.mode;
+    if (!isAlbumEditorMode(mode)) return;
     const original =
       mode === "edit"
         ? this.dependencies.library.albums.find(
@@ -599,8 +603,9 @@ export class AlbumEditor {
           break;
         }
 
-        const kind = button.dataset.kind as "genre" | "instrument";
-        const name = button.dataset.name!;
+        const kind = button.dataset.kind;
+        const name = button.dataset.name;
+        if ((kind !== "genre" && kind !== "instrument") || !name) return true;
         const choices =
           kind === "genre"
             ? this.dependencies.pickers.selections.genreChoices

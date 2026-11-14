@@ -1,3 +1,4 @@
+import { isInstrumentCategory } from "../app/instruments.ts";
 import { escapeHtml } from "./html.ts";
 import { icon } from "./icons.ts";
 import { cover } from "./presentation.ts";
@@ -86,6 +87,8 @@ export function updateCatalogImage(input: HTMLInputElement): void {
             ...form.querySelectorAll<HTMLInputElement>(
               '[name="category"]:checked',
             ),
-          ].map((input) => input.value as InstrumentCategory),
+          ]
+            .map((input) => input.value)
+            .filter(isInstrumentCategory),
         );
 }

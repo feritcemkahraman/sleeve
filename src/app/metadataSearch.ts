@@ -1,4 +1,4 @@
-import type { AlbumEditorMode } from "./albumEditor";
+import type { AlbumEditorMode } from "./editorContracts";
 import type { EditorDialog } from "./editorContracts";
 import {
   parseWikipediaUrl,
