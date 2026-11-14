@@ -25,8 +25,9 @@ state getters, draft cloning, and asynchronous lifecycle guards.
       remaining HTML fragments in views/controllers to annotated templates and
       named field options. Existing feature dependencies retain their focused
       capabilities and live getters; small helpers and generated files stay intact.
-- [ ] Evaluate automated enforcement of objective rules after cleanup; keep
-      architectural decisions under review rather than imposing blanket rewrites.
+- [x] Evaluate automated enforcement of objective rules after cleanup. Enable
+      TypeScript strict mode and a local `npm run typecheck` command. Keep
+      architectural decisions under review; see the evaluation below.
 
 ## Workflow
 
@@ -92,3 +93,83 @@ coverage; they are follow-up work, not completed by the draft migration:
 The initial regular-Zod migration increases the main JavaScript bundle from
 47.42 KB to 72.37 KB gzipped (production Vite build). Measure again as schemas
 expand; consider Zod Mini if bundle weight warrants it.
+
+## Local automated evaluation
+
+`npm run typecheck` checks the existing source with TypeScript strict mode;
+`npm run build` also runs this check before bundling. `npm run format:check`
+checks formatting. Keep these local for now; no CI setup is part of this project.
+
+Strict mode enforces null handling and implicit-any rules, but cannot prove data
+returned by JSON parsing matches a domain type. Schema migrations remain separate
+work. Strict mode also does not enable `noUncheckedIndexedAccess` or
+`exactOptionalPropertyTypes`; evaluate those separately rather than silently
+expanding this batch.
+
+Explicit exported return types and class method return types are suitable for
+syntax-aware lint rules. A future local lint setup should cover exported arrow
+helpers and re-exported local functions as well as declarations, allow inferred
+short local callbacks, and exclude generated database types. Prefer established
+TypeScript-aware lint rules over a new handwritten parser. The installed
+TypeScript 7 package exposes its AST API through explicitly unstable entry points;
+using that API for a custom checker would add avoidable maintenance here.
+
+HTML annotations need syntax-aware detection of template literals and their
+immediately preceding comments. Searching for `<` alone also matches non-HTML
+strings and misses fragments built entirely from interpolations. Prettier formats
+annotated HTML but does not enforce the annotation. Keep this under review until a
+local rule can be tested against nested templates, attribute fragments, SQL select
+strings, and plain text. No regex-based blocking check is introduced.
+
+Class ownership, dependency scope, live getters, snapshot cloning, lifecycle
+cancellation, and logical spacing remain review decisions backed by relevant
+tests. Do not enforce blanket class conversions, function-size limits, or template
+extraction counts.
+
+## Services and views follow-up review
+
+The earlier focused cleanup addressed selected guideline gaps, not every
+readability issue in these directories. Schedule these as focused behavior-
+preserving PRs; keep validation migration separate from rendering extractions.
+
+- Catalog views: `artistsView.ts` and `instrumentsView.ts` repeatedly scan albums
+  and calculate statistics during filtering, comparison, and row rendering.
+  Build per-render catalog results once, then use named row and empty-state
+  renderers. Preserve primary-artist filtering, unused semantics, tie-breakers,
+  selectors, and preview-root support. Keep genre hierarchy semantics distinct.
+- `genresView.ts`: separate recursive tree/leaf rendering and alphabetical result
+  rendering from the page shell. Name the genre variables and precompute counts
+  without changing direct-assignment versus descendant-inclusive behavior.
+- `albumDetailView.ts`: replace parallel provider ternary chains in `linkDetails`
+  with one named provider decision; extract coherent credits/tags sections where
+  nested markup obscures the page structure. Retain URL filtering and escaping.
+- `libraryView.ts`: rendering currently normalizes the caller's `state.genre` and
+  chooses random featured content. Make those responsibilities explicit before
+  attempting a pure-rendering extraction. Tighten sort/layout contracts at their
+  input boundaries; preserve current defaults and route/preview parity.
+- `authView.ts`: the initializer owns mutable mode/busy state and asynchronous
+  submit listeners without a disposal contract. Review class ownership together
+  with `main.ts` authentication mounting, teardown, and stale-result protection;
+  characterize sign-in, sign-up confirmation, demo entry, and pending teardown.
+- `services/albums.ts`: the joined-row mapper is already separate from fetching,
+  but the select query uses double casts to a handwritten joined-row type. Review
+  query-derived contracts and mapper tests, including absent joins and ordering,
+  before removing casts. Check callers before retaining or removing CRUD exports.
+- `services/wikipedia.ts`: split article resolution, Wikidata enrichment, and
+  optional page suggestions into focused helpers with named response contracts.
+  Preserve optional enrichment failures, language fallback, suggestion priority,
+  and request order. Remove the leftover raw-response `console.log` in that PR.
+- `services/appleMusic.ts`: separate store candidate extraction, embed checks,
+  and cache coordination. Preserve eight-candidate limits, parallel checks,
+  negative results, failed-request eviction, and existing matching behavior.
+- `services/musicbrainz.ts`: review queued request ownership and tests for failed
+  requests and rate spacing. The module-level queue is intentionally shared;
+  do not convert it solely for stylistic consistency.
+- `services/saveLibrary.ts` and `libraryDelta.ts`: tighten RPC result and table
+  contracts in a focused persistence review. Preserve atomic deltas, association
+  replacement, and server timestamp reconciliation. Small auth, pagination,
+  Supabase, and cover-art adapters do not need extra layers.
+
+Use existing unit and browser coverage for catalog filters, details, import review,
+account persistence, authentication, and route previews; extend only the branches
+needed to protect each extraction. These are follow-ups, not completed cleanup.
