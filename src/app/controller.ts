@@ -627,8 +627,9 @@ export class AppController {
 
   private announce(message: string): void {
     clearTimeout(this.toastTimer);
-    this.toast.innerHTML =
-      icon("check", 17) + "<span>" + escapeHtml(message) + "</span>";
+    this.toast.innerHTML = /* HTML */ `${icon("check", 17)}<span
+        >${escapeHtml(message)}</span
+      >`;
     this.toast.classList.add("visible");
     this.toastTimer = setTimeout(
       () => this.toast.classList.remove("visible"),

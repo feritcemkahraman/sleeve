@@ -86,7 +86,7 @@ export function renderGenresView(
                 .join("")}
             </ul>`
           : tree(null)
-      }${!results.length ? '<p class="muted">No matching genres. Add one here or while editing an album.</p>' : ""}
+      }${!results.length ? /* HTML */ `<p class="muted">No matching genres. Add one here or while editing an album.</p>` : ""}
     </div>
   </section>`;
 }
@@ -127,7 +127,7 @@ export function renderGenreDetail(
     }
     <section class="genre-albums" aria-labelledby="genre-albums-title">
       ${renderAlbumListHeading("Albums", used.length, layout, "genre-layout", "genre-albums-title")}
-      ${used.length ? renderAlbumGrid(used, layout) : "<p>No albums yet.</p>"}
+      ${used.length ? renderAlbumGrid(used, layout) : /* HTML */ `<p>No albums yet.</p>`}
     </section>
     <div class="instrument-delete">
       <button

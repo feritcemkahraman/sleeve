@@ -157,8 +157,10 @@ export class AppRouter {
       else if (location.hash === "#genres")
         this.renderListRoute("#genres", this.dependencies.main);
       else
-        this.dependencies.main.innerHTML =
-          '<div class="empty"><h1 id="page-title">Genre unavailable</h1><a href="#genres">Back to genres</a></div>';
+        this.dependencies.main.innerHTML = /* HTML */ `<div class="empty">
+          <h1 id="page-title">Genre unavailable</h1>
+          <a href="#genres">Back to genres</a>
+        </div>`;
     } else if (location.hash === "#artists") {
       this.renderListRoute("#artists", this.dependencies.main);
     } else if (artist) {

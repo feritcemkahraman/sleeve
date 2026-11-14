@@ -107,7 +107,7 @@ export function updateArtistsView(
           ${artists.length ? "No matching artists" : "Start your artist catalog"}
         </h2>
         <p>Add an artist here or while editing an album.</p>
-        ${artists.length ? '<button class="button secondary" data-action="clear-artist-filters">Clear filters</button>' : ""}
+        ${artists.length ? /* HTML */ `<button class="button secondary" data-action="clear-artist-filters">Clear filters</button>` : ""}
       </div>`;
 }
 export function renderArtistDetail(
@@ -146,7 +146,12 @@ export function renderArtistDetail(
       ${
         used.length
           ? renderAlbumGrid(used, layout)
-          : '<div class="empty detail-empty"><h3>No album credits yet</h3><p>This artist stays in your catalog until you use or delete it.</p></div>'
+          : /* HTML */ `<div class="empty detail-empty">
+              <h3>No album credits yet</h3>
+              <p>
+                This artist stays in your catalog until you use or delete it.
+              </p>
+            </div>`
       }
     </section>
     <div class="instrument-delete">

@@ -5,18 +5,31 @@ import { cover } from "./presentation.ts";
 import { catalogImage } from "./catalogSummary.ts";
 import type { AlbumLink, InstrumentCategory } from "../types/albums";
 
+export interface FieldOptions {
+  type?: string;
+  attributes?: string;
+  placeholder?: string;
+  help?: string;
+}
+
+export function catalogFormFooter(submitLabel: string): string {
+  return /* HTML */ `<div class="dialog-footer">
+    <button type="button" class="button secondary" data-action="close">
+      Cancel
+    </button>
+    <button type="submit" class="button primary">
+      ${escapeHtml(submitLabel)}
+    </button>
+  </div>`;
+}
+
 // Labels, placeholders, and attributes are trusted application markup.
 // User-entered field values are escaped before insertion.
 export function field(
   label: string,
   name: string,
   value: unknown = "",
-  options: {
-    type?: string;
-    attributes?: string;
-    placeholder?: string;
-    help?: string;
-  } = {},
+  options: FieldOptions = {},
 ): string {
   const {
     type = "text",

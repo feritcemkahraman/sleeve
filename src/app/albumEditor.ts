@@ -82,6 +82,16 @@ export interface AlbumEditorDependencies {
   lifecycle: { isActive: () => boolean; isSaving: () => boolean };
 }
 
+function savedArtwork(
+  artwork: string,
+  original: string | null | undefined,
+): string {
+  if (artwork) return artwork;
+  if (webUrl(original)) return "";
+
+  return original || "";
+}
+
 function readMappings(key: string): Record<string, string> {
   try {
     const data: unknown = JSON.parse(localStorage.getItem(key) ?? "{}");
@@ -379,7 +389,7 @@ export class AlbumEditor {
               </div>`
             : ""
         }
-        ${isEdit ? "" : '<p class="form-hint">Album title is required. The other fields are optional.</p>'}
+        ${isEdit ? "" : /* HTML */ `<p class="form-hint">Album title is required. The other fields are optional.</p>`}
         <div class="field-grid">
           ${field("Album title", "title", album.title, { attributes: 'required maxlength="150"', placeholder: "Album title" })}
           ${field("Release year", "year", album.releaseYear, { type: "number", attributes: 'min="1000" max="9999" step="1"', placeholder: "e.g. 1976" })}
@@ -469,20 +479,29 @@ export class AlbumEditor {
     this.dependencies.pickers.updateGenres();
   }
 
+  private originalAlbum(
+    mode: AlbumEditorMode,
+    id: string | undefined,
+  ): Album | undefined {
+    switch (mode) {
+      case "edit":
+        return this.dependencies.library.albums.find(
+          (album) => album.id === id,
+        );
+      case "review":
+        return this.reviewAlbum;
+      default:
+        return undefined;
+    }
+  }
+
   public saveAlbumForm(form: HTMLFormElement): void {
     const data = new FormData(form);
     const value = (name: string) => formValue(data, name);
 
     const mode = form.dataset.mode;
     if (!isAlbumEditorMode(mode)) return;
-    const original =
-      mode === "edit"
-        ? this.dependencies.library.albums.find(
-            (album) => album.id === form.dataset.id,
-          )
-        : mode === "review"
-          ? this.reviewAlbum
-          : undefined;
+    const original = this.originalAlbum(mode, form.dataset.id);
     if ((mode === "edit" || mode === "review") && !original) return;
 
     const title = value("title");
@@ -538,10 +557,7 @@ export class AlbumEditor {
         this.dependencies.pickers.selections.selectedGenres,
       ),
       recordLabel: value("label"),
-      artworkUrl:
-        artwork ||
-        (!webUrl(original?.artworkUrl) ? original?.artworkUrl : "") ||
-        "",
+      artworkUrl: savedArtwork(artwork, original?.artworkUrl),
       musicbrainzReleaseGroupId: mbid || null,
       links,
       createdAt: mode === "edit" ? original!.createdAt : today(),

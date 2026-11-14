@@ -2,7 +2,7 @@ import type { EditorDialog, PickerInteraction } from "./editorContracts";
 import { renderGenresView } from "../views/genresView";
 import type { DraftTarget } from "./editorDrafts";
 import type { LibraryData } from "../types/library";
-import { field } from "../components/formFields";
+import { catalogFormFooter, field } from "../components/formFields";
 import { makeId } from "./id";
 import { ancestors, genreUrl, normalizeGenres } from "./genres";
 import type { Genre, AlbumGenre } from "../types/albums";
@@ -33,6 +33,22 @@ export interface GenreFeatureDependencies {
     renderRoute: (focus?: boolean) => void;
     updateCatalogFilters: (id: string) => void;
   };
+}
+
+function genreChoiceContext(
+  genre: Genre,
+  selected: AlbumGenre[],
+  choices: Genre[],
+): string {
+  const descendant = selected.find((item) =>
+    ancestors(item.id, choices).some((parent) => parent.id === genre.id),
+  );
+  if (descendant) return ` — Included through ${escapeHtml(descendant.name)}`;
+
+  const parents = ancestors(genre.id, choices);
+  if (!parents.length) return "";
+
+  return ` (${parents.map((parent) => escapeHtml(parent.name)).join(" › ")})`;
 }
 
 function renderGenreForm(genres: Genre[], item?: Genre): string {
@@ -67,11 +83,7 @@ function renderGenreForm(genres: Genre[], item?: Genre): string {
       >
       <p id="form-error" class="form-error" role="alert" hidden></p>
     </div>
-    <div class="dialog-footer">
-      <button type="button" class="button secondary" data-action="close">
-        Cancel</button
-      ><button class="button primary" type="submit">Save genre</button>
-    </div>
+    ${catalogFormFooter("Save genre")}
   </form>`;
 }
 
@@ -254,15 +266,7 @@ export class GenreFeature {
             data-id="${escapeHtml(g.id)}"
             ${descendant ? "disabled" : ""}
           >
-            ${escapeHtml(g.name)}${
-              descendant
-                ? ` — Included through ${escapeHtml(descendant.name)}`
-                : ancestors(g.id, this.genreChoices).length
-                  ? ` (${ancestors(g.id, this.genreChoices)
-                      .map((p) => escapeHtml(p.name))
-                      .join(" › ")})`
-                  : ""
-            }
+            ${escapeHtml(g.name)}${genreChoiceContext(g, this.selectedGenres, this.genreChoices)}
           </button>`;
         })
         .join("") +
