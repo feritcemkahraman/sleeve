@@ -109,34 +109,32 @@ extraction counts.
 
 ## Services and views follow-up review
 
-The earlier focused cleanup addressed selected guideline gaps, not every
-readability issue in these directories. Schedule these as focused behavior-
-preserving PRs; keep validation migration separate from rendering extractions.
+The follow-up review is complete in focused behavior-preserving PRs, with
+persistence validation separate from rendering extractions.
 
-- [x] Catalog views: `artistsView.ts` and `instrumentsView.ts` repeatedly scan albums
-      and calculate statistics during filtering, comparison, and row rendering.
-      Build per-render catalog results once, then use named row and empty-state
-      renderers. Preserve primary-artist filtering, unused semantics, tie-breakers,
-      selectors, and preview-root support. Keep genre hierarchy semantics distinct.
-- [x] `genresView.ts`: separate recursive tree/leaf rendering and alphabetical result
-      rendering from the page shell. Name the genre variables and precompute counts
-      without changing direct-assignment versus descendant-inclusive behavior.
-- [x] `albumDetailView.ts`: replace parallel provider ternary chains in `linkDetails`
-      with one named provider decision; extract coherent credits/tags sections where
-      nested markup obscures the page structure. Retain URL filtering and escaping.
-- [x] `libraryView.ts`: rendering currently normalizes the caller's `state.genre` and
-      chooses random featured content. Make those responsibilities explicit before
-      attempting a pure-rendering extraction. Tighten sort/layout contracts at their
-      input boundaries; preserve current defaults and route/preview parity.
+- [x] Catalog views: artist and instrument lists compute per-render statistics
+      once and use named row/empty-state renderers. Preserve primary-artist
+      filtering, unused semantics, tie-breakers, selectors, and preview roots.
+- [x] `genresView.ts`: separated recursive tree/leaf and alphabetical rendering
+      from the shell, named genre variables, and precomputed descendant-inclusive
+      counts. Unused filtering still checks direct assignments only.
+- [x] `albumDetailView.ts`: replaced parallel provider ternaries with one named
+      provider decision and extracted credits/instrumentation sections. URL
+      filtering and escaping remain unchanged.
+- [x] `libraryView.ts`: moved genre normalization and random featured selection
+      into the router's shared route/preview path. Rendering consumes the chosen
+      featured album; library sort/layout contracts are closed and DOM inputs
+      retain their validation and defaults.
 - [x] `authView.ts`: moved mutable mode/busy state and submit listeners into
       `AuthView`, with explicit disposal and stale-result protection. `main.ts`
       tears down authentication before replacing it with loading/library views,
       remounting auth, or hot disposal. Browser coverage characterizes sign-in,
       sign-up confirmation, demo entry, and pending success/failure teardown.
-- `services/albums.ts`: the joined-row mapper is already separate from fetching,
-  but the select query uses double casts to a handwritten joined-row type. Review
-  query-derived contracts and mapper tests, including absent joins and ordering,
-  before removing casts. Check callers before retaining or removing CRUD exports.
+- [x] `services/albums.ts`: derive the joined-row contract from the select query
+      and map through a standalone, tested mapper without double casts. Tests
+      cover absent joins, relation ordering, and unchanged input. Removed unused
+      single-album/CRUD exports and their unused input types after checking callers;
+      application writes continue through the atomic library delta RPC.
 - [x] `services/wikipedia.ts`: separated article resolution, optional Wikidata
       enrichment, and optional page suggestions with named response contracts;
       removed raw-response logging. Unit/browser coverage preserves request order,
@@ -147,11 +145,13 @@ preserving PRs; keep validation migration separate from rendering extractions.
 - [x] `services/musicbrainz.ts`: retained the intentionally shared module queue.
       Added coverage proving serialized requests, rate spacing, HTTP/transport
       failures, and recovery without resetting queue ownership.
-- `services/saveLibrary.ts` and `libraryDelta.ts`: tighten RPC result and table
-  contracts in a focused persistence review. Preserve atomic deltas, association
-  replacement, and server timestamp reconciliation. Small auth, pagination,
-  Supabase, and cover-art adapters do not need extra layers.
+- [x] `services/saveLibrary.ts` and `libraryDelta.ts`: closed table contracts
+      derive delta rows from generated database types. Validate the consumed RPC
+      timestamp projection with Zod before updating local state, preserving missing
+      result arrays, final-row reconciliation, and unsaved entries. Regression
+      tests cover association replacement and invalid-response isolation. Small
+      auth, pagination, Supabase, and cover-art adapters remain focused functions.
 
 Use existing unit and browser coverage for catalog filters, details, import review,
 account persistence, authentication, and route previews; extend only the branches
-needed to protect each extraction. Checked items are complete; unchecked follow-ups remain scoped for focused PRs.
+needed to protect each extraction. All services/views follow-ups above are complete.

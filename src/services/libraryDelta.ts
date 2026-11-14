@@ -1,15 +1,32 @@
 import type { LibraryData } from "../types/library";
+import type { Tables } from "../types/database.types";
 
-export type LibraryDelta = Record<
-  string,
-  {
-    saved: Row[];
-    deleted: Row[];
-  }
+export type LibraryTable =
+  | "artists"
+  | "genres"
+  | "instruments"
+  | "albums"
+  | "instrument_categories"
+  | "album_artists"
+  | "album_genres"
+  | "album_instruments"
+  | "album_links"
+  | "listening_entries";
+
+type DeltaRow<Table extends LibraryTable> = Omit<
+  Tables<Table>,
+  "user_id" | "created_at" | "updated_at"
 >;
+type LibraryRows = { [Table in LibraryTable]: DeltaRow<Table>[] };
+type TableDelta<Row> = {
+  saved: Row[];
+  deleted: Row[];
+};
+export type LibraryDelta = {
+  [Table in LibraryTable]: TableDelta<DeltaRow<Table>>;
+};
 
-type Row = Record<string, string | number | boolean | null>;
-const keys: Record<string, string[]> = {
+const keys: { [Table in LibraryTable]: readonly (keyof DeltaRow<Table>)[] } = {
   artists: ["id"],
   genres: ["id"],
   instruments: ["id"],
@@ -22,10 +39,19 @@ const keys: Record<string, string[]> = {
   listening_entries: ["id"],
 };
 
-function rows(library: LibraryData): Record<string, Row[]> {
-  const result: Record<string, Row[]> = Object.fromEntries(
-    Object.keys(keys).map((table) => [table, []]),
-  );
+function rows(library: LibraryData): LibraryRows {
+  const result: LibraryRows = {
+    artists: [],
+    genres: [],
+    instruments: [],
+    albums: [],
+    instrument_categories: [],
+    album_artists: [],
+    album_genres: [],
+    album_instruments: [],
+    album_links: [],
+    listening_entries: [],
+  };
   result.artists = library.artists.map((a) => ({
     id: a.id,
     name: a.name,
@@ -106,27 +132,46 @@ export function libraryDelta(
 ): LibraryDelta {
   const previous = rows(before);
   const current = rows(next);
-  const changes: Record<string, { saved: Row[]; deleted: Row[] }> = {};
-  for (const [table, columns] of Object.entries(keys)) {
-    const key = (row: Row) =>
-      JSON.stringify(columns.map((column) => row[column]));
-    const old = new Map(previous[table].map((row) => [key(row), row]));
-    const updated = new Map(current[table].map((row) => [key(row), row]));
-    const saved = current[table].filter(
-      (row) => JSON.stringify(old.get(key(row))) !== JSON.stringify(row),
-    );
-    // Replace changed association rows to allow credit reordering and primary
-    // genre changes without transient uniqueness violations.
-    const replace =
-      table.startsWith("album_") || table === "instrument_categories";
-    changes[table] = {
-      saved,
-      deleted: previous[table].filter(
-        (row) =>
-          !updated.has(key(row)) ||
-          (replace && saved.some((item) => key(item) === key(row))),
-      ),
-    };
-  }
-  return changes;
+  return {
+    artists: tableDelta("artists", previous, current),
+    genres: tableDelta("genres", previous, current),
+    instruments: tableDelta("instruments", previous, current),
+    albums: tableDelta("albums", previous, current),
+    instrument_categories: tableDelta(
+      "instrument_categories",
+      previous,
+      current,
+    ),
+    album_artists: tableDelta("album_artists", previous, current),
+    album_genres: tableDelta("album_genres", previous, current),
+    album_instruments: tableDelta("album_instruments", previous, current),
+    album_links: tableDelta("album_links", previous, current),
+    listening_entries: tableDelta("listening_entries", previous, current),
+  };
+}
+
+function tableDelta<Table extends LibraryTable>(
+  table: Table,
+  previous: LibraryRows,
+  current: LibraryRows,
+): TableDelta<DeltaRow<Table>> {
+  const key = (row: DeltaRow<Table>) =>
+    JSON.stringify(keys[table].map((column) => row[column]));
+  const old = new Map(previous[table].map((row) => [key(row), row]));
+  const updated = new Map(current[table].map((row) => [key(row), row]));
+  const saved = current[table].filter(
+    (row) => JSON.stringify(old.get(key(row))) !== JSON.stringify(row),
+  );
+  // Replace changed association rows to allow credit reordering and primary
+  // genre changes without transient uniqueness violations.
+  const replace =
+    table.startsWith("album_") || table === "instrument_categories";
+  return {
+    saved,
+    deleted: previous[table].filter(
+      (row) =>
+        !updated.has(key(row)) ||
+        (replace && saved.some((item) => key(item) === key(row))),
+    ),
+  };
 }
