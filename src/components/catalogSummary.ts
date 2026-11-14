@@ -3,7 +3,11 @@ import type { Album, InstrumentCategory } from "../types/albums";
 import { latest, webUrl } from "./presentation.ts";
 import { escapeHtml as e } from "./html.ts";
 import { icon } from "./icons.ts";
-import { renderSortOptions } from "./sortOptions.ts";
+import {
+  renderSortOptions,
+  catalogSortOptions,
+  type CatalogSort,
+} from "./sortOptions.ts";
 
 export function catalogStats(albums: Album[]) {
   const entries = albums.flatMap((album) => {
@@ -33,8 +37,8 @@ export function catalogStats(albums: Album[]) {
 export function compareCatalog(
   a: ReturnType<typeof catalogStats>,
   b: ReturnType<typeof catalogStats>,
-  sort: string,
-) {
+  sort: CatalogSort,
+): number {
   if (sort === "rating")
     return (b.average ?? -1) - (a.average ?? -1) || b.rated - a.rated;
   if (sort === "updated") return b.updated.localeCompare(a.updated);
@@ -42,14 +46,18 @@ export function compareCatalog(
   return sort === "name" ? 0 : b.count - a.count;
 }
 
-export function catalogSort(id: string, value: string, showRating = true) {
+export function catalogSort(
+  id: string,
+  value: CatalogSort,
+  showRating = true,
+): string {
   return /* HTML */ `<label class="field"
     ><span>Sort by</span>
     <select id="${id}">
       ${renderSortOptions(
         showRating
-          ? ["albums", "rating", "recent", "updated", "name"]
-          : ["albums", "recent", "updated", "name"],
+          ? catalogSortOptions
+          : catalogSortOptions.filter((option) => option !== "rating"),
         value,
       )}
     </select></label

@@ -1,3 +1,5 @@
+import { isCatalogSort, type CatalogSort } from "../components/sortOptions";
+import type { EditorDialog } from "./editorContracts";
 import { renderInstrumentsView } from "../views/instrumentsView";
 import { updateCatalogImage } from "../components/formFields";
 import type { DraftTarget } from "./editorDrafts";
@@ -25,24 +27,13 @@ import {
 } from "../views/instrumentsView";
 import { focusForTyping } from "./device";
 
-interface InstrumentDialog {
-  element: HTMLDialogElement;
-  show: (
-    title: string,
-    content: string,
-    focusSelector: string,
-    backToSearch?: boolean,
-  ) => void;
-  formError: (message: string, input: HTMLInputElement) => void;
-}
-
 export interface InstrumentPickerSnapshot {
   selectedInstruments: AlbumInstrument[];
   instrumentChoices: AlbumInstrument[];
 }
 
 export interface InstrumentFeatureDependencies {
-  dialog: InstrumentDialog;
+  dialog: EditorDialog;
   drafts: { begin: (target: DraftTarget) => boolean };
   persistence: {
     finishSave: (id: string, message: string) => Promise<void>;
@@ -58,17 +49,11 @@ export interface InstrumentFeatureDependencies {
   };
 }
 
-type InstrumentSort = "albums" | "rating" | "recent" | "updated" | "name";
-
 interface InstrumentListFilters {
   query: string;
   category: InstrumentCategory | "";
   unused: boolean;
-  sort: InstrumentSort;
-}
-
-function isInstrumentSort(value: string): value is InstrumentSort {
-  return ["albums", "rating", "recent", "updated", "name"].includes(value);
+  sort: CatalogSort;
 }
 
 function isInstrumentCategory(value: unknown): value is InstrumentCategory {
@@ -102,7 +87,7 @@ function renderInstrumentForm(item?: Instrument): string {
 function readInstrumentForm(
   form: HTMLFormElement,
   instruments: Instrument[],
-  formError: InstrumentDialog["formError"],
+  formError: EditorDialog["formError"],
 ): Instrument | void {
   const input = form.querySelector<HTMLInputElement>(
     '[name="instrumentName"]',
@@ -535,7 +520,7 @@ export class InstrumentFeature {
   }
 
   public change(input: HTMLInputElement): void {
-    if (input.id === "instruments-sort" && isInstrumentSort(input.value)) {
+    if (input.id === "instruments-sort" && isCatalogSort(input.value)) {
       this.instrumentFilters.sort = input.value;
       this.updateInstrumentList();
     }

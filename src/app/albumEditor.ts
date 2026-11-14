@@ -1,3 +1,4 @@
+import type { EditorDialog } from "./editorContracts";
 import { today } from "./date";
 import type { DraftTarget } from "./editorDrafts";
 import type { LibraryData } from "../types/library";
@@ -29,17 +30,6 @@ import { focusForTyping } from "./device";
 
 export type AlbumEditorMode = "manual" | "edit" | "review" | "links";
 type SuggestionKind = "genre" | "instrument";
-
-interface AlbumEditorDialog {
-  element: HTMLDialogElement;
-  show: (
-    title: string,
-    content: string,
-    focusSelector: string,
-    backToSearch?: boolean,
-  ) => void;
-  formError: (message: string, input: HTMLInputElement) => void;
-}
 
 interface AlbumEditorDrafts {
   begin: (target: DraftTarget) => boolean;
@@ -81,7 +71,7 @@ interface AlbumEditorPickers {
 
 export interface AlbumEditorDependencies {
   accountId: string;
-  dialog: AlbumEditorDialog;
+  dialog: EditorDialog;
   drafts: AlbumEditorDrafts;
   persistence: AlbumEditorPersistence;
   pickers: AlbumEditorPickers;
@@ -106,7 +96,7 @@ function readMappings(key: string): Record<string, string> {
 
 function readMusicLinks(
   form: HTMLFormElement,
-  formError: AlbumEditorDialog["formError"],
+  formError: EditorDialog["formError"],
 ): AlbumLink[] | undefined {
   const links: AlbumLink[] = [];
 

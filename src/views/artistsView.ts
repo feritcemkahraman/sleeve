@@ -1,3 +1,4 @@
+import type { CatalogSort } from "../components/sortOptions";
 import {
   catalogImage,
   catalogSummary,
@@ -24,9 +25,9 @@ export const roleLabel = (role: string) =>
 export function renderArtistsView(
   query: string,
   unused: boolean,
-  sort = "updated",
+  sort: CatalogSort = "updated",
   primary = false,
-) {
+): string {
   return /* HTML */ `<section
     class="instrument-page catalog-page"
     aria-labelledby="page-title"
@@ -52,9 +53,9 @@ export function updateArtistsView(
   query: string,
   unused: boolean,
   root: ParentNode = document,
-  sort = "updated",
+  sort: CatalogSort = "updated",
   primary = false,
-) {
+): void {
   const credits = (id: string) =>
     artistAlbums(albums, id).filter(
       (album) =>

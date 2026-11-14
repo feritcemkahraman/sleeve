@@ -1,3 +1,4 @@
+import type { CatalogSort } from "../components/sortOptions";
 import {
   catalogImage,
   catalogSummary,
@@ -24,7 +25,7 @@ export interface InstrumentFilters {
   query: string;
   category: string;
   unused: boolean;
-  sort?: string;
+  sort?: CatalogSort;
 }
 
 export function categoryFields(
@@ -40,7 +41,7 @@ export function categoryFields(
   </fieldset>`;
 }
 
-export function renderInstrumentsView(filters: InstrumentFilters) {
+export function renderInstrumentsView(filters: InstrumentFilters): string {
   return /* HTML */ `<section
     class="instrument-page catalog-page"
     aria-labelledby="page-title"
@@ -91,7 +92,7 @@ export function updateInstrumentsView(
   albums: Album[],
   filters: InstrumentFilters,
   root: ParentNode = document,
-) {
+): void {
   const results = instruments
     .filter(
       (item) =>

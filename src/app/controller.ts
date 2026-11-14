@@ -1,3 +1,4 @@
+import type { EditorDialog, PickerInteraction } from "./editorContracts";
 import { createDiscovery } from "./discovery";
 import { readLibraryCache, writeLibraryCache } from "./libraryCache";
 import { createLibraryState, type SaveResult } from "./libraryState";
@@ -189,6 +190,20 @@ export function initializeApp(
     },
   });
   const { showDialog } = dialog;
+  const editorDialog: EditorDialog = {
+    element: editor,
+    show: showDialog,
+    formError,
+  };
+  const pickerInteraction: PickerInteraction = {
+    deferRender: () => {
+      if (!dialog.pickerPress) return false;
+
+      dialog.pickerRenderPending = true;
+      return true;
+    },
+    closeSearch: () => dialog.updateSearchDropdowns(null),
+  };
   const discovery = createDiscovery({
     editor,
     albums: () => library.data.albums,
@@ -238,19 +253,11 @@ export function initializeApp(
   });
   const { openListen, updateRating, saveListenForm } = listening;
   const artistFeature = new ArtistFeature({
-    dialog: { element: editor, show: showDialog, formError },
+    dialog: editorDialog,
     drafts: { begin: beginDraft },
     persistence: { finishCatalogSave },
     navigation: { renderRoute, updateCatalogFilters },
-    picker: {
-      deferRender: () => {
-        if (!dialog.pickerPress) return false;
-
-        dialog.pickerRenderPending = true;
-        return true;
-      },
-      closeSearch: () => dialog.updateSearchDropdowns(null),
-    },
+    picker: pickerInteraction,
     library: {
       get albums() {
         return library.data.albums;
@@ -264,19 +271,11 @@ export function initializeApp(
     },
   });
   const genreFeature = new GenreFeature({
-    dialog: { element: editor, show: showDialog, formError },
+    dialog: editorDialog,
     drafts: { begin: beginDraft },
     persistence: { finishCatalogSave },
     navigation: { main, announce, renderRoute, updateCatalogFilters },
-    picker: {
-      deferRender: () => {
-        if (!dialog.pickerPress) return false;
-
-        dialog.pickerRenderPending = true;
-        return true;
-      },
-      closeSearch: () => dialog.updateSearchDropdowns(null),
-    },
+    picker: pickerInteraction,
     library: {
       get albums() {
         return library.data.albums;
@@ -290,7 +289,7 @@ export function initializeApp(
     },
   });
   const instrumentFeature = new InstrumentFeature({
-    dialog: { element: editor, show: showDialog, formError },
+    dialog: editorDialog,
     drafts: { begin: beginDraft },
     persistence: { finishSave, finishCatalogSave },
     navigation: { renderRoute, updateCatalogFilters },
@@ -308,7 +307,7 @@ export function initializeApp(
   });
   const albumEditor = new AlbumEditor({
     accountId,
-    dialog: { element: editor, show: showDialog, formError },
+    dialog: editorDialog,
     drafts: { begin: beginDraft, capture: captureDraft },
     persistence: { finishSave, finishCatalogSave },
     lifecycle: {

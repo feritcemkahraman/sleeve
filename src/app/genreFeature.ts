@@ -1,3 +1,4 @@
+import type { EditorDialog, PickerInteraction } from "./editorContracts";
 import { renderGenresView } from "../views/genresView";
 import type { DraftTarget } from "./editorDrafts";
 import type { LibraryData } from "../types/library";
@@ -10,32 +11,18 @@ import { escapeHtml } from "../components/html";
 import { matches } from "./search";
 import { focusForTyping } from "./device";
 
-interface GenreDialog {
-  element: HTMLDialogElement;
-  show: (
-    title: string,
-    content: string,
-    focusSelector: string,
-    backToSearch?: boolean,
-  ) => void;
-  formError: (message: string, input: HTMLInputElement) => void;
-}
-
 export interface GenrePickerSnapshot {
   selectedGenres: AlbumGenre[];
   genreChoices: Genre[];
 }
 
 export interface GenreFeatureDependencies {
-  dialog: GenreDialog;
+  dialog: EditorDialog;
   drafts: { begin: (target: DraftTarget) => boolean };
   persistence: {
     finishCatalogSave: (message: string, destination: string) => Promise<void>;
   };
-  picker: {
-    deferRender: () => boolean;
-    closeSearch: () => void;
-  };
+  picker: PickerInteraction;
   library: {
     readonly albums: LibraryData["albums"];
     genres: LibraryData["genres"];
@@ -91,7 +78,7 @@ function renderGenreForm(genres: Genre[], item?: Genre): string {
 function readGenreForm(
   form: HTMLFormElement,
   genres: Genre[],
-  formError: GenreDialog["formError"],
+  formError: EditorDialog["formError"],
 ): Genre | void {
   const data = new FormData(form);
   const input = form.querySelector<HTMLInputElement>('[name="genreName"]')!;
