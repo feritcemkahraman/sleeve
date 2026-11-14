@@ -97,3 +97,42 @@ test("HTTP errors and malformed results can be retried", async () => {
     globalThis.fetch = original;
   }
 });
+
+test("concurrent searches share eight parallel checks and cache negative destinations", async () => {
+  const original = globalThis.fetch;
+  let searches = 0;
+  const pendingChecks = [];
+  globalThis.fetch = async (url) => {
+    if (new URL(url).hostname === "itunes.apple.com") {
+      searches++;
+      return Response.json({
+        results: Array.from({ length: 12 }, (_, id) => ({
+          collectionId: id + 100,
+          collectionName: "Bounded search",
+          artistName: "Artist",
+        })),
+      });
+    }
+    return new Promise((resolve) => pendingChecks.push(resolve));
+  };
+  try {
+    const first = findAppleMusicAlbums("Bounded search", "Artist");
+    const second = findAppleMusicAlbums("Bounded search", "Artist");
+    // All embed checks must start before any one of them finishes.
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(searches, 1);
+    assert.equal(pendingChecks.length, 8);
+    pendingChecks.forEach((resolve) =>
+      resolve(new Response(null, { status: 404 })),
+    );
+    assert.deepEqual(await first, []);
+    assert.deepEqual(await second, []);
+    assert.deepEqual(
+      await findAppleMusicAlbums("Bounded search", "Artist"),
+      [],
+    );
+    assert.equal(searches, 1);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

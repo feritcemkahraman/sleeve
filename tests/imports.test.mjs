@@ -207,3 +207,54 @@ test("Wikipedia rejects missing and disambiguation pages; optional metadata fail
     globalThis.fetch = originalFetch;
   }
 });
+
+test("Wikipedia enrichment keeps request order and English then article-language label fallback", async () => {
+  const original = globalThis.fetch;
+  const requests = [];
+  const responses = [
+    {
+      query: {
+        pages: [{ title: "Exemple", pageprops: { wikibase_item: "Q1" } }],
+      },
+    },
+    {
+      entities: {
+        Q1: { claims: { P175: [claim({ id: "Q2" }), claim({ id: "Q3" })] } },
+      },
+    },
+    {
+      entities: {
+        Q2: { labels: { en: { value: "English" }, fr: { value: "French" } } },
+        Q3: { labels: { fr: { value: "Fallback" } } },
+      },
+    },
+    { parse: {} },
+  ];
+  globalThis.fetch = async (url) => {
+    const parsed = new URL(url);
+    requests.push([parsed.hostname, parsed.searchParams.get("action")]);
+    if (requests.length === 3) {
+      assert.equal(parsed.searchParams.get("languages"), "en|fr");
+      assert.equal(parsed.searchParams.get("languagefallback"), "1");
+    }
+    return Response.json(responses.shift());
+  };
+  try {
+    const result = await resolveWikipediaArticle({
+      language: "fr",
+      title: "Exemple",
+    });
+    assert.deepEqual(
+      result.artists.map((artist) => artist.name),
+      ["English", "Fallback"],
+    );
+    assert.deepEqual(requests, [
+      ["fr.wikipedia.org", "query"],
+      ["www.wikidata.org", "wbgetentities"],
+      ["www.wikidata.org", "wbgetentities"],
+      ["fr.wikipedia.org", "parse"],
+    ]);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
