@@ -1,6 +1,11 @@
 import { renderCatalogFilters } from "../components/catalogFilters";
 import { renderLayoutToggle } from "../components/layoutToggle";
-import { renderSortOptions } from "../components/sortOptions";
+import type { Layout } from "../app/layoutPreferences";
+import type { LibrarySort } from "../components/sortOptions";
+import {
+  librarySortOptions,
+  renderSortOptions,
+} from "../components/sortOptions";
 import type { Genre } from "../types/albums";
 import { includesGenre } from "../app/genres";
 import type { Album } from "../types/albums";
@@ -18,18 +23,16 @@ import { matches } from "../app/search";
 export interface LibraryState {
   query: string;
   genre: string;
-  sort: string;
-  layout: string;
+  sort: LibrarySort;
+  layout: Layout;
 }
 
 export function renderLibraryView(
-  albums: Album[],
+  featured: Album | undefined,
   state: LibraryState,
   catalog: Genre[],
 ): string {
-  const featured = albums[Math.floor(Math.random() * albums.length)];
   const genres = catalog.map((g) => g.name).sort((a, b) => a.localeCompare(b));
-  if (!genres.includes(state.genre)) state.genre = "";
   return /* HTML */ `<section class="hero" aria-labelledby="page-title">
       <div class="hero-copy">
         <h1 id="page-title">The Listening <em>Room.</em></h1>
@@ -82,7 +85,7 @@ export function renderLibraryView(
             <label class="field"
               ><span>Sort albums</span
               ><select id="sort-order">
-                ${renderSortOptions(["recent", "updated", "title", "rating", "year"], state.sort)}
+                ${renderSortOptions(librarySortOptions, state.sort)}
               </select></label
             >`,
           Number(Boolean(state.genre)),
@@ -103,7 +106,7 @@ export function updateLibrary(
   if (!list) return;
   const titleOrder = (a: Album, b: Album) =>
     (a.sortTitle || a.title).localeCompare(b.sortTitle || b.title);
-  const order: Record<string, (a: Album, b: Album) => number> = {
+  const order: Record<LibrarySort, (a: Album, b: Album) => number> = {
     recent: (a, b) =>
       (latest(b)?.listenedAt ?? b.createdAt).localeCompare(
         latest(a)?.listenedAt ?? a.createdAt,

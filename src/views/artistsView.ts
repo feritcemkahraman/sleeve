@@ -4,6 +4,8 @@ import {
   catalogSummary,
   catalogSort,
   catalogStats,
+  renderCatalogSummary,
+  type CatalogStats,
   compareCatalog,
 } from "../components/catalogSummary";
 import { renderAlbumListHeading } from "../components/albumListHeading";
@@ -57,59 +59,61 @@ export function updateArtistsView(
   sort: CatalogSort = "updated",
   primary = false,
 ): void {
-  const credits = (id: string) =>
-    artistAlbums(albums, id).filter(
-      (album) =>
-        !primary ||
-        album.artists.some(
-          (artist) => artist.id === id && artist.role === "primary",
-        ),
-    );
   const results = artists
+    .map((item) => {
+      const used = artistAlbums(albums, item.id).filter(
+        (album) =>
+          !primary ||
+          album.artists.some(
+            (artist) => artist.id === item.id && artist.role === "primary",
+          ),
+      );
+      return { item, stats: catalogStats(used) };
+    })
     .filter(
-      (item) =>
+      ({ item, stats }) =>
         matches(query, item.name, item.sortName ?? "", item.country ?? "") &&
-        (!unused || !credits(item.id).length),
+        (!unused || !stats.count),
     )
     .sort(
       (a, b) =>
-        compareCatalog(
-          catalogStats(credits(a.id)),
-          catalogStats(credits(b.id)),
-          sort,
-        ) || (a.sortName || a.name).localeCompare(b.sortName || b.name),
+        compareCatalog(a.stats, b.stats, sort) ||
+        (a.item.sortName || a.item.name).localeCompare(
+          b.item.sortName || b.item.name,
+        ),
     );
   root.querySelector("#artists-count")!.textContent =
     `${results.length} ${results.length === 1 ? "artist" : "artists"}`;
   root.querySelector("#artists-list")!.innerHTML = results.length
     ? /* HTML */ `<ul class="instrument-catalog-list">
-        ${results
-          .map((item) => {
-            const used = credits(item.id);
-            return /* HTML */ `<li>
-              <a class="instrument-catalog-row" href="${artistUrl(item.id)}"
-                >${catalogImage(item.name, item.photoUrl, true)}<span
-                  class="catalog-card-content"
-                  ><span class="instrument-row-info"
-                    ><span
-                      ><strong>${e(item.name)}</strong
-                      >${item.country ? /* HTML */ ` <em class="artist-country">(${e(item.country)})</em>` : ""}</span
-                    ></span
-                  >${catalogSummary(used)}</span
-                >${icon("chevron", 18)}</a
-              >
-            </li>`;
-          })
-          .join("")}
+        ${results.map(({ item, stats }) => renderArtistRow(item, stats)).join("")}
       </ul>`
-    : /* HTML */ `<div class="empty">
-        <h2>
-          ${artists.length ? "No matching artists" : "Start your artist catalog"}
-        </h2>
-        <p>Add an artist here or while editing an album.</p>
-        ${artists.length ? /* HTML */ `<button class="button secondary" data-action="clear-artist-filters">Clear filters</button>` : ""}
-      </div>`;
+    : renderArtistEmpty(Boolean(artists.length));
 }
+function renderArtistRow(item: Artist, stats: CatalogStats): string {
+  return /* HTML */ `<li>
+    <a class="instrument-catalog-row" href="${artistUrl(item.id)}"
+      >${catalogImage(item.name, item.photoUrl, true)}<span
+        class="catalog-card-content"
+        ><span class="instrument-row-info"
+          ><span
+            ><strong>${e(item.name)}</strong
+            >${item.country ? /* HTML */ ` <em class="artist-country">(${e(item.country)})</em>` : ""}</span
+          ></span
+        >${renderCatalogSummary(stats)}</span
+      >${icon("chevron", 18)}</a
+    >
+  </li>`;
+}
+
+function renderArtistEmpty(hasItems: boolean): string {
+  return /* HTML */ `<div class="empty">
+    <h2>${hasItems ? "No matching artists" : "Start your artist catalog"}</h2>
+    <p>Add an artist here or while editing an album.</p>
+    ${hasItems ? /* HTML */ `<button class="button secondary" data-action="clear-artist-filters">Clear filters</button>` : ""}
+  </div>`;
+}
+
 export function renderArtistDetail(
   item: Artist,
   albums: Album[],

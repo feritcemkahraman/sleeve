@@ -1,3 +1,4 @@
+import { isLibrarySort } from "../components/sortOptions";
 import type { Album, Artist, Genre, Instrument } from "../types/albums";
 import type { LibraryData } from "../types/library";
 import type { LibraryState } from "../views/libraryView";
@@ -41,17 +42,6 @@ function routeSection(hash: string): RouteSection {
   return "library";
 }
 
-type LibrarySort = "recent" | "updated" | "title" | "rating" | "year";
-
-interface LibraryFilters extends LibraryState {
-  sort: LibrarySort;
-  layout: "grid" | "list";
-}
-
-function isLibrarySort(value: string): value is LibrarySort {
-  return ["recent", "updated", "title", "rating", "year"].includes(value);
-}
-
 export interface AppRouterDependencies {
   accountId: string;
   main: HTMLElement;
@@ -73,7 +63,7 @@ export class AppRouter {
     artist: readLayout("artist"),
     genre: readLayout("genre"),
   };
-  private readonly state: LibraryFilters = {
+  private readonly state: LibraryState = {
     query: "",
     genre: "",
     sort: "updated",
@@ -115,11 +105,10 @@ export class AppRouter {
     else if (hash === "#genres") this.dependencies.lists.genres(root);
     else if (hash === "#instruments") this.dependencies.lists.instruments(root);
     else {
-      root.innerHTML = renderLibraryView(
-        this.dependencies.library().albums,
-        this.state,
-        this.dependencies.library().genres,
-      );
+      const { albums, genres } = this.dependencies.library();
+      this.normalizeLibraryGenre(genres);
+      const featured = albums[Math.floor(Math.random() * albums.length)];
+      root.innerHTML = renderLibraryView(featured, this.state, genres);
       updateLibrary(
         this.dependencies.library().albums,
         this.state,
@@ -127,6 +116,11 @@ export class AppRouter {
         root,
       );
     }
+  }
+
+  private normalizeLibraryGenre(genres: Genre[]): void {
+    if (!genres.some((genre) => genre.name === this.state.genre))
+      this.state.genre = "";
   }
 
   public render(focus = false): void {

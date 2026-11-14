@@ -1,3 +1,16 @@
+export const librarySortOptions = [
+  "recent",
+  "updated",
+  "title",
+  "rating",
+  "year",
+] as const;
+export type LibrarySort = (typeof librarySortOptions)[number];
+
+export function isLibrarySort(value: string): value is LibrarySort {
+  return librarySortOptions.some((option) => option === value);
+}
+
 export const catalogSortOptions = [
   "albums",
   "rating",
