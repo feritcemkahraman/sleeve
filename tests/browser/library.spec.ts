@@ -320,7 +320,7 @@ test("dialog mount and disposal remove listeners and queued work", async ({
   const result = await page.evaluate(async () => {
     // Load the same module as the application through Vite.
     const modulePath = "/src/app/dialog.ts";
-    const { createDialog } = await import(/* @vite-ignore */ modulePath);
+    const { Dialog } = await import(/* @vite-ignore */ modulePath);
     const editor = document.createElement("dialog");
     document.body.append(editor);
     let dismissals = 0;
@@ -340,7 +340,7 @@ test("dialog mount and disposal remove listeners and queued work", async ({
       onClose: () => {},
       routeHash: () => location.hash,
     };
-    const first = createDialog(options);
+    const first = new Dialog(options);
     first.mount();
     first.mount();
     editor.dispatchEvent(new Event("cancel", { cancelable: true }));
@@ -349,7 +349,7 @@ test("dialog mount and disposal remove listeners and queued work", async ({
     editor.close();
     await Promise.resolve();
     editor.dispatchEvent(new Event("cancel", { cancelable: true }));
-    const second = createDialog(options);
+    const second = new Dialog(options);
     second.mount();
     editor.dispatchEvent(new Event("cancel", { cancelable: true }));
     second.dispose();

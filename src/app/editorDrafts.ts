@@ -69,56 +69,69 @@ export interface EditorDrafts {
   dispose: () => void;
 }
 
-export function createEditorDrafts({
-  editor,
-  accountId,
-  isSaving,
-  baseline,
-  serializeSelections,
-  resumeDraft,
-  announce,
-  setBaseline,
-  updateRating,
-}: EditorDraftsDependencies): EditorDrafts {
-  const lifecycle = createLifecycle();
-  const draftKey = `jazzlog:editor-draft:v1:${accountId}`;
-  let draft: Draft | undefined;
-  const state = {
-    target: undefined as DraftTarget | undefined,
+export class EditorDraftController implements EditorDrafts {
+  private readonly lifecycle = createLifecycle();
+  private readonly draftKey: string;
+  private draft: Draft | undefined;
+  readonly state: EditorDrafts["state"] = {
+    target: undefined,
     restoring: false,
     source: "",
   };
-  const resumeButton = document.createElement("button");
-  resumeButton.className = "button secondary draft-resume";
-  resumeButton.textContent = "Resume draft";
-  resumeButton.hidden = true;
-  document.querySelector(".masthead-inner")!.append(resumeButton);
-  function writeDraft() {
+  readonly resumeButton = document.createElement("button");
+
+  private readonly ops: EditorDraftsDependencies;
+
+  constructor(ops: EditorDraftsDependencies) {
+    this.ops = ops;
+    this.draftKey = `jazzlog:editor-draft:v1:${ops.accountId}`;
+    this.resumeButton.className = "button secondary draft-resume";
+    this.resumeButton.textContent = "Resume draft";
+    this.resumeButton.hidden = true;
+    document.querySelector(".masthead-inner")!.append(this.resumeButton);
+    this.loadDraft();
+    this.listen();
+  }
+
+  get current(): Draft | undefined {
+    return this.draft;
+  }
+
+  writeDraft(): boolean {
     try {
-      if (draft) localStorage.setItem(draftKey, JSON.stringify(draft));
-      else localStorage.removeItem(draftKey);
+      if (this.draft)
+        localStorage.setItem(this.draftKey, JSON.stringify(this.draft));
+      else localStorage.removeItem(this.draftKey);
       return true;
     } catch {
       return false;
     }
   }
-  function clearDraft() {
-    draft = undefined;
-    state.target = undefined;
-    writeDraft();
-    resumeButton.hidden = true;
+
+  clearDraft(): void {
+    this.draft = undefined;
+    this.state.target = undefined;
+    this.writeDraft();
+    this.resumeButton.hidden = true;
   }
-  function captureDraft() {
-    if (state.restoring || isSaving() || !editor.open || !state.target) return;
-    const form = editor.querySelector("form");
+
+  captureDraft(): void {
+    if (
+      this.state.restoring ||
+      this.ops.isSaving() ||
+      !this.ops.editor.open ||
+      !this.state.target
+    )
+      return;
+    const form = this.ops.editor.querySelector("form");
     if (!form) return;
-    draft = {
+    this.draft = {
       version: 1,
-      target: state.target,
+      target: this.state.target,
       hash: location.hash,
       open: true,
-      baseline: baseline(),
-      source: state.source,
+      baseline: this.ops.baseline(),
+      source: this.state.source,
       fields: [
         ...form.querySelectorAll<HTMLInputElement>("input, select, textarea"),
       ].map((input) => ({
@@ -128,30 +141,32 @@ export function createEditorDrafts({
         checked: input.checked ?? false,
       })),
       links: form.querySelectorAll(".link-fields").length,
-      ...serializeSelections(),
+      ...this.ops.serializeSelections(),
     };
-    const stored = writeDraft();
-    const status = editor.querySelector("[data-draft-status]");
+    const stored = this.writeDraft();
+    const status = this.ops.editor.querySelector("[data-draft-status]");
     const message = stored
       ? "Draft saved on this device"
       : "Draft could not be saved on this device";
     if (status && status.textContent !== message) status.textContent = message;
-    resumeButton.hidden = true;
+    this.resumeButton.hidden = true;
   }
-  function beginDraft(target: DraftTarget) {
-    if (!state.restoring && draft && !editor.open) {
-      resumeDraft();
-      announce(
+
+  beginDraft(target: DraftTarget): boolean {
+    if (!this.state.restoring && this.draft && !this.ops.editor.open) {
+      this.ops.resumeDraft();
+      this.ops.announce(
         "Resume or discard your unfinished edit before starting another.",
       );
       return false;
     }
-    state.target = target;
-    state.source = JSON.stringify(target.item ?? null);
+    this.state.target = target;
+    this.state.source = JSON.stringify(target.item ?? null);
     return true;
   }
-  function draftCloseChoices() {
-    if (editor.querySelector("[data-draft-close]")) return;
+
+  draftCloseChoices(): void {
+    if (this.ops.editor.querySelector("[data-draft-close]")) return;
     const panel = document.createElement("div");
     panel.className = "dialog-body";
     panel.dataset.draftClose = "";
@@ -167,97 +182,48 @@ export function createEditorDrafts({
           Continue editing
         </button>
       </div>`;
-    editor.append(panel);
+    this.ops.editor.append(panel);
     panel.querySelector("button")?.focus();
-    lifecycle.listen(panel).addEventListener("click", (event) => {
+    this.lifecycle.listen(panel).addEventListener("click", (event) => {
       const target = event.target as HTMLElement;
       if (target.closest("[data-draft-keep]")) {
-        captureDraft();
-        if (!draft || !writeDraft()) {
-          announce(
+        this.captureDraft();
+        if (!this.draft || !this.writeDraft()) {
+          this.ops.announce(
             "Couldn’t keep the draft. Continue editing or discard changes.",
           );
           return;
         }
-        draft.open = false;
-        if (!writeDraft()) {
-          draft.open = true;
+        this.draft.open = false;
+        if (!this.writeDraft()) {
+          this.draft.open = true;
           return;
         }
-        state.target = undefined;
-        resumeButton.hidden = false;
-        editor.close();
+        this.state.target = undefined;
+        this.resumeButton.hidden = false;
+        this.ops.editor.close();
       } else if (target.closest("[data-draft-discard]")) {
-        clearDraft();
-        editor.close();
+        this.clearDraft();
+        this.ops.editor.close();
       } else if (target.closest("[data-draft-continue]")) {
         panel.remove();
-        editor.querySelector<HTMLElement>("#dialog-title")?.focus();
+        this.ops.editor.querySelector<HTMLElement>("#dialog-title")?.focus();
       }
     });
   }
 
-  lifecycle.listen(resumeButton).addEventListener("click", resumeDraft);
-  try {
-    const stored = JSON.parse(localStorage.getItem(draftKey) ?? "null");
-    if (
-      stored?.version === 1 &&
-      [
-        "album",
-        "artist",
-        "genre",
-        "instrument",
-        "instruments",
-        "listen",
-      ].includes(stored.target?.kind) &&
-      typeof stored.hash === "string" &&
-      (stored.hash === "" || stored.hash.startsWith("#")) &&
-      typeof stored.baseline === "string" &&
-      typeof stored.source === "string" &&
-      Number.isInteger(stored.links) &&
-      stored.links >= 0 &&
-      stored.links <= 1000 &&
-      [
-        stored.fields,
-        stored.artists,
-        stored.genres,
-        stored.instruments,
-        stored.artistChoices,
-        stored.genreChoices,
-        stored.instrumentChoices,
-      ].every(Array.isArray) &&
-      stored.fields.every(
-        (field: Draft["fields"][number]) =>
-          field &&
-          typeof field.name === "string" &&
-          typeof field.id === "string" &&
-          typeof field.value === "string" &&
-          typeof field.checked === "boolean",
-      )
-    )
-      draft = stored;
-  } catch {
-    /* An unavailable or damaged draft must not prevent opening the library. */
-  }
-  for (const event of ["input", "change", "click"])
-    lifecycle
-      .listen(editor)
-      .addEventListener(event, () => lifecycle.queue(captureDraft));
-  lifecycle.listen(window).addEventListener("pagehide", captureDraft);
-  lifecycle.listen(document).addEventListener("visibilitychange", () => {
-    if (document.hidden) captureDraft();
-  });
-
-  function restore(saved: Draft, openEditor: () => void) {
-    state.restoring = true;
+  restore(saved: Draft, openEditor: () => void): void {
+    this.state.restoring = true;
     openEditor();
-    const rows = editor.querySelector("#link-rows");
+    const rows = this.ops.editor.querySelector("#link-rows");
     if (rows)
       rows.innerHTML = Array.from({ length: saved.links }, () =>
         linkRow(),
       ).join("");
     const controls = [
-      ...editor.querySelectorAll<HTMLInputElement>("input, select, textarea"),
+      ...this.ops.editor.querySelectorAll<HTMLInputElement>(
+        "input, select, textarea",
+      ),
     ];
     const used = new Set<HTMLInputElement>();
     for (const field of saved.fields) {
@@ -274,44 +240,94 @@ export function createEditorDrafts({
         used.add(input);
       }
     }
-    for (const row of editor.querySelectorAll<HTMLElement>(
+    for (const row of this.ops.editor.querySelectorAll<HTMLElement>(
       "[data-suggestion-row]",
     ))
       row.hidden =
         row.querySelector<HTMLSelectElement>("select")?.value === "__done";
-    const rating = editor.querySelector<HTMLInputElement>(
+    const rating = this.ops.editor.querySelector<HTMLInputElement>(
       '[name="rating"]:checked',
     );
-    if (rating) updateRating(Number(rating.value));
-    lifecycle.queue(() => {
-      setBaseline(saved.baseline);
-      state.source = saved.source;
-      state.restoring = false;
-      captureDraft();
-      const status = editor.querySelector("[data-draft-status]");
+    if (rating) this.ops.updateRating(Number(rating.value));
+    this.lifecycle.queue(() => {
+      this.ops.setBaseline(saved.baseline);
+      this.state.source = saved.source;
+      this.state.restoring = false;
+      this.captureDraft();
+      const status = this.ops.editor.querySelector("[data-draft-status]");
       if (status && status.textContent === "Draft saved on this device")
         status.textContent =
           "Your unfinished edit was restored. Draft saved on this device.";
-      editor
+      this.ops.editor
         .querySelector<HTMLElement>("#dialog-title")
         ?.focus({ preventScroll: true });
     });
   }
-  return {
-    restore,
-    state,
-    get current() {
-      return draft;
-    },
-    resumeButton,
-    writeDraft,
-    clearDraft,
-    captureDraft,
-    beginDraft,
-    draftCloseChoices,
-    dispose() {
-      lifecycle.dispose();
-      resumeButton.remove();
-    },
-  };
+
+  private loadDraft(): void {
+    try {
+      const stored = JSON.parse(localStorage.getItem(this.draftKey) ?? "null");
+      if (
+        stored?.version === 1 &&
+        [
+          "album",
+          "artist",
+          "genre",
+          "instrument",
+          "instruments",
+          "listen",
+        ].includes(stored.target?.kind) &&
+        typeof stored.hash === "string" &&
+        (stored.hash === "" || stored.hash.startsWith("#")) &&
+        typeof stored.baseline === "string" &&
+        typeof stored.source === "string" &&
+        Number.isInteger(stored.links) &&
+        stored.links >= 0 &&
+        stored.links <= 1000 &&
+        [
+          stored.fields,
+          stored.artists,
+          stored.genres,
+          stored.instruments,
+          stored.artistChoices,
+          stored.genreChoices,
+          stored.instrumentChoices,
+        ].every(Array.isArray) &&
+        stored.fields.every(
+          (field: Draft["fields"][number]) =>
+            field &&
+            typeof field.name === "string" &&
+            typeof field.id === "string" &&
+            typeof field.value === "string" &&
+            typeof field.checked === "boolean",
+        )
+      )
+        this.draft = stored;
+    } catch {
+      /* An unavailable or damaged draft must not prevent opening the library. */
+    }
+  }
+
+  private listen(): void {
+    this.lifecycle
+      .listen(this.resumeButton)
+      .addEventListener("click", this.ops.resumeDraft);
+    for (const event of ["input", "change", "click"])
+      this.lifecycle
+        .listen(this.ops.editor)
+        .addEventListener(event, () =>
+          this.lifecycle.queue(() => this.captureDraft()),
+        );
+    this.lifecycle
+      .listen(window)
+      .addEventListener("pagehide", () => this.captureDraft());
+    this.lifecycle.listen(document).addEventListener("visibilitychange", () => {
+      if (document.hidden) this.captureDraft();
+    });
+  }
+
+  dispose(): void {
+    this.lifecycle.dispose();
+    this.resumeButton.remove();
+  }
 }

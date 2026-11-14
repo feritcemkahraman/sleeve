@@ -10,9 +10,9 @@ state getters, draft cloning, and asynchronous lifecycle guards.
 - [x] Explicit boundaries: annotate exported functions (including arrow helpers),
       name dependency objects, and define named result contracts for larger shapes.
       Keep existing dependency access and runtime behavior intact.
-- [ ] Stateful ownership: review metadata search, dialog, and editor drafts for
-      class conversion, one component per PR. Keep small factories as functions.
-      Metadata search is complete; dialog and editor drafts remain.
+- [x] Stateful ownership: review metadata search, dialog, and editor drafts for
+      class conversion. Metadata search, dialog, and editor drafts are complete.
+      Keep small factories as functions; group each remaining batch in one PR.
 - [ ] Domain contracts: tighten draft modes/actions and validate persisted/DOM
       strings. Reduce casts through shared contracts.
 - [ ] Focused cleanup: review duplicated rendering, long fallback chains,

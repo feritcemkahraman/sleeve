@@ -4,9 +4,9 @@ import { EditorPersistence } from "./editorPersistence";
 import type { EditorDialog, PickerInteraction } from "./editorContracts";
 import { createDiscovery, type Discovery } from "./discovery";
 import { createLibraryState, type LibraryStore } from "./libraryState";
-import { createDialog, type DialogController } from "./dialog";
+import { Dialog, type DialogController } from "./dialog";
 import {
-  createEditorDrafts,
+  EditorDraftController,
   type EditorDrafts,
   type DraftTarget,
 } from "./editorDrafts";
@@ -93,7 +93,7 @@ export class AppController {
       announce: (message) => this.announce(message),
     });
 
-    this.dialog = createDialog({
+    this.dialog = new Dialog({
       editor: this.editor,
       main: this.main,
       formState: () => this.dialogFormState(),
@@ -118,7 +118,7 @@ export class AppController {
 
     const editorDialog: EditorDialog = {
       element: this.editor,
-      show: this.dialog.showDialog,
+      show: (...args) => this.dialog.showDialog(...args),
       formError: (message, input) => this.formError(message, input),
     };
 
@@ -135,11 +135,11 @@ export class AppController {
     this.discovery = createDiscovery({
       editor: this.editor,
       albums: () => this.library.data.albums,
-      showDialog: this.dialog.showDialog,
+      showDialog: (...args) => this.dialog.showDialog(...args),
       announce: (message) => this.announce(message),
     });
 
-    this.drafts = createEditorDrafts({
+    this.drafts = new EditorDraftController({
       editor: this.editor,
       accountId,
       isSaving: () => this.library.saving,
@@ -168,8 +168,8 @@ export class AppController {
 
     this.listening = createListening({
       editor: this.editor,
-      showDialog: this.dialog.showDialog,
-      beginDraft: this.drafts.beginDraft,
+      showDialog: (...args) => this.dialog.showDialog(...args),
+      beginDraft: (target) => this.drafts.beginDraft(target),
       albums: () => this.library.data.albums,
       finishSave: (id, message) => this.persistence.finishSave(id, message),
     });
@@ -187,7 +187,7 @@ export class AppController {
 
     this.metadataSearch = new MetadataSearchController({
       editor: this.editor,
-      showDialog: this.dialog.showDialog,
+      showDialog: (...args) => this.dialog.showDialog(...args),
       hasDraft: () => Boolean(this.drafts.current),
       clearDraftTarget: () => {
         this.drafts.state.target = undefined;
@@ -196,7 +196,7 @@ export class AppController {
       openAlbumForm: (album, mode) =>
         this.albumEditor.openAlbumForm(album, mode),
       canDismissDialog: () => this.canDismissDialog(),
-      clearDraft: this.drafts.clearDraft,
+      clearDraft: () => this.drafts.clearDraft(),
       isActive: () => this.lifecycle.active,
       albums: () => this.library.data.albums,
     });
@@ -225,7 +225,7 @@ export class AppController {
 
     return new ArtistFeature({
       dialog: editorDialog,
-      drafts: { begin: this.drafts.beginDraft },
+      drafts: { begin: (target) => this.drafts.beginDraft(target) },
       persistence: {
         finishCatalogSave: (message, destination) =>
           this.persistence.finishCatalogSave(message, destination),
@@ -257,7 +257,7 @@ export class AppController {
 
     return new GenreFeature({
       dialog: editorDialog,
-      drafts: { begin: this.drafts.beginDraft },
+      drafts: { begin: (target) => this.drafts.beginDraft(target) },
       persistence: {
         finishCatalogSave: (message, destination) =>
           this.persistence.finishCatalogSave(message, destination),
@@ -290,7 +290,7 @@ export class AppController {
 
     return new InstrumentFeature({
       dialog: editorDialog,
-      drafts: { begin: this.drafts.beginDraft },
+      drafts: { begin: (target) => this.drafts.beginDraft(target) },
       persistence: {
         finishSave: (id, message) => this.persistence.finishSave(id, message),
         finishCatalogSave: (message, destination) =>
@@ -324,8 +324,8 @@ export class AppController {
       accountId,
       dialog: editorDialog,
       drafts: {
-        begin: this.drafts.beginDraft,
-        capture: this.drafts.captureDraft,
+        begin: (target) => this.drafts.beginDraft(target),
+        capture: () => this.drafts.captureDraft(),
       },
       persistence: {
         finishSave: (id, message) => this.persistence.finishSave(id, message),
