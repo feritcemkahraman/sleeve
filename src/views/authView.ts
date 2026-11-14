@@ -1,3 +1,5 @@
+import { createLifecycle } from "../app/lifecycle";
+
 type AuthMode = "signin" | "signup";
 
 export function renderAuthView(): string {
@@ -78,98 +80,164 @@ export function renderAuthView(): string {
   `;
 }
 
-export function initializeAuthView(
-  enterLibrary: (authenticated?: boolean) => void,
-): void {
-  let mode: AuthMode = "signin";
-  let busy = false;
-  const form = document.querySelector<HTMLFormElement>("#auth-form")!;
-  const password = document.querySelector<HTMLInputElement>("#auth-password")!;
-  const submit = form.querySelector<HTMLButtonElement>("[type=submit]")!;
-  const status = document.querySelector<HTMLElement>("#auth-status")!;
-  const demo = document.querySelector<HTMLButtonElement>("#auth-demo")!;
-  const tabs = [
-    ...document.querySelectorAll<HTMLButtonElement>("[data-auth-mode]"),
-  ];
+export interface AuthSessionResult {
+  session: object | null;
+}
 
-  for (const tab of tabs) {
-    tab.addEventListener("click", () => {
-      if (busy) return;
-      const nextMode = tab.dataset.authMode;
-      if (nextMode !== "signin" && nextMode !== "signup") return;
-      mode = nextMode;
-      const signingUp = mode === "signup";
-      tabs.forEach((item) =>
-        item.setAttribute("aria-pressed", String(item === tab)),
-      );
-      document.querySelector("#auth-title")!.textContent = signingUp
-        ? "Make yourself at home."
-        : "Welcome back.";
-      document.querySelector("#auth-description")!.textContent = signingUp
-        ? "Start your own listening journal."
-        : "Pick up where you left off.";
-      password.autocomplete = signingUp ? "new-password" : "current-password";
-      password.minLength = signingUp ? 8 : 1;
-      password.setAttribute("aria-describedby", "auth-password-help");
-      document.querySelector<HTMLElement>("#auth-password-help")!.hidden =
-        !signingUp;
-      submit.textContent = signingUp ? "Create account →" : "Sign in →";
-      status.textContent = "";
-      password.value = "";
+export interface AuthViewDependencies {
+  enterLibrary: (authenticated?: boolean) => void;
+  authenticate: (
+    mode: AuthMode,
+    email: string,
+    password: string,
+  ) => Promise<AuthSessionResult>;
+}
+
+async function authenticate(
+  mode: AuthMode,
+  email: string,
+  password: string,
+): Promise<AuthSessionResult> {
+  if (
+    !import.meta.env.VITE_SUPABASE_URL ||
+    !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  ) {
+    throw new Error(
+      "Account access is not configured yet. You can explore the demo library in the meantime.",
+    );
+  }
+  const auth = await import("../services/auth");
+  return mode === "signup"
+    ? auth.signUp(email, password)
+    : auth.signIn(email, password);
+}
+
+export class AuthView {
+  private mode: AuthMode = "signin";
+  private busy = false;
+  private readonly lifecycle = createLifecycle();
+  private readonly root: ParentNode;
+  private readonly dependencies: AuthViewDependencies;
+  private readonly form: HTMLFormElement;
+  private readonly password: HTMLInputElement;
+  private readonly submit: HTMLButtonElement;
+  private readonly status: HTMLElement;
+  private readonly demo: HTMLButtonElement;
+  private readonly tabs: HTMLButtonElement[];
+
+  constructor(root: ParentNode, dependencies: AuthViewDependencies) {
+    this.root = root;
+    this.dependencies = dependencies;
+    this.form = root.querySelector<HTMLFormElement>("#auth-form")!;
+    this.password = root.querySelector<HTMLInputElement>("#auth-password")!;
+    this.submit = this.form.querySelector<HTMLButtonElement>("[type=submit]")!;
+    this.status = root.querySelector<HTMLElement>("#auth-status")!;
+    this.demo = root.querySelector<HTMLButtonElement>("#auth-demo")!;
+    this.tabs = [
+      ...root.querySelectorAll<HTMLButtonElement>("[data-auth-mode]"),
+    ];
+
+    for (const tab of this.tabs) {
+      this.lifecycle
+        .listen(tab)
+        .addEventListener("click", () => this.changeMode(tab));
+    }
+    this.lifecycle.listen(this.demo).addEventListener("click", () => {
+      if (!this.busy) this.dependencies.enterLibrary();
+    });
+    this.lifecycle.listen(this.form).addEventListener("submit", (event) => {
+      event.preventDefault();
+      void this.signIn();
     });
   }
 
-  demo.addEventListener("click", () => {
-    if (!busy) enterLibrary();
-  });
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (busy) return;
-    busy = true;
-    submit.disabled = true;
-    demo.disabled = true;
-    tabs.forEach((tab) => (tab.disabled = true));
-    form.setAttribute("aria-busy", "true");
-    status.textContent = "";
-    status.classList.remove("auth-error");
-    submit.textContent =
-      mode === "signup" ? "Creating account…" : "Signing in…";
+  private changeMode(tab: HTMLButtonElement): void {
+    if (this.busy) return;
+    const nextMode = tab.dataset.authMode;
+    if (nextMode !== "signin" && nextMode !== "signup") return;
+    this.mode = nextMode;
+    const signingUp = this.mode === "signup";
+    this.tabs.forEach((item) =>
+      item.setAttribute("aria-pressed", String(item === tab)),
+    );
+    this.root.querySelector("#auth-title")!.textContent = signingUp
+      ? "Make yourself at home."
+      : "Welcome back.";
+    this.root.querySelector("#auth-description")!.textContent = signingUp
+      ? "Start your own listening journal."
+      : "Pick up where you left off.";
+    this.password.autocomplete = signingUp
+      ? "new-password"
+      : "current-password";
+    this.password.minLength = signingUp ? 8 : 1;
+    this.password.setAttribute("aria-describedby", "auth-password-help");
+    this.root.querySelector<HTMLElement>("#auth-password-help")!.hidden =
+      !signingUp;
+    this.submit.textContent = signingUp ? "Create account →" : "Sign in →";
+    this.status.textContent = "";
+    this.password.value = "";
+  }
+
+  private async signIn(): Promise<void> {
+    if (this.busy || !this.lifecycle.active) return;
+    this.busy = true;
+    this.setBusy(true);
+    this.status.textContent = "";
+    this.status.classList.remove("auth-error");
+    this.submit.textContent =
+      this.mode === "signup" ? "Creating account…" : "Signing in…";
+
     try {
-      if (
-        !import.meta.env.VITE_SUPABASE_URL ||
-        !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-      ) {
-        throw new Error(
-          "Account access is not configured yet. You can explore the demo library in the meantime.",
-        );
-      }
-      const auth = await import("../services/auth");
-      const email = (new FormData(form).get("email") as string).trim();
-      const data = await (mode === "signup"
-        ? auth.signUp(email, password.value)
-        : auth.signIn(email, password.value));
+      const email = String(new FormData(this.form).get("email") ?? "").trim();
+      const data = await this.dependencies.authenticate(
+        this.mode,
+        email,
+        this.password.value,
+      );
+      if (!this.lifecycle.active) return;
       if (data.session) {
-        enterLibrary(true);
-      } else if (mode === "signup") {
-        status.textContent =
+        this.dependencies.enterLibrary(true);
+      } else if (this.mode === "signup") {
+        this.status.textContent =
           "Check your email to confirm your account, then come back to sign in.";
-        password.value = "";
+        this.password.value = "";
       } else {
         throw new Error("Sign in did not create a session. Please try again.");
       }
     } catch (error) {
-      status.classList.add("auth-error");
-      status.textContent =
+      if (!this.lifecycle.active) return;
+      this.status.classList.add("auth-error");
+      this.status.textContent =
         error instanceof Error
           ? error.message
           : "We couldn’t connect. Please try again.";
     } finally {
-      busy = false;
-      submit.disabled = false;
-      demo.disabled = false;
-      tabs.forEach((tab) => (tab.disabled = false));
-      form.removeAttribute("aria-busy");
-      submit.textContent = mode === "signup" ? "Create account →" : "Sign in →";
+      if (this.lifecycle.active) {
+        this.busy = false;
+        this.setBusy(false);
+        this.submit.textContent =
+          this.mode === "signup" ? "Create account →" : "Sign in →";
+      }
     }
-  });
+  }
+
+  private setBusy(busy: boolean): void {
+    this.submit.disabled = busy;
+    this.demo.disabled = busy;
+    this.tabs.forEach((tab) => {
+      tab.disabled = busy;
+    });
+    if (busy) this.form.setAttribute("aria-busy", "true");
+    else this.form.removeAttribute("aria-busy");
+  }
+
+  public dispose(): void {
+    this.lifecycle.dispose();
+  }
+}
+
+export function initializeAuthView(
+  enterLibrary: (authenticated?: boolean) => void,
+): AuthView {
+  return new AuthView(document, { enterLibrary, authenticate });
 }
