@@ -27,6 +27,12 @@ let disposeLibrary: (() => void) | undefined;
 let accountId: string | null = null;
 let signingOut = false;
 let stopAuth: (() => void) | undefined;
+let disposeAuthView: (() => void) | undefined;
+
+function teardownAuthView(): void {
+  disposeAuthView?.();
+  disposeAuthView = undefined;
+}
 
 function enterLibrary(
   authenticated = false,
@@ -39,6 +45,7 @@ function enterLibrary(
     if (authenticated) window.location.reload();
     return;
   }
+  teardownAuthView();
   libraryMounted = true;
   root!.innerHTML = renderApp(authenticated);
   const renderNavigationPage = initializeApp(
@@ -90,6 +97,7 @@ async function loadAccountLibrary(userId: string): Promise<void> {
     enterLibrary(true, cached.data, true);
     return;
   }
+  teardownAuthView();
   root!.innerHTML = /* HTML */ `<main class="frame auth-loading" role="status">
     Loading your library…
   </main>`;
@@ -126,11 +134,13 @@ async function loadAccountLibrary(userId: string): Promise<void> {
 }
 
 function showAuth(message?: string): void {
+  teardownAuthView();
   root!.innerHTML = renderAuthView();
-  initializeAuthView((authenticated) => {
+  const authView = initializeAuthView((authenticated) => {
     // A configured client drives authenticated navigation via its auth events.
     if (!authenticated) enterLibrary();
   });
+  disposeAuthView = () => authView.dispose();
   if (message) {
     const status = document.querySelector<HTMLElement>("#auth-status")!;
     status.classList.add("auth-error");
@@ -207,6 +217,7 @@ async function start(): Promise<void> {
 void start();
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
+    teardownAuthView();
     stopAuth?.();
     disposeLibrary?.();
   });

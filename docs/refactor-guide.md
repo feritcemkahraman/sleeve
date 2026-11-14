@@ -128,10 +128,11 @@ preserving PRs; keep validation migration separate from rendering extractions.
   chooses random featured content. Make those responsibilities explicit before
   attempting a pure-rendering extraction. Tighten sort/layout contracts at their
   input boundaries; preserve current defaults and route/preview parity.
-- `authView.ts`: the initializer owns mutable mode/busy state and asynchronous
-  submit listeners without a disposal contract. Review class ownership together
-  with `main.ts` authentication mounting, teardown, and stale-result protection;
-  characterize sign-in, sign-up confirmation, demo entry, and pending teardown.
+- [x] `authView.ts`: moved mutable mode/busy state and submit listeners into
+      `AuthView`, with explicit disposal and stale-result protection. `main.ts`
+      tears down authentication before replacing it with loading/library views,
+      remounting auth, or hot disposal. Browser coverage characterizes sign-in,
+      sign-up confirmation, demo entry, and pending success/failure teardown.
 - `services/albums.ts`: the joined-row mapper is already separate from fetching,
   but the select query uses double casts to a handwritten joined-row type. Review
   query-derived contracts and mapper tests, including absent joins and ordering,
