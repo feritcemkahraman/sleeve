@@ -86,17 +86,3 @@ export interface ListeningEntry {
   createdAt: string;
   updatedAt: string;
 }
-
-// Core album fields accepted when creating an album. Related records such as
-// artists, genres, and instruments are managed separately.
-export interface NewAlbum {
-  title: string;
-  recordLabel?: string | null;
-  sortTitle?: string | null;
-  releaseYear?: number | null;
-  artworkUrl?: string | null;
-  musicbrainzReleaseGroupId?: string | null;
-}
-
-// Core album fields accepted when editing an album.
-export type AlbumUpdates = Partial<NewAlbum>;
