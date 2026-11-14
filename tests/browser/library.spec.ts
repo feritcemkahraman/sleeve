@@ -560,3 +560,178 @@ test("route previews match live lists and remounting handles each save once", as
       .filter({ hasText: "Saved once after remount" }),
   ).toHaveCount(1);
 });
+
+test("artist roles and order recover from drafts and survive save and removal", async ({
+  page,
+  isMobile,
+}) => {
+  await openAlbum(page);
+  await page.locator('[data-action="edit"]').click();
+  const originalNames = await page
+    .locator("#artist-selected strong")
+    .allTextContents();
+  for (const name of ["First draft artist", "Second draft artist"]) {
+    await page.locator("#artist-query").fill(name);
+    const create = page.locator('[data-action="create-artist"]');
+    if (isMobile) await create.tap();
+    else await create.click();
+  }
+
+  const first = page
+    .locator(".artist-credit-row")
+    .filter({ hasText: "First draft artist" });
+  await first.locator("select").selectOption("featured");
+  await page
+    .getByRole("button", {
+      name: "Move Second draft artist earlier",
+      exact: true,
+    })
+    .click();
+  const expectedNames = [
+    ...originalNames,
+    "Second draft artist",
+    "First draft artist",
+  ];
+  await expect(page.locator("#artist-selected strong")).toHaveText(
+    expectedNames,
+  );
+
+  await reloadDemo(page);
+  await expect(page.locator("#artist-selected strong")).toHaveText(
+    expectedNames,
+  );
+  await expect(first.locator("select")).toHaveValue("featured");
+  await page.locator('#album-form button[type="submit"]').click();
+  await expect(page.locator("#editor")).not.toBeVisible();
+
+  await reloadDemo(page);
+  await page.locator('[data-action="edit"]').click();
+  await expect(page.locator("#artist-selected strong")).toHaveText(
+    expectedNames,
+  );
+  await expect(first.locator("select")).toHaveValue("featured");
+  await page
+    .getByRole("button", { name: "Remove First draft artist", exact: true })
+    .click();
+  await page.locator('#album-form button[type="submit"]').click();
+  await expect(page.locator("#editor")).not.toBeVisible();
+
+  await reloadDemo(page);
+  await page.locator('[data-action="edit"]').click();
+  await expect(page.locator("#artist-selected strong")).toHaveText([
+    ...originalNames,
+    "Second draft artist",
+  ]);
+});
+
+test("genre hierarchy changes review redundant assignments and prevent cycles", async ({
+  page,
+}) => {
+  const genreHashes: string[] = [];
+  for (const name of ["Hierarchy parent", "Hierarchy child"]) {
+    await page.goto("/#genres");
+    await page.locator('[data-action="new-catalog-genre"]').click();
+    await page.locator('[name="genreName"]').fill(name);
+    await page.locator('#catalog-genre-form button[type="submit"]').click();
+    await expect(page.locator("#page-title")).toHaveText(name);
+    genreHashes.push(new URL(page.url()).hash);
+  }
+
+  await page.goto("/#");
+  await openAlbum(page);
+  const albumHash = new URL(page.url()).hash;
+  await page.locator('[data-action="edit"]').click();
+  for (const name of ["Hierarchy parent", "Hierarchy child"]) {
+    await page.locator("#genre-query").fill(name);
+    await page
+      .locator("#genre-results button")
+      .filter({ hasText: name })
+      .click();
+  }
+  await page.locator('#album-form button[type="submit"]').click();
+  await expect(page.locator("#editor")).not.toBeVisible();
+
+  await page.goto("/" + genreHashes[1]);
+  await page.locator('[data-action="edit-catalog-genre"]').click();
+  await page
+    .locator('[name="parentGenreId"]')
+    .selectOption({ label: "Hierarchy parent" });
+  await page.locator('#catalog-genre-form button[type="submit"]').click();
+  await expect(page.locator("#dialog-title")).toHaveText(
+    "Review genre changes",
+  );
+  await page.locator("#apply-genre-change").click();
+  await expect(page.locator("#editor")).not.toBeVisible();
+
+  await reloadDemo(page);
+  await page.goto("/" + albumHash);
+  await page.locator('[data-action="edit"]').click();
+  await expect(page.locator("#genre-selected")).toContainText(
+    "Hierarchy child",
+  );
+  await expect(page.locator("#genre-selected")).not.toContainText(
+    "Hierarchy parent",
+  );
+  await page.locator("#genre-query").fill("Hierarchy parent");
+  await expect(
+    page
+      .locator("#genre-results button")
+      .filter({ hasText: "Hierarchy parent" }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  // The first Escape closes the picker; the second dismisses the unchanged form.
+  await page.keyboard.press("Escape");
+
+  await page.goto("/" + genreHashes[0]);
+  await page.locator('[data-action="edit-catalog-genre"]').click();
+  await expect(
+    page
+      .locator('[name="parentGenreId"] option')
+      .filter({ hasText: "Hierarchy child" }),
+  ).toHaveCount(0);
+});
+
+test("dedicated instrument editor restores draft categories and commits only on save", async ({
+  page,
+}) => {
+  await openAlbum(page);
+  await page.locator('[data-action="edit-instruments"]').click();
+  await page.locator("#instrument-query").fill("Draft category instrument");
+  const category = page.locator('[name="inline-category"]').first();
+  const categoryValue = await category.inputValue();
+  await category.check();
+  await page.locator('[data-action="create-instrument"]').click();
+  await expect(page.locator("#instrument-selected")).toContainText(
+    "Draft category instrument",
+  );
+
+  await reloadDemo(page);
+  await expect(page.locator("#instruments-form")).toBeVisible();
+  await expect(page.locator("#instrument-selected")).toContainText(
+    "Draft category instrument",
+  );
+  await page.locator('#instruments-form button[type="submit"]').click();
+  await expect(page.locator("#editor")).not.toBeVisible();
+
+  await reloadDemo(page);
+  await page.locator('[data-action="edit-instruments"]').click();
+  await expect(page.locator("#instrument-selected")).toContainText(
+    "Draft category instrument",
+  );
+  await page
+    .getByRole("button", {
+      name: "Remove Draft category instrument",
+      exact: true,
+    })
+    .click();
+  await page.locator('#instruments-form button[type="submit"]').click();
+  await expect(page.locator("#editor")).not.toBeVisible();
+
+  await page.goto("/#instruments");
+  await page.locator("#instruments-search").fill("Draft category instrument");
+  await page.locator('main a[href^="#instrument/"]').click();
+  await page.locator('[data-action="edit-catalog-instrument"]').click();
+  await expect(
+    page.locator(`[name="category"][value="${categoryValue}"]`),
+  ).toBeChecked();
+});

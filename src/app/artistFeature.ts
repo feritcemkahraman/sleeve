@@ -1,7 +1,6 @@
 import { renderArtistsView } from "../views/artistsView";
 import { updateCatalogImage } from "../components/formFields";
-import { createDialog } from "./dialog";
-import { createEditorDrafts } from "./editorDrafts";
+import type { DraftTarget } from "./editorDrafts";
 
 import type { LibraryData } from "../types/library";
 import { field, catalogImageField } from "../components/formFields";
@@ -22,71 +21,187 @@ import { webUrl } from "../components/presentation";
 import { matches } from "./search";
 import { focusForTyping } from "./device";
 
-export function createArtistFeature(ops: {
-  editor: HTMLDialogElement;
-  showDialog: ReturnType<typeof createDialog>["showDialog"];
-  beginDraft: ReturnType<typeof createEditorDrafts>["beginDraft"];
+type ArtistSort = "albums" | "rating" | "recent" | "updated" | "name";
 
-  dialog: Pick<
-    ReturnType<typeof createDialog>,
-    "pickerPress" | "pickerRenderPending" | "updateSearchDropdowns"
-  >;
+interface ArtistDialog {
+  element: HTMLDialogElement;
+  show: (
+    title: string,
+    content: string,
+    focusSelector: string,
+    backToSearch?: boolean,
+  ) => void;
+  formError: (message: string, input: HTMLInputElement) => void;
+}
+
+interface ArtistPickerInteraction {
+  deferRender: () => boolean;
+  closeSearch: () => void;
+}
+
+export interface ArtistPickerSnapshot {
+  selectedArtists: AlbumArtist[];
+  artistChoices: Artist[];
+}
+
+export interface ArtistFeatureDependencies {
+  dialog: ArtistDialog;
+  drafts: { begin: (target: DraftTarget) => boolean };
+  persistence: {
+    finishCatalogSave: (message: string, destination: string) => Promise<void>;
+  };
+  picker: ArtistPickerInteraction;
   library: {
     readonly albums: LibraryData["albums"];
     artists: LibraryData["artists"];
   };
-  formError: (message: string, input: HTMLInputElement) => void;
+  navigation: {
+    renderRoute: (focus?: boolean) => void;
+    updateCatalogFilters: (id: string) => void;
+  };
+}
 
-  finishCatalogSave: (message: string, destination: string) => Promise<void>;
-  renderRoute: (focus?: boolean) => void;
-  updateCatalogFilters: (id: string) => void;
-}) {
-  let selectedArtists: AlbumArtist[] = [];
-  let artistChoices: Artist[] = [];
-  let artistQuery = "";
-  let artistUnused = false;
-  let artistSort = "updated";
-  let artistPrimary = false;
-  function openCatalogArtist(item?: Artist) {
-    if (!ops.beginDraft({ kind: "artist", item })) return;
-    ops.showDialog(
+function isArtistSort(value: string): value is ArtistSort {
+  return ["albums", "rating", "recent", "updated", "name"].includes(value);
+}
+
+function isArtistRole(value: string): value is ArtistRole {
+  return artistRoles.some((role) => role === value);
+}
+
+function renderArtistForm(item?: Artist): string {
+  return /* HTML */ `<form
+    id="catalog-artist-form"
+    data-id="${escapeHtml(item?.id ?? "")}"
+  >
+    <div class="dialog-body">
+      ${field("Artist name", "artistName", item?.name, { attributes: 'required maxlength="150"', placeholder: "e.g. Miles Davis" })}
+      ${catalogImageField("Photo URL", item?.name ?? "Artist", item?.photoUrl, true)}
+      ${field("Sort name", "sortName", item?.sortName, { attributes: 'maxlength="150"', placeholder: "e.g. Davis, Miles" })}
+      ${field("Country code", "country", item?.country, { attributes: 'maxlength="2" pattern="[A-Za-z]{2}"', placeholder: "e.g. US" })}
+      ${field("MusicBrainz artist ID", "artistMbid", item?.musicbrainzId, { attributes: 'maxlength="36"', placeholder: "Optional artist ID" })}
+      <p class="form-hint">
+        Artist details apply everywhere this artist is credited. Choose their
+        role separately on each album.
+      </p>
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="button secondary" data-action="close">
+        Cancel</button
+      ><button class="button primary" type="submit">Save artist</button>
+    </div>
+  </form>`;
+}
+
+function readArtistForm(
+  form: HTMLFormElement,
+  artists: Artist[],
+  formError: ArtistDialog["formError"],
+): Artist | void {
+  const data = new FormData(form);
+  const value = (key: string) => formValue(data, key);
+  const input = form.querySelector<HTMLInputElement>('[name="artistName"]')!;
+  const name = value("artistName");
+
+  if (!name) return formError("Enter an artist name.", input);
+  if (
+    artists.some(
+      (item) =>
+        item.id !== form.dataset.id &&
+        item.name.toLowerCase() === name.toLowerCase(),
+    )
+  )
+    return formError("An artist with this name already exists.", input);
+
+  const musicbrainzId = value("artistMbid") || null;
+  if (
+    musicbrainzId &&
+    !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(musicbrainzId)
+  )
+    return formError(
+      "Enter a valid MusicBrainz artist ID.",
+      form.querySelector('[name="artistMbid"]')!,
+    );
+  if (
+    musicbrainzId &&
+    artists.some(
+      (item) =>
+        item.id !== form.dataset.id &&
+        item.musicbrainzId?.toLowerCase() === musicbrainzId.toLowerCase(),
+    )
+  )
+    return formError(
+      "This MusicBrainz artist is already in your catalog.",
+      input,
+    );
+
+  if (value("catalogImage") && !webUrl(value("catalogImage")))
+    return formError(
+      "Enter an HTTP or HTTPS photo URL.",
+      form.querySelector('[name="catalogImage"]')!,
+    );
+
+  return {
+    id: form.dataset.id || makeId(),
+    name,
+    photoUrl: value("catalogImage") || null,
+    sortName: value("sortName") || null,
+    country: value("country").toUpperCase() || null,
+    musicbrainzId,
+  };
+}
+
+export class ArtistFeature {
+  private readonly dependencies: ArtistFeatureDependencies;
+  private selectedArtists: AlbumArtist[] = [];
+  private artistChoices: Artist[] = [];
+  private artistQuery = "";
+  private artistUnused = false;
+  private artistSort: ArtistSort = "updated";
+  private artistPrimary = false;
+
+  constructor(dependencies: ArtistFeatureDependencies) {
+    this.dependencies = dependencies;
+  }
+
+  public get selections(): AlbumArtist[] {
+    return this.selectedArtists;
+  }
+
+  public snapshotPicker(): ArtistPickerSnapshot {
+    return structuredClone({
+      selectedArtists: this.selectedArtists,
+      artistChoices: this.artistChoices,
+    });
+  }
+
+  public restorePicker(snapshot: ArtistPickerSnapshot): void {
+    this.selectedArtists = structuredClone(snapshot.selectedArtists);
+    this.artistChoices = structuredClone(snapshot.artistChoices);
+  }
+
+  public openCatalogArtist(item?: Artist): void {
+    if (!this.dependencies.drafts.begin({ kind: "artist", item })) return;
+
+    this.dependencies.dialog.show(
       item ? "Edit artist" : "Add artist",
-      /* HTML */ `<form
-        id="catalog-artist-form"
-        data-id="${escapeHtml(item?.id ?? "")}"
-      >
-        <div class="dialog-body">
-          ${field("Artist name", "artistName", item?.name, { attributes: 'required maxlength="150"', placeholder: "e.g. Miles Davis" })}
-          ${catalogImageField("Photo URL", item?.name ?? "Artist", item?.photoUrl, true)}
-          ${field("Sort name", "sortName", item?.sortName, { attributes: 'maxlength="150"', placeholder: "e.g. Davis, Miles" })}
-          ${field("Country code", "country", item?.country, { attributes: 'maxlength="2" pattern="[A-Za-z]{2}"', placeholder: "e.g. US" })}
-          ${field("MusicBrainz artist ID", "artistMbid", item?.musicbrainzId, { attributes: 'maxlength="36"', placeholder: "Optional artist ID" })}
-          <p class="form-hint">
-            Artist details apply everywhere this artist is credited. Choose
-            their role separately on each album.
-          </p>
-          <p id="form-error" class="form-error" role="alert" hidden></p>
-        </div>
-        <div class="dialog-footer">
-          <button type="button" class="button secondary" data-action="close">
-            Cancel</button
-          ><button class="button primary" type="submit">Save artist</button>
-        </div>
-      </form>`,
+      renderArtistForm(item),
       '[name="artistName"]',
     );
   }
 
-  function artistPicker(credits: AlbumArtist[]) {
-    artistChoices = structuredClone(ops.library.artists);
-    selectedArtists = credits.map((credit) => {
-      const existing = findArtist(artistChoices, credit);
+  public artistPicker(credits: AlbumArtist[]): string {
+    this.artistChoices = structuredClone(this.dependencies.library.artists);
+    this.selectedArtists = credits.map((credit) => {
+      const existing = findArtist(this.artistChoices, credit);
       if (!existing) {
         const { role, position, ...artist } = credit;
-        artistChoices.push(artist);
+        this.artistChoices.push(artist);
       }
       return { ...credit, ...(existing ?? {}) };
     });
+
     return /* HTML */ `<div class="instrument-picker">
       <label class="field" for="artist-query"
         ><span>Artists <span class="muted">(optional)</span></span></label
@@ -110,15 +225,18 @@ export function createArtistFeature(ops: {
     </div>`;
   }
 
-  function updateArtists() {
-    if (ops.dialog.pickerPress) {
-      ops.dialog.pickerRenderPending = true;
-      return;
-    }
-    const input = ops.editor.querySelector<HTMLInputElement>("#artist-query");
+  public updateArtists(): void {
+    if (this.dependencies.picker.deferRender()) return;
+    const input =
+      this.dependencies.dialog.element.querySelector<HTMLInputElement>(
+        "#artist-query",
+      );
     if (!input) return;
+
     const query = input.value.trim();
-    ops.editor.querySelector("#artist-selected")!.innerHTML = selectedArtists
+    this.dependencies.dialog.element.querySelector(
+      "#artist-selected",
+    )!.innerHTML = this.selectedArtists
       .map(
         (item, index) =>
           /* HTML */ `<div class="artist-credit-row">
@@ -149,16 +267,19 @@ export function createArtistFeature(ops: {
           </div>`,
       )
       .join("");
-    const choices = artistChoices
+
+    const choices = this.artistChoices
       .filter(
         (item) =>
-          !selectedArtists.some((credit) => credit.id === item.id) &&
+          !this.selectedArtists.some((credit) => credit.id === item.id) &&
           matches(query, item.name, item.sortName ?? ""),
       )
       .sort((a, b) =>
         (a.sortName || a.name).localeCompare(b.sortName || b.name),
       );
-    ops.editor.querySelector("#artist-results")!.innerHTML =
+    this.dependencies.dialog.element.querySelector(
+      "#artist-results",
+    )!.innerHTML =
       choices
         .slice(0, 20)
         .map(
@@ -180,7 +301,7 @@ export function createArtistFeature(ops: {
         ? /* HTML */ `<p class="form-hint">Type to narrow the results.</p>`
         : "") +
       (query &&
-      !artistChoices.some(
+      !this.artistChoices.some(
         (item) => item.name.toLowerCase() === query.toLowerCase(),
       )
         ? /* HTML */ `<button
@@ -193,36 +314,41 @@ export function createArtistFeature(ops: {
         : "");
   }
 
-  function updateArtistList() {
+  private updateArtistList(): void {
     updateArtistsView(
-      ops.library.artists,
-      ops.library.albums,
-      artistQuery,
-      artistUnused,
+      this.dependencies.library.artists,
+      this.dependencies.library.albums,
+      this.artistQuery,
+      this.artistUnused,
       document,
-      artistSort,
-      artistPrimary,
+      this.artistSort,
+      this.artistPrimary,
     );
   }
 
-  function click(button: HTMLButtonElement) {
+  public click(button: HTMLButtonElement): boolean {
     switch (button.dataset.action) {
       case "new-catalog-artist":
-        openCatalogArtist();
+        this.openCatalogArtist();
         break;
       case "edit-catalog-artist":
-        openCatalogArtist(
-          ops.library.artists.find(
+        this.openCatalogArtist(
+          this.dependencies.library.artists.find(
             (item) => artistUrl(item.id) === location.hash,
           ),
         );
         break;
       case "delete-catalog-artist": {
-        const item = ops.library.artists.find(
+        const item = this.dependencies.library.artists.find(
           (item) => artistUrl(item.id) === location.hash,
         );
-        if (!item || artistAlbums(ops.library.albums, item.id).length) break;
-        ops.showDialog(
+        if (
+          !item ||
+          artistAlbums(this.dependencies.library.albums, item.id).length
+        )
+          break;
+
+        this.dependencies.dialog.show(
           "Delete artist?",
           /* HTML */ `<div class="dialog-body">
               <p>Delete ${escapeHtml(item.name)} from your catalog?</p>
@@ -248,33 +374,45 @@ export function createArtistFeature(ops: {
         break;
       }
       case "confirm-delete-artist":
-        if (!artistAlbums(ops.library.albums, button.dataset.id!).length) {
-          ops.library.artists = ops.library.artists.filter(
-            (item) => item.id !== button.dataset.id,
+        if (
+          !artistAlbums(this.dependencies.library.albums, button.dataset.id!)
+            .length
+        ) {
+          this.dependencies.library.artists =
+            this.dependencies.library.artists.filter(
+              (item) => item.id !== button.dataset.id,
+            );
+          this.dependencies.persistence.finishCatalogSave(
+            "Artist deleted.",
+            "#artists",
           );
-          ops.finishCatalogSave("Artist deleted.", "#artists");
         }
         break;
       case "clear-artist-filters":
-        artistPrimary = false;
-        artistQuery = "";
-        artistUnused = false;
-        ops.renderRoute();
+        this.artistPrimary = false;
+        this.artistQuery = "";
+        this.artistUnused = false;
+        this.dependencies.navigation.renderRoute();
         break;
       case "create-artist":
       case "select-artist": {
         const input =
-          ops.editor.querySelector<HTMLInputElement>("#artist-query")!;
-        let item = artistChoices.find((item) => item.id === button.dataset.id);
+          this.dependencies.dialog.element.querySelector<HTMLInputElement>(
+            "#artist-query",
+          )!;
+        let item = this.artistChoices.find(
+          (item) => item.id === button.dataset.id,
+        );
         if (button.dataset.action === "create-artist") {
           const name = input.value.trim();
           if (
             !name ||
-            artistChoices.some(
+            this.artistChoices.some(
               (item) => item.name.toLowerCase() === name.toLowerCase(),
             )
           )
             break;
+
           item = {
             id: makeId(),
             name,
@@ -282,38 +420,47 @@ export function createArtistFeature(ops: {
             country: null,
             musicbrainzId: null,
           };
-          artistChoices.push(item);
+          this.artistChoices.push(item);
         }
-        if (item && !selectedArtists.some((credit) => credit.id === item.id))
-          selectedArtists.push({
+
+        if (
+          item &&
+          !this.selectedArtists.some((credit) => credit.id === item.id)
+        )
+          this.selectedArtists.push({
             ...item,
             role: "primary",
-            position: selectedArtists.length,
+            position: this.selectedArtists.length,
           });
+
         input.value = "";
-        updateArtists();
+        this.updateArtists();
         focusForTyping(input);
-        ops.dialog.updateSearchDropdowns(null);
+        this.dependencies.picker.closeSearch();
         break;
       }
       case "remove-artist":
-        selectedArtists = selectedArtists.filter(
+        this.selectedArtists = this.selectedArtists.filter(
           (item) => item.id !== button.dataset.id,
         );
-        updateArtists();
-        focusForTyping(ops.editor.querySelector("#artist-query"));
+        this.updateArtists();
+        focusForTyping(
+          this.dependencies.dialog.element.querySelector("#artist-query"),
+        );
         break;
       case "move-artist": {
-        const index = selectedArtists.findIndex(
+        const index = this.selectedArtists.findIndex(
           (item) => item.id === button.dataset.id,
         );
+
         if (index > 0)
-          [selectedArtists[index - 1], selectedArtists[index]] = [
-            selectedArtists[index],
-            selectedArtists[index - 1],
+          [this.selectedArtists[index - 1], this.selectedArtists[index]] = [
+            this.selectedArtists[index],
+            this.selectedArtists[index - 1],
           ];
-        updateArtists();
-        ops.editor
+
+        this.updateArtists();
+        this.dependencies.dialog.element
           .querySelector<HTMLElement>(
             `[data-action="move-artist"][data-id="${button.dataset.id}"]`,
           )
@@ -324,135 +471,77 @@ export function createArtistFeature(ops: {
       default:
         return false;
     }
+
     return true;
   }
 
-  function submit(form: HTMLFormElement) {
-    const data = new FormData(form);
-    const value = (key: string) => formValue(data, key);
-    const input = form.querySelector<HTMLInputElement>('[name="artistName"]')!;
-    const name = value("artistName");
-    if (!name) return ops.formError("Enter an artist name.", input);
-    if (
-      ops.library.artists.some(
-        (item) =>
-          item.id !== form.dataset.id &&
-          item.name.toLowerCase() === name.toLowerCase(),
-      )
-    )
-      return ops.formError("An artist with this name already exists.", input);
-    const musicbrainzId = value("artistMbid") || null;
-    if (
-      musicbrainzId &&
-      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(musicbrainzId)
-    )
-      return ops.formError(
-        "Enter a valid MusicBrainz artist ID.",
-        form.querySelector('[name="artistMbid"]')!,
-      );
-    if (
-      musicbrainzId &&
-      ops.library.artists.some(
-        (item) =>
-          item.id !== form.dataset.id &&
-          item.musicbrainzId?.toLowerCase() === musicbrainzId.toLowerCase(),
-      )
-    )
-      return ops.formError(
-        "This MusicBrainz artist is already in your catalog.",
-        input,
-      );
-    if (value("catalogImage") && !webUrl(value("catalogImage")))
-      return ops.formError(
-        "Enter an HTTP or HTTPS photo URL.",
-        form.querySelector('[name="catalogImage"]')!,
-      );
-    const item: Artist = {
-      id: form.dataset.id || makeId(),
-      name,
-      photoUrl: value("catalogImage") || null,
-      sortName: value("sortName") || null,
-      country: value("country").toUpperCase() || null,
-      musicbrainzId,
-    };
-    ops.library.artists = ops.library.artists
+  public submit(form: HTMLFormElement): void {
+    const item = readArtistForm(
+      form,
+      this.dependencies.library.artists,
+      this.dependencies.dialog.formError,
+    );
+    if (!item) return;
+
+    this.dependencies.library.artists = this.dependencies.library.artists
       .filter((existing) => existing.id !== item.id)
       .concat(item);
-    ops.finishCatalogSave("Artist saved.", artistUrl(item.id));
+    this.dependencies.persistence.finishCatalogSave(
+      "Artist saved.",
+      artistUrl(item.id),
+    );
   }
 
-  function input(input: HTMLInputElement) {
+  public input(input: HTMLInputElement): void {
     if (input.closest("#catalog-artist-form") && input.name === "catalogImage")
       updateCatalogImage(input);
+
     if (input.id === "artists-search") {
-      artistQuery = input.value;
-      updateArtistList();
+      this.artistQuery = input.value;
+      this.updateArtistList();
     }
-    if (input.id === "artist-query") updateArtists();
+    if (input.id === "artist-query") this.updateArtists();
   }
-  function change(input: HTMLInputElement) {
-    if (input.id === "artists-sort") {
-      artistSort = input.value;
-      updateArtistList();
+
+  public change(input: HTMLInputElement): void {
+    if (input.id === "artists-sort" && isArtistSort(input.value)) {
+      this.artistSort = input.value;
+      this.updateArtistList();
     }
+
     if (input.id === "artists-primary") {
-      artistPrimary = input.checked;
-      ops.updateCatalogFilters(input.id);
+      this.artistPrimary = input.checked;
+      this.dependencies.navigation.updateCatalogFilters(input.id);
     }
+
     if (input.id === "artists-unused") {
-      artistUnused = input.checked;
-      ops.updateCatalogFilters(input.id);
+      this.artistUnused = input.checked;
+      this.dependencies.navigation.updateCatalogFilters(input.id);
     }
-    if (
-      input.dataset.artistRole &&
-      artistRoles.some((role) => role === input.value)
-    ) {
-      const credit = selectedArtists.find(
+
+    if (input.dataset.artistRole && isArtistRole(input.value)) {
+      const credit = this.selectedArtists.find(
         (item) => item.id === input.dataset.artistRole,
       );
-      if (credit) credit.role = input.value as ArtistRole;
+      if (credit) credit.role = input.value;
     }
   }
 
-  function renderList(root: HTMLElement) {
+  public renderList(root: HTMLElement): void {
     root.innerHTML = renderArtistsView(
-      artistQuery,
-      artistUnused,
-      artistSort,
-      artistPrimary,
+      this.artistQuery,
+      this.artistUnused,
+      this.artistSort,
+      this.artistPrimary,
     );
     updateArtistsView(
-      ops.library.artists,
-      ops.library.albums,
-      artistQuery,
-      artistUnused,
+      this.dependencies.library.artists,
+      this.dependencies.library.albums,
+      this.artistQuery,
+      this.artistUnused,
       root,
-      artistSort,
-      artistPrimary,
+      this.artistSort,
+      this.artistPrimary,
     );
   }
-  return {
-    renderList,
-    input,
-    change,
-    openCatalogArtist,
-    artistPicker,
-    updateArtists,
-    submit,
-    click,
-    state: {
-      get selectedArtists() {
-        return selectedArtists;
-      },
-      set selectedArtists(value: typeof selectedArtists) {
-        selectedArtists = value;
-      },
-      get artistChoices() {
-        return artistChoices;
-      },
-      set artistChoices(value: typeof artistChoices) {
-        artistChoices = value;
-      },
-    },
-  };
 }

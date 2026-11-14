@@ -12,6 +12,7 @@
 - Use string unions for closed sets of modes and actions. Validate strings from persisted data or the DOM before treating them as those types.
 - Separate rendering, validation, and storage from orchestration when they form a focused responsibility. Extract duplicated behavior into shared helpers; avoid adding layers for trivial operations.
 - Preserve live access to shared state when refactoring dependencies. Do not replace getters with snapshots when the underlying arrays or objects can be reassigned.
+- For draftable components, expose paired snapshot/restore methods for related selections and choices. Clone at those boundaries so drafts cannot mutate live picker state; keep live getters for consumers that need current selections.
 - Preserve lifecycle guards for asynchronous work so stale results cannot update a replaced or disposed view.
 - Apply these practices to new and modified code incrementally. Verify refactors with the TypeScript build and relevant existing tests, including browser coverage for changed user flows.
 

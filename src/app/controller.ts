@@ -20,9 +20,9 @@ import { instrumentUrl } from "./instruments";
 import { renderInstrumentDetail } from "../views/instrumentsView";
 import { focusForTyping } from "./device";
 import { createMetadataSearch } from "./metadataSearch";
-import { createInstrumentFeature } from "./instrumentFeature";
-import { createGenreFeature } from "./genreFeature";
-import { createArtistFeature } from "./artistFeature";
+import { InstrumentFeature } from "./instrumentFeature";
+import { GenreFeature } from "./genreFeature";
+import { ArtistFeature } from "./artistFeature";
 import { AlbumEditor } from "./albumEditor";
 import { createListening } from "./listening";
 import { readLayout, saveLayout } from "./layoutPreferences";
@@ -204,16 +204,20 @@ export function initializeApp(
       dialog.baseline = value;
     },
     updateRating: (rating) => listening.updateRating(rating),
-    serializeSelections: () => ({
-      artists: structuredClone(artistFeature.state.selectedArtists),
-      genres: structuredClone(genreFeature.state.selectedGenres),
-      instruments: structuredClone(instrumentFeature.state.selectedInstruments),
-      artistChoices: structuredClone(artistFeature.state.artistChoices),
-      genreChoices: structuredClone(genreFeature.state.genreChoices),
-      instrumentChoices: structuredClone(
-        instrumentFeature.state.instrumentChoices,
-      ),
-    }),
+    serializeSelections: () => {
+      const artists = artistFeature.snapshotPicker();
+      const instruments = instrumentFeature.snapshotPicker();
+      const genres = genreFeature.snapshotPicker();
+
+      return {
+        artists: artists.selectedArtists,
+        genres: genres.selectedGenres,
+        instruments: instruments.selectedInstruments,
+        artistChoices: artists.artistChoices,
+        genreChoices: genres.genreChoices,
+        instrumentChoices: instruments.instrumentChoices,
+      };
+    },
     resumeDraft,
     announce,
   });
@@ -233,15 +237,20 @@ export function initializeApp(
     finishSave,
   });
   const { openListen, updateRating, saveListenForm } = listening;
-  const artistFeature = createArtistFeature({
-    editor,
-    dialog,
-    showDialog,
-    beginDraft,
-    formError,
-    finishCatalogSave,
-    renderRoute,
-    updateCatalogFilters,
+  const artistFeature = new ArtistFeature({
+    dialog: { element: editor, show: showDialog, formError },
+    drafts: { begin: beginDraft },
+    persistence: { finishCatalogSave },
+    navigation: { renderRoute, updateCatalogFilters },
+    picker: {
+      deferRender: () => {
+        if (!dialog.pickerPress) return false;
+
+        dialog.pickerRenderPending = true;
+        return true;
+      },
+      closeSearch: () => dialog.updateSearchDropdowns(null),
+    },
     library: {
       get albums() {
         return library.data.albums;
@@ -254,18 +263,20 @@ export function initializeApp(
       },
     },
   });
-  const { openCatalogArtist, artistPicker, updateArtists } = artistFeature;
-  const genreFeature = createGenreFeature({
-    editor,
-    main,
-    dialog,
-    showDialog,
-    beginDraft,
-    formError,
-    finishCatalogSave,
-    announce,
-    renderRoute,
-    updateCatalogFilters,
+  const genreFeature = new GenreFeature({
+    dialog: { element: editor, show: showDialog, formError },
+    drafts: { begin: beginDraft },
+    persistence: { finishCatalogSave },
+    navigation: { main, announce, renderRoute, updateCatalogFilters },
+    picker: {
+      deferRender: () => {
+        if (!dialog.pickerPress) return false;
+
+        dialog.pickerRenderPending = true;
+        return true;
+      },
+      closeSearch: () => dialog.updateSearchDropdowns(null),
+    },
     library: {
       get albums() {
         return library.data.albums;
@@ -278,16 +289,11 @@ export function initializeApp(
       },
     },
   });
-  const { openCatalogGenre, genrePicker, updateGenres } = genreFeature;
-  const instrumentFeature = createInstrumentFeature({
-    editor,
-    showDialog,
-    beginDraft,
-    formError,
-    finishSave,
-    finishCatalogSave,
-    renderRoute,
-    updateCatalogFilters,
+  const instrumentFeature = new InstrumentFeature({
+    dialog: { element: editor, show: showDialog, formError },
+    drafts: { begin: beginDraft },
+    persistence: { finishSave, finishCatalogSave },
+    navigation: { renderRoute, updateCatalogFilters },
     library: {
       get albums() {
         return library.data.albums;
@@ -300,13 +306,6 @@ export function initializeApp(
       },
     },
   });
-  const {
-    openCatalogInstrument,
-    instrumentPicker,
-    updateInstruments,
-    openInstruments,
-    commitInstrumentChoices,
-  } = instrumentFeature;
   const albumEditor = new AlbumEditor({
     accountId,
     dialog: { element: editor, show: showDialog, formError },
@@ -348,28 +347,31 @@ export function initializeApp(
       },
       selections: {
         get instrumentChoices() {
-          return instrumentFeature.state.instrumentChoices;
+          return instrumentFeature.choices;
         },
         get selectedArtists() {
-          return artistFeature.state.selectedArtists;
+          return artistFeature.selections;
         },
         get selectedGenres() {
-          return genreFeature.state.selectedGenres;
+          return genreFeature.selections;
         },
         get selectedInstruments() {
-          return instrumentFeature.state.selectedInstruments;
+          return instrumentFeature.selections;
         },
         get genreChoices() {
-          return genreFeature.state.genreChoices;
+          return genreFeature.choices;
         },
       },
-      artistPicker,
-      genrePicker,
-      instrumentPicker,
-      updateArtists,
-      updateGenres,
-      updateInstruments,
-      commitInstrumentChoices,
+      artistPicker: (credits) => artistFeature.artistPicker(credits),
+      genrePicker: (items, renderSuggestions) =>
+        genreFeature.genrePicker(items, renderSuggestions),
+      instrumentPicker: (items, renderSuggestions) =>
+        instrumentFeature.instrumentPicker(items, renderSuggestions),
+      updateArtists: () => artistFeature.updateArtists(),
+      updateGenres: () => genreFeature.updateGenres(),
+      updateInstruments: () => instrumentFeature.updateInstruments(),
+      commitInstrumentChoices: () =>
+        instrumentFeature.commitInstrumentChoices(),
     },
   });
   const metadataSearch = createMetadataSearch({
@@ -448,30 +450,40 @@ export function initializeApp(
           );
           break;
         case "artist":
-          openCatalogArtist(target.item as Artist | undefined);
+          artistFeature.openCatalogArtist(target.item as Artist | undefined);
           break;
         case "genre":
-          openCatalogGenre(target.item as Genre | undefined);
+          genreFeature.openCatalogGenre(target.item as Genre | undefined);
           break;
         case "instrument":
-          openCatalogInstrument(target.item as Instrument | undefined);
+          instrumentFeature.openCatalogInstrument(
+            target.item as Instrument | undefined,
+          );
           break;
         case "instruments":
-          openInstruments(existing as Album);
+          instrumentFeature.openInstruments(existing as Album);
           break;
         case "listen":
           openListen(existing as Album, target.entry);
           break;
       }
-      artistFeature.state.selectedArtists = saved.artists;
-      genreFeature.state.selectedGenres = saved.genres;
-      instrumentFeature.state.selectedInstruments = saved.instruments;
-      artistFeature.state.artistChoices = saved.artistChoices;
-      genreFeature.state.genreChoices = saved.genreChoices;
-      instrumentFeature.state.instrumentChoices = saved.instrumentChoices;
-      if (editor.querySelector("#artist-selected")) updateArtists();
-      if (editor.querySelector("#genre-selected")) updateGenres();
-      if (editor.querySelector("#instrument-selected")) updateInstruments();
+      artistFeature.restorePicker({
+        selectedArtists: saved.artists,
+        artistChoices: saved.artistChoices,
+      });
+      genreFeature.restorePicker({
+        selectedGenres: saved.genres,
+        genreChoices: saved.genreChoices,
+      });
+      instrumentFeature.restorePicker({
+        selectedInstruments: saved.instruments,
+        instrumentChoices: saved.instrumentChoices,
+      });
+      if (editor.querySelector("#artist-selected"))
+        artistFeature.updateArtists();
+      if (editor.querySelector("#genre-selected")) genreFeature.updateGenres();
+      if (editor.querySelector("#instrument-selected"))
+        instrumentFeature.updateInstruments();
     });
   }
 
@@ -677,13 +689,13 @@ export function initializeApp(
     return JSON.stringify({
       fields: [...new FormData(form).entries()],
       artists: editor.querySelector("#artist-selected")
-        ? artistFeature.state.selectedArtists
+        ? artistFeature.selections
         : null,
       genres: editor.querySelector("#genre-selected")
-        ? genreFeature.state.selectedGenres
+        ? genreFeature.selections
         : null,
       instruments: editor.querySelector("#instrument-selected")
-        ? instrumentFeature.state.selectedInstruments
+        ? instrumentFeature.selections
         : null,
     });
   }

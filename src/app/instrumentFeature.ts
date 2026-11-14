@@ -1,7 +1,6 @@
 import { renderInstrumentsView } from "../views/instrumentsView";
 import { updateCatalogImage } from "../components/formFields";
-import { createDialog } from "./dialog";
-import { createEditorDrafts } from "./editorDrafts";
+import type { DraftTarget } from "./editorDrafts";
 
 import type { LibraryData } from "../types/library";
 import { field, catalogImageField } from "../components/formFields";
@@ -26,67 +25,173 @@ import {
 } from "../views/instrumentsView";
 import { focusForTyping } from "./device";
 
-export function createInstrumentFeature(ops: {
-  editor: HTMLDialogElement;
-  showDialog: ReturnType<typeof createDialog>["showDialog"];
-  beginDraft: ReturnType<typeof createEditorDrafts>["beginDraft"];
+interface InstrumentDialog {
+  element: HTMLDialogElement;
+  show: (
+    title: string,
+    content: string,
+    focusSelector: string,
+    backToSearch?: boolean,
+  ) => void;
+  formError: (message: string, input: HTMLInputElement) => void;
+}
 
+export interface InstrumentPickerSnapshot {
+  selectedInstruments: AlbumInstrument[];
+  instrumentChoices: AlbumInstrument[];
+}
+
+export interface InstrumentFeatureDependencies {
+  dialog: InstrumentDialog;
+  drafts: { begin: (target: DraftTarget) => boolean };
+  persistence: {
+    finishSave: (id: string, message: string) => Promise<void>;
+    finishCatalogSave: (message: string, destination: string) => Promise<void>;
+  };
   library: {
     readonly albums: LibraryData["albums"];
     instruments: LibraryData["instruments"];
   };
-  formError: (message: string, input: HTMLInputElement) => void;
-  finishSave: (id: string, message: string) => Promise<void>;
-  finishCatalogSave: (message: string, destination: string) => Promise<void>;
-  renderRoute: (focus?: boolean) => void;
-  updateCatalogFilters: (id: string) => void;
-}) {
-  let selectedInstruments: AlbumInstrument[] = [];
-  let instrumentChoices: AlbumInstrument[] = [];
-  let instrumentFilters = {
+  navigation: {
+    renderRoute: (focus?: boolean) => void;
+    updateCatalogFilters: (id: string) => void;
+  };
+}
+
+type InstrumentSort = "albums" | "rating" | "recent" | "updated" | "name";
+
+interface InstrumentListFilters {
+  query: string;
+  category: InstrumentCategory | "";
+  unused: boolean;
+  sort: InstrumentSort;
+}
+
+function isInstrumentSort(value: string): value is InstrumentSort {
+  return ["albums", "rating", "recent", "updated", "name"].includes(value);
+}
+
+function isInstrumentCategory(value: unknown): value is InstrumentCategory {
+  return instrumentCategories.some((category) => category === value);
+}
+
+function renderInstrumentForm(item?: Instrument): string {
+  return /* HTML */ `<form
+    id="catalog-instrument-form"
+    data-id="${escapeHtml(item?.id ?? "")}"
+  >
+    <div class="dialog-body">
+      ${field("Instrument name", "instrumentName", item?.name ?? "", { attributes: 'required maxlength="80"', placeholder: "e.g. Vibraphone" })}
+      ${catalogImageField("Image URL", item?.name ?? "Instrument", item?.imageUrl, false, item?.categories)}
+      ${categoryFields(item?.categories)}
+      <p class="form-hint">
+        Name and category changes apply everywhere this instrument is used.
+      </p>
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="button secondary" data-action="close">
+        Cancel</button
+      ><button type="submit" class="button primary">
+        ${item ? "Save changes" : "Add instrument"}
+      </button>
+    </div>
+  </form>`;
+}
+
+function readInstrumentForm(
+  form: HTMLFormElement,
+  instruments: Instrument[],
+  formError: InstrumentDialog["formError"],
+): Instrument | void {
+  const input = form.querySelector<HTMLInputElement>(
+    '[name="instrumentName"]',
+  )!;
+  const name = input.value.trim();
+
+  if (!name) return formError("Enter an instrument name.", input);
+  if (
+    instruments.some(
+      (item) =>
+        item.id !== form.dataset.id &&
+        item.name.toLowerCase() === name.toLowerCase(),
+    )
+  )
+    return formError("An instrument with this name already exists.", input);
+
+  const data = new FormData(form);
+  const imageUrl = String(data.get("catalogImage") ?? "").trim();
+  if (imageUrl && !webUrl(imageUrl))
+    return formError(
+      "Enter an HTTP or HTTPS image URL.",
+      form.querySelector('[name="catalogImage"]')!,
+    );
+
+  return {
+    imageUrl: imageUrl || null,
+    id: form.dataset.id || makeId(),
+    name,
+    categories: data.getAll("category").filter(isInstrumentCategory),
+  };
+}
+
+export class InstrumentFeature {
+  private readonly dependencies: InstrumentFeatureDependencies;
+  private selectedInstruments: AlbumInstrument[] = [];
+  private instrumentChoices: AlbumInstrument[] = [];
+  private readonly instrumentFilters: InstrumentListFilters = {
     query: "",
     category: "",
     unused: false,
     sort: "updated",
   };
-  function openCatalogInstrument(item?: Instrument) {
-    if (!ops.beginDraft({ kind: "instrument", item })) return;
-    ops.showDialog(
+
+  constructor(dependencies: InstrumentFeatureDependencies) {
+    this.dependencies = dependencies;
+  }
+
+  public get selections(): AlbumInstrument[] {
+    return this.selectedInstruments;
+  }
+
+  public get choices(): AlbumInstrument[] {
+    return this.instrumentChoices;
+  }
+
+  public snapshotPicker(): InstrumentPickerSnapshot {
+    return structuredClone({
+      selectedInstruments: this.selectedInstruments,
+      instrumentChoices: this.instrumentChoices,
+    });
+  }
+
+  public restorePicker(snapshot: InstrumentPickerSnapshot): void {
+    this.selectedInstruments = structuredClone(snapshot.selectedInstruments);
+    this.instrumentChoices = structuredClone(snapshot.instrumentChoices);
+  }
+
+  public openCatalogInstrument(item?: Instrument): void {
+    if (!this.dependencies.drafts.begin({ kind: "instrument", item })) return;
+
+    this.dependencies.dialog.show(
       item ? "Edit instrument" : "Add instrument",
-      /* HTML */ `<form
-        id="catalog-instrument-form"
-        data-id="${escapeHtml(item?.id ?? "")}"
-      >
-        <div class="dialog-body">
-          ${field("Instrument name", "instrumentName", item?.name ?? "", { attributes: 'required maxlength="80"', placeholder: "e.g. Vibraphone" })}
-          ${catalogImageField("Image URL", item?.name ?? "Instrument", item?.imageUrl, false, item?.categories)}
-          ${categoryFields(item?.categories)}
-          <p class="form-hint">
-            Name and category changes apply everywhere this instrument is used.
-          </p>
-          <p id="form-error" class="form-error" role="alert" hidden></p>
-        </div>
-        <div class="dialog-footer">
-          <button type="button" class="button secondary" data-action="close">
-            Cancel</button
-          ><button type="submit" class="button primary">
-            ${item ? "Save changes" : "Add instrument"}
-          </button>
-        </div>
-      </form>`,
+      renderInstrumentForm(item),
       '[name="instrumentName"]',
     );
   }
 
-  function instrumentPicker(
+  public instrumentPicker(
     items: AlbumInstrument[],
     renderSuggestions: () => string = () => "",
-  ) {
-    selectedInstruments = structuredClone(items);
-    instrumentChoices = ops.library.instruments.map((item) => ({
-      ...structuredClone(item),
-      notes: null,
-    }));
+  ): string {
+    this.selectedInstruments = structuredClone(items);
+    this.instrumentChoices = this.dependencies.library.instruments.map(
+      (item) => ({
+        ...structuredClone(item),
+        notes: null,
+      }),
+    );
+
     return /* HTML */ `<div class="instrument-picker">
       <label class="field" for="instrument-query"
         ><span>Instruments <span class="muted">(optional)</span></span></label
@@ -116,49 +221,60 @@ export function createInstrumentFeature(ops: {
     </div>`;
   }
 
-  function updateInstruments() {
+  public updateInstruments(): void {
     const input =
-      ops.editor.querySelector<HTMLInputElement>("#instrument-query");
+      this.dependencies.dialog.element.querySelector<HTMLInputElement>(
+        "#instrument-query",
+      );
     if (!input) return;
+
     const query = input.value.trim();
-    ops.editor.querySelector("#instrument-selected")!.innerHTML =
-      selectedInstruments
-        .map(
-          (item) =>
-            /* HTML */ `<button
-              type="button"
-              class="instrument-chip"
-              data-action="remove-instrument"
-              data-id="${escapeHtml(item.id)}"
-              aria-label="Remove ${escapeHtml(item.name)}"
-            >
-              ${escapeHtml(item.name)} ${icon("close", 14)}
-            </button>`,
-        )
-        .join("");
-    const create = ops.editor.querySelector<HTMLElement>("#instrument-create")!;
+    this.dependencies.dialog.element.querySelector(
+      "#instrument-selected",
+    )!.innerHTML = this.selectedInstruments
+      .map(
+        (item) =>
+          /* HTML */ `<button
+            type="button"
+            class="instrument-chip"
+            data-action="remove-instrument"
+            data-id="${escapeHtml(item.id)}"
+            aria-label="Remove ${escapeHtml(item.name)}"
+          >
+            ${escapeHtml(item.name)} ${icon("close", 14)}
+          </button>`,
+      )
+      .join("");
+    const create =
+      this.dependencies.dialog.element.querySelector<HTMLElement>(
+        "#instrument-create",
+      )!;
     create.hidden =
       !query ||
-      instrumentChoices.some(
+      this.instrumentChoices.some(
         (item) => item.name.toLowerCase() === query.toLowerCase(),
       );
     create.querySelector("button")!.textContent = `Create “${query}”`;
     const usage = new Map<string, number>();
-    for (const album of ops.library.albums)
+    for (const album of this.dependencies.library.albums)
       for (const id of new Set(album.instruments.map((item) => item.id)))
         usage.set(id, (usage.get(id) ?? 0) + 1);
-    const choices = instrumentChoices
+
+    const choices = this.instrumentChoices
       .filter(
         (item) =>
-          !selectedInstruments.some((selected) => selected.id === item.id) &&
-          item.name.toLowerCase().includes(query.toLowerCase()),
+          !this.selectedInstruments.some(
+            (selected) => selected.id === item.id,
+          ) && item.name.toLowerCase().includes(query.toLowerCase()),
       )
       .sort(
         (a, b) =>
           (usage.get(b.id) ?? 0) - (usage.get(a.id) ?? 0) ||
           a.name.localeCompare(b.name),
       );
-    ops.editor.querySelector("#instrument-results")!.innerHTML =
+    this.dependencies.dialog.element.querySelector(
+      "#instrument-results",
+    )!.innerHTML =
       choices
         .map(
           (item) =>
@@ -177,14 +293,16 @@ export function createInstrumentFeature(ops: {
         : "");
   }
 
-  function openInstruments(album: Album) {
-    if (!ops.beginDraft({ kind: "instruments", item: album })) return;
-    ops.showDialog(
+  public openInstruments(album: Album): void {
+    if (!this.dependencies.drafts.begin({ kind: "instruments", item: album }))
+      return;
+
+    this.dependencies.dialog.show(
       "Edit instruments",
       /* HTML */ `<form id="instruments-form" data-id="${escapeHtml(album.id)}">
         <div class="dialog-body">
           <p class="dialog-intro">${escapeHtml(album.title)}</p>
-          ${instrumentPicker(album.instruments)}
+          ${this.instrumentPicker(album.instruments)}
         </div>
         <div class="dialog-footer">
           <button type="button" class="button secondary" data-action="close">
@@ -196,19 +314,20 @@ export function createInstrumentFeature(ops: {
       </form>`,
       "#instrument-query",
     );
-    updateInstruments();
+
+    this.updateInstruments();
   }
 
-  function updateInstrumentList() {
+  private updateInstrumentList(): void {
     updateInstrumentsView(
-      ops.library.instruments,
-      ops.library.albums,
-      instrumentFilters,
+      this.dependencies.library.instruments,
+      this.dependencies.library.albums,
+      this.instrumentFilters,
     );
   }
 
-  function commitInstrumentChoices() {
-    ops.library.instruments = instrumentChoices.map(
+  public commitInstrumentChoices(): void {
+    this.dependencies.library.instruments = this.instrumentChoices.map(
       ({ id, name, categories, imageUrl }) => ({
         imageUrl,
         id,
@@ -218,64 +337,47 @@ export function createInstrumentFeature(ops: {
     );
   }
 
-  function saveCatalogInstrument(form: HTMLFormElement) {
-    const input = form.querySelector<HTMLInputElement>(
-      '[name="instrumentName"]',
-    )!;
-    const name = input.value.trim();
-    if (!name) return ops.formError("Enter an instrument name.", input);
-    if (
-      ops.library.instruments.some(
-        (item) =>
-          item.id !== form.dataset.id &&
-          item.name.toLowerCase() === name.toLowerCase(),
-      )
-    )
-      return ops.formError(
-        "An instrument with this name already exists.",
-        input,
-      );
-    const data = new FormData(form);
-    const imageUrl = String(data.get("catalogImage") ?? "").trim();
-    if (imageUrl && !webUrl(imageUrl))
-      return ops.formError(
-        "Enter an HTTP or HTTPS image URL.",
-        form.querySelector('[name="catalogImage"]')!,
-      );
-    const item: Instrument = {
-      imageUrl: imageUrl || null,
-      id: form.dataset.id || makeId(),
-      name,
-      categories: data
-        .getAll("category")
-        .filter((category): category is InstrumentCategory =>
-          instrumentCategories.some((value) => value === category),
-        ),
-    };
-    ops.library.instruments = ops.library.instruments
-      .filter((existing) => existing.id !== item.id)
-      .concat(item);
-    ops.finishCatalogSave("Instrument saved.", instrumentUrl(item.id));
+  private saveCatalogInstrument(form: HTMLFormElement): void {
+    const item = readInstrumentForm(
+      form,
+      this.dependencies.library.instruments,
+      this.dependencies.dialog.formError,
+    );
+    if (!item) return;
+
+    this.dependencies.library.instruments =
+      this.dependencies.library.instruments
+        .filter((existing) => existing.id !== item.id)
+        .concat(item);
+    this.dependencies.persistence.finishCatalogSave(
+      "Instrument saved.",
+      instrumentUrl(item.id),
+    );
   }
 
-  function click(button: HTMLButtonElement, album?: Album) {
+  public click(button: HTMLButtonElement, album?: Album): boolean {
     switch (button.dataset.action) {
       case "new-catalog-instrument":
-        openCatalogInstrument();
+        this.openCatalogInstrument();
         break;
       case "edit-catalog-instrument": {
-        const item = ops.library.instruments.find(
+        const item = this.dependencies.library.instruments.find(
           (item) => instrumentUrl(item.id) === location.hash,
         );
-        if (item) openCatalogInstrument(item);
+        if (item) this.openCatalogInstrument(item);
         break;
       }
       case "delete-catalog-instrument": {
-        const item = ops.library.instruments.find(
+        const item = this.dependencies.library.instruments.find(
           (item) => instrumentUrl(item.id) === location.hash,
         );
-        if (!item || albumsUsing(ops.library.albums, item.id).length) break;
-        ops.showDialog(
+        if (
+          !item ||
+          albumsUsing(this.dependencies.library.albums, item.id).length
+        )
+          break;
+
+        this.dependencies.dialog.show(
           "Delete instrument?",
           /* HTML */ `<div class="dialog-body">
               <p>
@@ -304,158 +406,161 @@ export function createInstrumentFeature(ops: {
         break;
       }
       case "confirm-delete-instrument": {
-        const item = ops.library.instruments.find(
+        const item = this.dependencies.library.instruments.find(
           (item) => item.id === button.dataset.id,
         );
-        if (!item || albumsUsing(ops.library.albums, item.id).length) break;
-        ops.library.instruments = ops.library.instruments.filter(
-          (existing) => existing.id !== item.id,
+        if (
+          !item ||
+          albumsUsing(this.dependencies.library.albums, item.id).length
+        )
+          break;
+        this.dependencies.library.instruments =
+          this.dependencies.library.instruments.filter(
+            (existing) => existing.id !== item.id,
+          );
+        this.dependencies.persistence.finishCatalogSave(
+          "Instrument deleted.",
+          "#instruments",
         );
-        ops.finishCatalogSave("Instrument deleted.", "#instruments");
         break;
       }
       case "clear-instrument-filters":
-        instrumentFilters.query = "";
-        instrumentFilters.category = "";
-        instrumentFilters.unused = false;
-        ops.renderRoute();
+        this.instrumentFilters.query = "";
+        this.instrumentFilters.category = "";
+        this.instrumentFilters.unused = false;
+        this.dependencies.navigation.renderRoute();
         break;
       case "edit-instruments":
-        if (album) openInstruments(album);
+        if (album) this.openInstruments(album);
         break;
       case "select-instrument": {
-        const item = instrumentChoices.find(
+        const item = this.instrumentChoices.find(
           (item) => item.id === button.dataset.id,
         );
         if (
           item &&
-          !selectedInstruments.some((selected) => selected.id === item.id)
+          !this.selectedInstruments.some((selected) => selected.id === item.id)
         )
-          selectedInstruments.push({ ...item, notes: null });
-        ops.editor.querySelector<HTMLInputElement>("#instrument-query")!.value =
-          "";
-        updateInstruments();
+          this.selectedInstruments.push({ ...item, notes: null });
+        this.dependencies.dialog.element.querySelector<HTMLInputElement>(
+          "#instrument-query",
+        )!.value = "";
+        this.updateInstruments();
         focusForTyping(
-          ops.editor.querySelector<HTMLElement>("#instrument-query"),
+          this.dependencies.dialog.element.querySelector<HTMLElement>(
+            "#instrument-query",
+          ),
         );
         break;
       }
       case "create-instrument": {
         const input =
-          ops.editor.querySelector<HTMLInputElement>("#instrument-query")!;
+          this.dependencies.dialog.element.querySelector<HTMLInputElement>(
+            "#instrument-query",
+          )!;
         const name = input.value.trim();
         if (!name) break;
+
         const categories = [
-          ...ops.editor.querySelectorAll<HTMLInputElement>(
+          ...this.dependencies.dialog.element.querySelectorAll<HTMLInputElement>(
             '[name="inline-category"]:checked',
           ),
-        ].map((input) => input.value as InstrumentCategory);
+        ]
+          .map((input) => input.value)
+          .filter(isInstrumentCategory);
         const item = { id: makeId(), name, notes: null, categories };
-        for (const input of ops.editor.querySelectorAll<HTMLInputElement>(
+        for (const input of this.dependencies.dialog.element.querySelectorAll<HTMLInputElement>(
           '[name="inline-category"]',
         ))
           input.checked = false;
-        instrumentChoices.push(item);
-        selectedInstruments.push(item);
+        this.instrumentChoices.push(item);
+        this.selectedInstruments.push(item);
         input.value = "";
-        updateInstruments();
+        this.updateInstruments();
         focusForTyping(input);
         break;
       }
       case "remove-instrument":
-        selectedInstruments = selectedInstruments.filter(
+        this.selectedInstruments = this.selectedInstruments.filter(
           (item) => item.id !== button.dataset.id,
         );
-        updateInstruments();
+        this.updateInstruments();
         focusForTyping(
-          ops.editor.querySelector<HTMLElement>("#instrument-query"),
+          this.dependencies.dialog.element.querySelector<HTMLElement>(
+            "#instrument-query",
+          ),
         );
         break;
       default:
         return false;
     }
+
     return true;
   }
 
-  function saveInstruments(form: HTMLFormElement) {
-    const album = ops.library.albums.find(
+  private saveInstruments(form: HTMLFormElement): void {
+    const album = this.dependencies.library.albums.find(
       (item) => item.id === form.dataset.id,
     );
+
     if (album) {
-      commitInstrumentChoices();
-      album.instruments = structuredClone(selectedInstruments);
+      this.commitInstrumentChoices();
+      album.instruments = structuredClone(this.selectedInstruments);
       album.updatedAt = new Date().toISOString();
-      ops.finishSave(album.id, "Album instruments updated.");
+      this.dependencies.persistence.finishSave(
+        album.id,
+        "Album instruments updated.",
+      );
     }
   }
 
-  function submit(form: HTMLFormElement) {
-    if (form.id === "instruments-form") saveInstruments(form);
-    else saveCatalogInstrument(form);
+  public submit(form: HTMLFormElement): void {
+    if (form.id === "instruments-form") this.saveInstruments(form);
+    else this.saveCatalogInstrument(form);
   }
 
-  function input(input: HTMLInputElement) {
+  public input(input: HTMLInputElement): void {
     if (
       input.closest("#catalog-instrument-form") &&
       (input.name === "catalogImage" || input.name === "category")
     )
       updateCatalogImage(input);
+
     if (input.id === "instruments-search") {
-      instrumentFilters.query = input.value;
-      updateInstrumentList();
+      this.instrumentFilters.query = input.value;
+      this.updateInstrumentList();
     }
 
-    if (input.id === "instrument-query") updateInstruments();
+    if (input.id === "instrument-query") this.updateInstruments();
   }
-  function change(input: HTMLInputElement) {
-    if (input.id === "instruments-sort") {
-      instrumentFilters.sort = input.value;
-      updateInstrumentList();
+
+  public change(input: HTMLInputElement): void {
+    if (input.id === "instruments-sort" && isInstrumentSort(input.value)) {
+      this.instrumentFilters.sort = input.value;
+      this.updateInstrumentList();
     }
 
-    if (input.id === "instrument-category-filter") {
-      instrumentFilters.category = input.value;
-      ops.updateCatalogFilters(input.id);
+    if (
+      input.id === "instrument-category-filter" &&
+      (input.value === "" || isInstrumentCategory(input.value))
+    ) {
+      this.instrumentFilters.category = input.value;
+      this.dependencies.navigation.updateCatalogFilters(input.id);
     }
+
     if (input.id === "instruments-unused") {
-      instrumentFilters.unused = input.checked;
-      ops.updateCatalogFilters(input.id);
+      this.instrumentFilters.unused = input.checked;
+      this.dependencies.navigation.updateCatalogFilters(input.id);
     }
   }
 
-  function renderList(root: HTMLElement) {
-    root.innerHTML = renderInstrumentsView(instrumentFilters);
+  public renderList(root: HTMLElement): void {
+    root.innerHTML = renderInstrumentsView(this.instrumentFilters);
     updateInstrumentsView(
-      ops.library.instruments,
-      ops.library.albums,
-      instrumentFilters,
+      this.dependencies.library.instruments,
+      this.dependencies.library.albums,
+      this.instrumentFilters,
       root,
     );
   }
-  return {
-    renderList,
-    input,
-    change,
-    openCatalogInstrument,
-    instrumentPicker,
-    updateInstruments,
-    openInstruments,
-    commitInstrumentChoices,
-    submit,
-    click,
-    state: {
-      get selectedInstruments() {
-        return selectedInstruments;
-      },
-      set selectedInstruments(value: typeof selectedInstruments) {
-        selectedInstruments = value;
-      },
-      get instrumentChoices() {
-        return instrumentChoices;
-      },
-      set instrumentChoices(value: typeof instrumentChoices) {
-        instrumentChoices = value;
-      },
-    },
-  };
 }
