@@ -23,7 +23,11 @@ import {
 import type { Artist, AlbumArtist, ArtistRole } from "../types/albums";
 import { icon } from "../components/icons";
 import { escapeHtml } from "../components/html";
-import { webUrl } from "../components/presentation";
+import {
+  requiredNameSchema,
+  musicbrainzArtistIdSchema,
+  optionalHttpUrlSchema,
+} from "./formValidation";
 import { matches } from "./search";
 import { focusForTyping } from "./device";
 
@@ -84,7 +88,8 @@ function readArtistForm(
   const input = form.querySelector<HTMLInputElement>('[name="artistName"]')!;
   const name = value("artistName");
 
-  if (!name) return formError("Enter an artist name.", input);
+  if (!requiredNameSchema.safeParse(name).success)
+    return formError("Enter an artist name.", input);
   if (
     artists.some(
       (item) =>
@@ -97,7 +102,7 @@ function readArtistForm(
   const musicbrainzId = value("artistMbid") || null;
   if (
     musicbrainzId &&
-    !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(musicbrainzId)
+    !musicbrainzArtistIdSchema.safeParse(musicbrainzId).success
   )
     return formError(
       "Enter a valid MusicBrainz artist ID.",
@@ -116,7 +121,7 @@ function readArtistForm(
       input,
     );
 
-  if (value("catalogImage") && !webUrl(value("catalogImage")))
+  if (!optionalHttpUrlSchema.safeParse(value("catalogImage")).success)
     return formError(
       "Enter an HTTP or HTTPS photo URL.",
       form.querySelector('[name="catalogImage"]')!,

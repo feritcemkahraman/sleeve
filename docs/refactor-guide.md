@@ -64,30 +64,11 @@ coerce persisted JSON or strip unknown stored fields unintentionally. Draft
 loading now uses Zod with explicit unknown-field preservation and no coercion;
 regression coverage checks malformed snapshots and parsed-data isolation.
 
-### Follow-up inventory
+### Submission and storage migration
 
-Earlier refactors improved ownership and contracts but left these handwritten
-validators in place. Migrate them incrementally with their relevant browser
-coverage; they are follow-up work, not completed by the draft migration:
-
-- `albumEditor.ts`: `saveAlbumForm` and `readMusicLinks` repeat title, year,
-  artwork, and music-link validation. Introduce submission schemas while
-  preserving HTTP/HTTPS URL rules and the editor's first-error focus behavior.
-- `artistFeature.ts`, `genreFeature.ts`, and `instrumentFeature.ts`:
-  `readArtistForm`, `readGenreForm`, and `readInstrumentForm` already separate
-  extraction/validation from orchestration. Replace their scalar checks with
-  schemas; retain catalog uniqueness, MusicBrainz identity conflicts, and genre
-  hierarchy checks against live library state.
-- `listening.ts`: `saveListenForm` can share explicit rating/date/note submission
-  rules while keeping album/entry existence checks and persistence separate.
-- `storage.ts`, `libraryCache.ts`, and `routeHistory.ts`: replace handwritten
-  persisted-snapshot checks with schemas appropriate to each version. Preserve
-  legacy demo upgrades, account isolation, storage-failure fallback behavior,
-  and route-marker checks. Do not assume the draft album schema accepts every
-  older demo/cache format.
-- `albumEditor.ts`: `readMappings` can use a record schema while retaining its
-  current behavior of filtering invalid entries rather than rejecting the whole
-  mapping. Simple DOM enum guards and action switches need no blanket rewrite.
+The handwritten validators previously inventoried here now use focused Zod
+schemas. See the [migration handoff](implementation/validation-migrations.md) for
+completed coverage, storage compatibility limits, and current bundle measurements.
 
 The initial regular-Zod migration increases the main JavaScript bundle from
 47.42 KB to 72.37 KB gzipped (production Vite build). Measure again as schemas

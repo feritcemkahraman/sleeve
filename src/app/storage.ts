@@ -1,3 +1,9 @@
+import {
+  isDemoAlbums,
+  isDemoInstrumentCatalog,
+  isDemoArtistCatalog,
+  isDemoGenreCatalog,
+} from "./storageValidation.ts";
 import type {
   Album,
   AlbumInstrument,
@@ -5,9 +11,8 @@ import type {
   Artist,
   Genre,
 } from "../types/albums";
-import { mockAlbums } from "../data/mockData";
-import { instrumentCategories } from "./instruments";
-import { makeId } from "./id";
+import { mockAlbums } from "../data/mockData.ts";
+import { makeId } from "./id.ts";
 
 // Version the demo separately from both the standalone prototype and future account data.
 const storageKey = "jazzlog-demo-v1";
@@ -15,64 +20,6 @@ const object = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 const strings = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === "string");
-const optionalString = (value: unknown) =>
-  value == null || typeof value === "string";
-
-// Browser storage may be stale or manually changed. Reject unusable snapshots.
-function isAlbum(value: unknown): value is Album {
-  if (!object(value)) return false;
-  return (
-    typeof value.id === "string" &&
-    typeof value.title === "string" &&
-    typeof value.createdAt === "string" &&
-    typeof value.updatedAt === "string" &&
-    optionalString(value.sortTitle) &&
-    optionalString(value.artworkUrl) &&
-    optionalString(value.sourceId) &&
-    optionalString(value.recordLabel) &&
-    optionalString(value.musicbrainzReleaseGroupId) &&
-    (value.releaseYear === null ||
-      (typeof value.releaseYear === "number" &&
-        Number.isInteger(value.releaseYear))) &&
-    Array.isArray(value.artists) &&
-    value.artists.every(
-      (artist) => object(artist) && typeof artist.name === "string",
-    ) &&
-    Array.isArray(value.genres) &&
-    value.genres.every(
-      (genre) => object(genre) && typeof genre.name === "string",
-    ) &&
-    Array.isArray(value.instruments) &&
-    value.instruments.every(
-      (item) =>
-        object(item) &&
-        typeof item.id === "string" &&
-        typeof item.name === "string" &&
-        optionalString(item.notes) &&
-        strings(item.categories),
-    ) &&
-    Array.isArray(value.links) &&
-    value.links.every(
-      (link) =>
-        object(link) &&
-        typeof link.url === "string" &&
-        optionalString(link.label),
-    ) &&
-    Array.isArray(value.listeningEntries) &&
-    value.listeningEntries.every(
-      (entry) =>
-        object(entry) &&
-        typeof entry.listenedAt === "string" &&
-        /^\d{4}-\d{2}-\d{2}/.test(entry.listenedAt) &&
-        Number.isFinite(Date.parse(entry.listenedAt)) &&
-        typeof entry.rating === "number" &&
-        Number.isInteger(entry.rating) &&
-        entry.rating >= 1 &&
-        entry.rating <= 10 &&
-        optionalString(entry.notes),
-    )
-  );
-}
 
 export function readAlbums(): Album[] {
   try {
@@ -81,7 +28,7 @@ export function readAlbums(): Album[] {
     );
     const saved =
       object(snapshot) && !Array.isArray(snapshot) ? snapshot.albums : snapshot;
-    if (Array.isArray(saved) && saved.every(isAlbum)) {
+    if (isDemoAlbums(saved)) {
       // Preserve instrumentation entered in older demo versions, at album scope.
       const known = new Map(
         saved
@@ -138,25 +85,10 @@ export function readInstrumentCatalog(albums: Album[]): Instrument[] {
     const saved: unknown = JSON.parse(
       localStorage.getItem(storageKey) ?? "null",
     );
-    if (
-      object(saved) &&
-      Array.isArray(saved.instruments) &&
-      saved.instruments.every(
-        (item) =>
-          object(item) &&
-          typeof item.id === "string" &&
-          typeof item.name === "string" &&
-          strings(item.categories) &&
-          item.categories.every((category) =>
-            instrumentCategories.some((valid) => valid === category),
-          ),
-      )
-    ) {
+    if (isDemoInstrumentCatalog(saved)) {
       return [
         ...new Map(
-          linked
-            .concat(saved.instruments as Instrument[])
-            .map((item) => [item.id, item]),
+          linked.concat(saved.instruments).map((item) => [item.id, item]),
         ).values(),
       ];
     }
@@ -187,20 +119,10 @@ export function saveAlbums(
 export function readArtistCatalog(albums: Album[]): Artist[] {
   let saved: Artist[] = [];
   try {
-    const snapshot = JSON.parse(localStorage.getItem(storageKey) ?? "null");
-    if (
-      Array.isArray(snapshot?.artists) &&
-      snapshot.artists.every(
-        (item: unknown) =>
-          object(item) &&
-          typeof item.id === "string" &&
-          typeof item.name === "string" &&
-          optionalString(item.sortName) &&
-          optionalString(item.country) &&
-          optionalString(item.musicbrainzId),
-      )
-    )
-      saved = snapshot.artists;
+    const snapshot: unknown = JSON.parse(
+      localStorage.getItem(storageKey) ?? "null",
+    );
+    if (isDemoArtistCatalog(snapshot)) saved = snapshot.artists;
   } catch {
     /* Albums still supply the catalog. */
   }
@@ -231,18 +153,10 @@ export function readArtistCatalog(albums: Album[]): Artist[] {
 export function readGenreCatalog(albums: Album[]): Genre[] {
   let saved: Genre[] = [];
   try {
-    const snapshot = JSON.parse(localStorage.getItem(storageKey) ?? "null");
-    if (
-      Array.isArray(snapshot?.genres) &&
-      snapshot.genres.every(
-        (g: unknown) =>
-          object(g) &&
-          typeof g.id === "string" &&
-          typeof g.name === "string" &&
-          optionalString(g.parentGenreId),
-      )
-    )
-      saved = snapshot.genres;
+    const snapshot: unknown = JSON.parse(
+      localStorage.getItem(storageKey) ?? "null",
+    );
+    if (isDemoGenreCatalog(snapshot)) saved = snapshot.genres;
   } catch {
     /* Albums supply the catalog. */
   }

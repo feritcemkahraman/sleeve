@@ -1,3 +1,4 @@
+import { requiredNameSchema } from "./formValidation";
 import type { EditorDialog, PickerInteraction } from "./editorContracts";
 import { renderGenresView } from "../views/genresView";
 import type { DraftTarget } from "./editorDrafts";
@@ -99,7 +100,7 @@ function readGenreForm(
   const parentGenreId = String(data.get("parentGenreId") || "") || null;
 
   if (
-    !name ||
+    !requiredNameSchema.safeParse(name).success ||
     genres.some(
       (g) => g.id !== id && g.name.toLowerCase() === name.toLowerCase(),
     )
