@@ -4,6 +4,8 @@ import {
   catalogSummary,
   catalogSort,
   catalogStats,
+  renderCatalogSummary,
+  type CatalogStats,
   compareCatalog,
 } from "../components/catalogSummary";
 import { renderCatalogHeading } from "../components/catalogHeading";
@@ -94,8 +96,12 @@ export function updateInstrumentsView(
   root: ParentNode = document,
 ): void {
   const results = instruments
+    .map((item) => ({
+      item,
+      stats: catalogStats(albumsUsing(albums, item.id)),
+    }))
     .filter(
-      (item) =>
+      ({ item, stats }) =>
         matches(filters.query, item.name) &&
         (!filters.category ||
           (filters.category === "uncategorized"
@@ -103,50 +109,51 @@ export function updateInstrumentsView(
             : item.categories.some(
                 (category) => category === filters.category,
               ))) &&
-        (!filters.unused || !albumsUsing(albums, item.id).length),
+        (!filters.unused || !stats.count),
     )
     .sort(
       (a, b) =>
-        compareCatalog(
-          catalogStats(albumsUsing(albums, a.id)),
-          catalogStats(albumsUsing(albums, b.id)),
-          filters.sort ?? "updated",
-        ) || a.name.localeCompare(b.name),
+        compareCatalog(a.stats, b.stats, filters.sort ?? "updated") ||
+        a.item.name.localeCompare(b.item.name),
     );
   root.querySelector("#instruments-count")!.textContent =
     `${results.length} ${results.length === 1 ? "instrument" : "instruments"}`;
   root.querySelector("#instruments-list")!.innerHTML = results.length
     ? /* HTML */ `<ul class="instrument-catalog-list">
-        ${results
-          .map((item) => {
-            return /* HTML */ `<li>
-              <a class="instrument-catalog-row" href="${instrumentUrl(item.id)}"
-                >${catalogImage(item.name, item.imageUrl, false, item.categories)}<span
-                  class="catalog-card-content"
-                  ><span class="instrument-row-info"
-                    ><span
-                      ><strong>${escapeHtml(item.name)}</strong
-                      ><span class="muted instrument-inline-category">
-                        <span class="instrument-category-dot">· </span>
-                        ${item.categories.length ? item.categories.map(categoryLabel).join(", ") : "Uncategorized"}</span
-                      ></span
-                    ></span
-                  >${catalogSummary(albumsUsing(albums, item.id), false)}</span
-                >${icon("chevron", 18)}</a
-              >
-            </li>`;
-          })
-          .join("")}
+        ${results.map(({ item, stats }) => renderInstrumentRow(item, stats)).join("")}
       </ul>`
-    : /* HTML */ `<div class="empty">
-        <h2>
-          ${instruments.length ? "No matching instruments" : "Start your instrument catalog"}
-        </h2>
-        <p>
-          ${instruments.length ? "Try another search or adjust your filters." : "Add an instrument here or while editing an album."}
-        </p>
-        ${instruments.length ? /* HTML */ `<button type="button" class="button secondary" data-action="clear-instrument-filters">Clear filters</button>` : ""}
-      </div>`;
+    : renderInstrumentEmpty(Boolean(instruments.length));
+}
+
+function renderInstrumentRow(item: Instrument, stats: CatalogStats): string {
+  return /* HTML */ `<li>
+    <a class="instrument-catalog-row" href="${instrumentUrl(item.id)}"
+      >${catalogImage(item.name, item.imageUrl, false, item.categories)}<span
+        class="catalog-card-content"
+        ><span class="instrument-row-info"
+          ><span
+            ><strong>${escapeHtml(item.name)}</strong
+            ><span class="muted instrument-inline-category">
+              <span class="instrument-category-dot">· </span>
+              ${item.categories.length ? item.categories.map(categoryLabel).join(", ") : "Uncategorized"}</span
+            ></span
+          ></span
+        >${renderCatalogSummary(stats, false)}</span
+      >${icon("chevron", 18)}</a
+    >
+  </li>`;
+}
+
+function renderInstrumentEmpty(hasItems: boolean): string {
+  return /* HTML */ `<div class="empty">
+    <h2>
+      ${hasItems ? "No matching instruments" : "Start your instrument catalog"}
+    </h2>
+    <p>
+      ${hasItems ? "Try another search or adjust your filters." : "Add an instrument here or while editing an album."}
+    </p>
+    ${hasItems ? /* HTML */ `<button type="button" class="button secondary" data-action="clear-instrument-filters">Clear filters</button>` : ""}
+  </div>`;
 }
 
 export function renderInstrumentDetail(

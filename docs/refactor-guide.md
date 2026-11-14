@@ -113,21 +113,21 @@ The earlier focused cleanup addressed selected guideline gaps, not every
 readability issue in these directories. Schedule these as focused behavior-
 preserving PRs; keep validation migration separate from rendering extractions.
 
-- Catalog views: `artistsView.ts` and `instrumentsView.ts` repeatedly scan albums
-  and calculate statistics during filtering, comparison, and row rendering.
-  Build per-render catalog results once, then use named row and empty-state
-  renderers. Preserve primary-artist filtering, unused semantics, tie-breakers,
-  selectors, and preview-root support. Keep genre hierarchy semantics distinct.
-- `genresView.ts`: separate recursive tree/leaf rendering and alphabetical result
-  rendering from the page shell. Name the genre variables and precompute counts
-  without changing direct-assignment versus descendant-inclusive behavior.
-- `albumDetailView.ts`: replace parallel provider ternary chains in `linkDetails`
-  with one named provider decision; extract coherent credits/tags sections where
-  nested markup obscures the page structure. Retain URL filtering and escaping.
-- `libraryView.ts`: rendering currently normalizes the caller's `state.genre` and
-  chooses random featured content. Make those responsibilities explicit before
-  attempting a pure-rendering extraction. Tighten sort/layout contracts at their
-  input boundaries; preserve current defaults and route/preview parity.
+- [x] Catalog views: `artistsView.ts` and `instrumentsView.ts` repeatedly scan albums
+      and calculate statistics during filtering, comparison, and row rendering.
+      Build per-render catalog results once, then use named row and empty-state
+      renderers. Preserve primary-artist filtering, unused semantics, tie-breakers,
+      selectors, and preview-root support. Keep genre hierarchy semantics distinct.
+- [x] `genresView.ts`: separate recursive tree/leaf rendering and alphabetical result
+      rendering from the page shell. Name the genre variables and precompute counts
+      without changing direct-assignment versus descendant-inclusive behavior.
+- [x] `albumDetailView.ts`: replace parallel provider ternary chains in `linkDetails`
+      with one named provider decision; extract coherent credits/tags sections where
+      nested markup obscures the page structure. Retain URL filtering and escaping.
+- [x] `libraryView.ts`: rendering currently normalizes the caller's `state.genre` and
+      chooses random featured content. Make those responsibilities explicit before
+      attempting a pure-rendering extraction. Tighten sort/layout contracts at their
+      input boundaries; preserve current defaults and route/preview parity.
 - `authView.ts`: the initializer owns mutable mode/busy state and asynchronous
   submit listeners without a disposal contract. Review class ownership together
   with `main.ts` authentication mounting, teardown, and stale-result protection;
@@ -153,4 +153,4 @@ preserving PRs; keep validation migration separate from rendering extractions.
 
 Use existing unit and browser coverage for catalog filters, details, import review,
 account persistence, authentication, and route previews; extend only the branches
-needed to protect each extraction. These are follow-ups, not completed cleanup.
+needed to protect each extraction. Checked items are complete; unchecked follow-ups remain scoped for focused PRs.

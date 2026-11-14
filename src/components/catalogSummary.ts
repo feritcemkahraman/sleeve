@@ -73,14 +73,20 @@ export function catalogSort(
 }
 
 export function catalogSummary(albums: Album[], showRating = true): string {
+  return renderCatalogSummary(catalogStats(albums), showRating);
+}
+
+export function renderCatalogSummary(
+  stats: CatalogStats,
+  showRating = true,
+): string {
   if (!showRating)
     return /* HTML */ `<span class="catalog-stats"
       ><span
-        ><strong>${albums.length}</strong
-        ><small>${albums.length === 1 ? "album" : "albums"}</small></span
+        ><strong>${stats.count}</strong
+        ><small>${stats.count === 1 ? "album" : "albums"}</small></span
       ></span
     >`;
-  const stats = catalogStats(albums);
   return /* HTML */ `<span class="catalog-stats"
     ><span
       ><strong>${stats.count}</strong
