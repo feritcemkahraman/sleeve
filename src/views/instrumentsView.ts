@@ -145,7 +145,7 @@ export function updateInstrumentsView(
         <p>
           ${instruments.length ? "Try another search or adjust your filters." : "Add an instrument here or while editing an album."}
         </p>
-        ${instruments.length ? '<button type="button" class="button secondary" data-action="clear-instrument-filters">Clear filters</button>' : ""}
+        ${instruments.length ? /* HTML */ `<button type="button" class="button secondary" data-action="clear-instrument-filters">Clear filters</button>` : ""}
       </div>`;
 }
 
@@ -168,7 +168,7 @@ export function renderInstrumentDetail(
         </div>
         <h1 id="page-title">${escapeHtml(item.name)}</h1>
         <div class="tags">
-          ${item.categories.length ? chips(item.categories.map(categoryLabel)) : '<span class="muted">Uncategorized</span>'}
+          ${item.categories.length ? chips(item.categories.map(categoryLabel)) : /* HTML */ `<span class="muted">Uncategorized</span>`}
         </div>
       </div>
       <button
@@ -187,7 +187,17 @@ export function renderInstrumentDetail(
         <h2 id="instrument-albums-title">Albums using this instrument</h2>
         <span class="count-pill">${used.length}</span>
       </div>
-      ${used.length ? renderAlbumGrid(used) : '<div class="empty detail-empty"><h3>Not used on any albums</h3><p>This instrument stays in your catalog until you add it to an album or delete it.</p></div>'}
+      ${
+        used.length
+          ? renderAlbumGrid(used)
+          : /* HTML */ `<div class="empty detail-empty">
+              <h3>Not used on any albums</h3>
+              <p>
+                This instrument stays in your catalog until you add it to an
+                album or delete it.
+              </p>
+            </div>`
+      }
     </section>
     <div class="instrument-delete">
       <button

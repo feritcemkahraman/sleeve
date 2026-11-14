@@ -6,7 +6,11 @@ import { updateCatalogImage } from "../components/formFields";
 import type { DraftTarget } from "./editorDrafts";
 
 import type { LibraryData } from "../types/library";
-import { field, catalogImageField } from "../components/formFields";
+import {
+  catalogFormFooter,
+  field,
+  catalogImageField,
+} from "../components/formFields";
 import { makeId } from "./id";
 import type {
   Album,
@@ -67,13 +71,7 @@ function renderInstrumentForm(item?: Instrument): string {
       </p>
       <p id="form-error" class="form-error" role="alert" hidden></p>
     </div>
-    <div class="dialog-footer">
-      <button type="button" class="button secondary" data-action="close">
-        Cancel</button
-      ><button type="submit" class="button primary">
-        ${item ? "Save changes" : "Add instrument"}
-      </button>
-    </div>
+    ${catalogFormFooter(item ? "Save changes" : "Add instrument")}
   </form>`;
 }
 
@@ -267,7 +265,9 @@ export class InstrumentFeature {
         )
         .join("") +
       (!choices.length && !query
-        ? '<p class="form-hint">Search for an instrument name to add one.</p>'
+        ? /* HTML */ `<p class="form-hint">
+            Search for an instrument name to add one.
+          </p>`
         : "");
   }
 

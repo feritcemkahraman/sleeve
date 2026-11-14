@@ -22,5 +22,5 @@ export function renderRating(rating: number | undefined): string {
         aria-label="${displayRating(rating)} out of 5 stars"
         >${stars(rating)}</span
       >`
-    : '<span class="unrated">Unrated</span>';
+    : /* HTML */ `<span class="unrated">Unrated</span>`;
 }

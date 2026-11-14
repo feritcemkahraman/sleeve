@@ -71,7 +71,7 @@ function externalLinks(links: AlbumLink[]) {
   });
   return rows.length
     ? /* HTML */ `<div class="external-links">${rows.join("")}</div>`
-    : '<p class="muted">No music links added.</p>';
+    : /* HTML */ `<p class="muted">No music links added.</p>`;
 }
 
 function historyCard(listen: ListeningEntry) {
@@ -210,7 +210,7 @@ export function renderAlbumDetailView(album: Album): string {
               ${icon("edit", 14)} Edit
             </button>
           </div>
-          ${album.instruments.length ? /* HTML */ `<div class="tags">${album.instruments.map((item) => /* HTML */ `<a class="chip" href="${instrumentUrl(item.id)}">${escapeHtml(item.name)}</a>`).join("")}</div>` : '<p class="muted">No instruments added yet. Add them whenever you know what you heard.</p>'}
+          ${album.instruments.length ? /* HTML */ `<div class="tags">${album.instruments.map((item) => /* HTML */ `<a class="chip" href="${instrumentUrl(item.id)}">${escapeHtml(item.name)}</a>`).join("")}</div>` : /* HTML */ `<p class="muted">No instruments added yet. Add them whenever you know what you heard.</p>`}
         </section>
         <section aria-labelledby="links-title">
           <div class="detail-heading">

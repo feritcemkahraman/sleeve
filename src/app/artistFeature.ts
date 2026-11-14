@@ -5,7 +5,11 @@ import { updateCatalogImage } from "../components/formFields";
 import type { DraftTarget } from "./editorDrafts";
 
 import type { LibraryData } from "../types/library";
-import { field, catalogImageField } from "../components/formFields";
+import {
+  catalogFormFooter,
+  field,
+  catalogImageField,
+} from "../components/formFields";
 import { formValue } from "./formValues";
 import { findArtist } from "./artistIdentity";
 import { makeId } from "./id";
@@ -66,11 +70,7 @@ function renderArtistForm(item?: Artist): string {
       </p>
       <p id="form-error" class="form-error" role="alert" hidden></p>
     </div>
-    <div class="dialog-footer">
-      <button type="button" class="button secondary" data-action="close">
-        Cancel</button
-      ><button class="button primary" type="submit">Save artist</button>
-    </div>
+    ${catalogFormFooter("Save artist")}
   </form>`;
 }
 

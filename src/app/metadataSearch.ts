@@ -233,22 +233,26 @@ export class MetadataSearchController implements MetadataSearch {
     }, 400);
   }
 
+  private findSavedAlbum(album: Album): Album | undefined {
+    return this.ops
+      .albums()
+      .find(
+        (item) =>
+          (album.musicbrainzReleaseGroupId &&
+            item.musicbrainzReleaseGroupId ===
+              album.musicbrainzReleaseGroupId) ||
+          album.links.some((link) =>
+            item.links.some((savedLink) => savedLink.url === link.url),
+          ),
+      );
+  }
+
   private renderCatalog(): void {
     const results = this.searchResults;
-    const inLibrary = (album: Album) =>
-      this.ops
-        .albums()
-        .find(
-          (item) =>
-            (album.musicbrainzReleaseGroupId &&
-              item.musicbrainzReleaseGroupId ===
-                album.musicbrainzReleaseGroupId) ||
-            album.links.some((link) =>
-              item.links.some((savedLink) => savedLink.url === link.url),
-            ),
-        );
     const sorted = [...results].sort(
-      (a, b) => Number(Boolean(inLibrary(a))) - Number(Boolean(inLibrary(b))),
+      (a, b) =>
+        Number(Boolean(this.findSavedAlbum(a))) -
+        Number(Boolean(this.findSavedAlbum(b))),
     );
     document.querySelector<HTMLElement>("#catalog-count")!.textContent =
       `${results.length} ${results.length === 1 ? "result" : "results"}`;
@@ -257,7 +261,7 @@ export class MetadataSearchController implements MetadataSearch {
         ? /* HTML */ `<ul class="catalog-list">
             ${sorted
               .map((album) => {
-                const saved = inLibrary(album);
+                const saved = this.findSavedAlbum(album);
                 return /* HTML */ `<li>
                   <button
                     type="button"
@@ -272,7 +276,7 @@ export class MetadataSearchController implements MetadataSearch {
                         ${album.releaseYear ?? "Unknown year"}</span
                       ></span
                     >
-                    ${saved ? '<span class="in-library">In library</span>' : ""}${icon("chevron", 17)}
+                    ${saved ? /* HTML */ `<span class="in-library">In library</span>` : ""}${icon("chevron", 17)}
                   </button>
                 </li>`;
               })
@@ -307,17 +311,7 @@ export class MetadataSearchController implements MetadataSearch {
           (entry) => entry.id === button.dataset.id,
         );
         if (!result) break;
-        const saved = this.ops
-          .albums()
-          .find(
-            (entry) =>
-              (result.musicbrainzReleaseGroupId &&
-                entry.musicbrainzReleaseGroupId ===
-                  result.musicbrainzReleaseGroupId) ||
-              result.links.some((link) =>
-                entry.links.some((savedLink) => savedLink.url === link.url),
-              ),
-          );
+        const saved = this.findSavedAlbum(result);
         if (saved) {
           this.ops.editor.close();
           location.hash = albumUrl(saved.id);

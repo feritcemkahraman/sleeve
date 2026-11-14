@@ -19,8 +19,12 @@ state getters, draft cloning, and asynchronous lifecycle guards.
       across editors and metadata search. DOM auth modes, import suggestion kinds,
       and image-preview instrument categories are checked before use. Existing
       action switches already narrow recognized actions and ignore unknown values.
-- [ ] Focused cleanup: review duplicated rendering, long fallback chains,
-      dependency scope, HTML annotations, and logical spacing.
+- [x] Focused cleanup: reviewed rendering, fallback chains, dependency scope,
+      HTML annotations, and logical spacing. Shared catalog form footers and
+      metadata library matching; named album and genre choice fallbacks. Converted
+      remaining HTML fragments in views/controllers to annotated templates and
+      named field options. Existing feature dependencies retain their focused
+      capabilities and live getters; small helpers and generated files stay intact.
 - [ ] Evaluate automated enforcement of objective rules after cleanup; keep
       architectural decisions under review rather than imposing blanket rewrites.
 
