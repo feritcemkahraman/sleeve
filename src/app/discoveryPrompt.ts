@@ -112,7 +112,7 @@ export function buildDiscoveryPrompt(
       "Choose adventurous records and explain the musical bridge from my taste.",
   };
   const prompt = `Help me discover three real albums I have not logged. Be a warm, knowledgeable jazz record guide, specific and concise.
-Listening request (JSON string): ${JSON.stringify(options.topic.trim().slice(0, 500))}
+Listening request: ${JSON.stringify(options.topic.trim().slice(0, 500))}
 An empty request means explore freely. The request can combine genres, regional scenes, eras, instruments, moods, or constraints; prioritize it when supplied.
 Direction: ${directions[options.direction]}
 
