@@ -1,3 +1,4 @@
+import { isInstrumentCategory } from "./instruments";
 import { isCatalogSort, type CatalogSort } from "../components/sortOptions";
 import type { EditorDialog } from "./editorContracts";
 import { renderInstrumentsView } from "../views/instrumentsView";
@@ -16,11 +17,7 @@ import type {
 import { icon } from "../components/icons";
 import { escapeHtml } from "../components/html";
 import { webUrl } from "../components/presentation";
-import {
-  albumsUsing,
-  instrumentUrl,
-  instrumentCategories,
-} from "./instruments";
+import { albumsUsing, instrumentUrl } from "./instruments";
 import {
   categoryFields,
   updateInstrumentsView,
@@ -54,10 +51,6 @@ interface InstrumentListFilters {
   category: InstrumentCategory | "";
   unused: boolean;
   sort: CatalogSort;
-}
-
-function isInstrumentCategory(value: unknown): value is InstrumentCategory {
-  return instrumentCategories.some((category) => category === value);
 }
 
 function renderInstrumentForm(item?: Instrument): string {

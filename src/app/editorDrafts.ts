@@ -1,5 +1,7 @@
 import { linkRow } from "../components/formFields";
 import type {
+  Album,
+  Instrument,
   AlbumArtist,
   AlbumGenre,
   AlbumInstrument,
@@ -7,6 +9,8 @@ import type {
   Genre,
   ListeningEntry,
 } from "../types/albums";
+import type { AlbumEditorMode } from "./editorContracts";
+import { draftSchema } from "./draftValidation";
 import { createLifecycle } from "./lifecycle";
 
 export interface EditorDraftsDependencies {
@@ -29,12 +33,13 @@ export interface EditorDraftsDependencies {
   announce: (message: string) => void;
 }
 
-export type DraftTarget = {
-  kind: string;
-  item?: unknown;
-  mode?: string;
-  entry?: ListeningEntry;
-};
+export type DraftTarget =
+  | { kind: "album"; item?: Partial<Album>; mode?: AlbumEditorMode }
+  | { kind: "artist"; item?: Artist }
+  | { kind: "genre"; item?: Genre }
+  | { kind: "instrument"; item?: Instrument }
+  | { kind: "instruments"; item: Album }
+  | { kind: "listen"; item: Album; entry?: ListeningEntry };
 export type Draft = {
   version: 1;
   target: DraftTarget;
@@ -266,43 +271,11 @@ export class EditorDraftController implements EditorDrafts {
 
   private loadDraft(): void {
     try {
-      const stored = JSON.parse(localStorage.getItem(this.draftKey) ?? "null");
-      if (
-        stored?.version === 1 &&
-        [
-          "album",
-          "artist",
-          "genre",
-          "instrument",
-          "instruments",
-          "listen",
-        ].includes(stored.target?.kind) &&
-        typeof stored.hash === "string" &&
-        (stored.hash === "" || stored.hash.startsWith("#")) &&
-        typeof stored.baseline === "string" &&
-        typeof stored.source === "string" &&
-        Number.isInteger(stored.links) &&
-        stored.links >= 0 &&
-        stored.links <= 1000 &&
-        [
-          stored.fields,
-          stored.artists,
-          stored.genres,
-          stored.instruments,
-          stored.artistChoices,
-          stored.genreChoices,
-          stored.instrumentChoices,
-        ].every(Array.isArray) &&
-        stored.fields.every(
-          (field: Draft["fields"][number]) =>
-            field &&
-            typeof field.name === "string" &&
-            typeof field.id === "string" &&
-            typeof field.value === "string" &&
-            typeof field.checked === "boolean",
-        )
-      )
-        this.draft = stored;
+      const stored: unknown = JSON.parse(
+        localStorage.getItem(this.draftKey) ?? "null",
+      );
+      const result = draftSchema.safeParse(stored);
+      if (result.success) this.draft = result.data;
     } catch {
       /* An unavailable or damaged draft must not prevent opening the library. */
     }

@@ -53,3 +53,9 @@ export function syncAlbumInstruments(
       return instrument ? [{ ...instrument, notes: item.notes }] : [];
     });
 }
+
+export function isInstrumentCategory(
+  value: unknown,
+): value is InstrumentCategory {
+  return instrumentCategories.some((category) => category === value);
+}

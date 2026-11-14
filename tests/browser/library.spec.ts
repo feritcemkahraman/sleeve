@@ -736,3 +736,30 @@ test("dedicated instrument editor restores draft categories and commits only on 
     page.locator(`[name="category"][value="${categoryValue}"]`),
   ).toBeChecked();
 });
+
+test("malformed persisted draft selections do not prevent opening a new editor", async ({
+  page,
+}) => {
+  await openAlbum(page);
+  const title = await page.locator("#page-title").textContent();
+  await page.locator('[data-action="edit"]').click();
+  await page.locator('[name="title"]').fill("Damaged draft");
+  await expect(page.locator("[data-draft-status]")).toHaveText(
+    "Draft saved on this device",
+  );
+  await page.evaluate(() => {
+    const key = "jazzlog:editor-draft:v1:demo";
+    const saved = JSON.parse(localStorage.getItem(key)!);
+    saved.artists = [null];
+    sessionStorage.setItem("damaged-draft", JSON.stringify(saved));
+  });
+  // Install after pagehide so capturing the old editor cannot repair the payload.
+  await page.addInitScript(() => {
+    const saved = sessionStorage.getItem("damaged-draft");
+    if (saved) localStorage.setItem("jazzlog:editor-draft:v1:demo", saved);
+  });
+  await reloadDemo(page);
+  await expect(page.getByRole("button", { name: "Resume draft" })).toBeHidden();
+  await page.locator('[data-action="edit"]').click();
+  await expect(page.locator('[name="title"]')).toHaveValue(title!);
+});

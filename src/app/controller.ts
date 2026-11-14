@@ -536,21 +536,23 @@ export class AppController {
 
     const saved = structuredClone(this.drafts.current);
     const target = saved.target;
-    const item = target.item as
-      | {
-          id?: string;
-        }
-      | undefined;
+    const item = target.item;
     const catalog = this.draftCatalog(target.kind);
     const existing = catalog.find((value) => value.id === item?.id);
     const requiresExisting =
       ["listen", "instruments"].includes(target.kind) ||
-      ["edit", "links"].includes(target.mode ?? "") ||
+      (target.kind === "album" &&
+        (target.mode === "edit" || target.mode === "links")) ||
       (["artist", "genre", "instrument"].includes(target.kind) && !!item?.id);
+    const existingAlbum =
+      target.kind === "listen" || target.kind === "instruments"
+        ? this.library.data.albums.find((album) => album.id === item?.id)
+        : undefined;
     const entryMissing =
+      target.kind === "listen" &&
       target.entry &&
-      !(existing as Album | undefined)?.listeningEntries?.some(
-        (entry) => entry.id === target.entry!.id,
+      !existingAlbum?.listeningEntries.some(
+        (entry) => entry.id === target.entry?.id,
       );
 
     if (requiresExisting && (!existing || entryMissing)) {
@@ -582,33 +584,24 @@ export class AppController {
       this.router.render();
       switch (target.kind) {
         case "album":
-          this.albumEditor.openAlbumForm(
-            target.item as Partial<Album>,
-            target.mode === "edit" ||
-              target.mode === "review" ||
-              target.mode === "links"
-              ? target.mode
-              : "manual",
-          );
+          this.albumEditor.openAlbumForm(target.item, target.mode ?? "manual");
           break;
         case "artist":
-          this.artistFeature.openCatalogArtist(
-            target.item as Artist | undefined,
-          );
+          this.artistFeature.openCatalogArtist(target.item);
           break;
         case "genre":
-          this.genreFeature.openCatalogGenre(target.item as Genre | undefined);
+          this.genreFeature.openCatalogGenre(target.item);
           break;
         case "instrument":
-          this.instrumentFeature.openCatalogInstrument(
-            target.item as Instrument | undefined,
-          );
+          this.instrumentFeature.openCatalogInstrument(target.item);
           break;
         case "instruments":
-          this.instrumentFeature.openInstruments(existing as Album);
+          if (existingAlbum)
+            this.instrumentFeature.openInstruments(existingAlbum);
           break;
         case "listen":
-          this.listening.openListen(existing as Album, target.entry);
+          if (existingAlbum)
+            this.listening.openListen(existingAlbum, target.entry);
           break;
       }
       this.artistFeature.restorePicker({
