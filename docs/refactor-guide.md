@@ -137,16 +137,16 @@ preserving PRs; keep validation migration separate from rendering extractions.
   but the select query uses double casts to a handwritten joined-row type. Review
   query-derived contracts and mapper tests, including absent joins and ordering,
   before removing casts. Check callers before retaining or removing CRUD exports.
-- `services/wikipedia.ts`: split article resolution, Wikidata enrichment, and
-  optional page suggestions into focused helpers with named response contracts.
-  Preserve optional enrichment failures, language fallback, suggestion priority,
-  and request order. Remove the leftover raw-response `console.log` in that PR.
-- `services/appleMusic.ts`: separate store candidate extraction, embed checks,
-  and cache coordination. Preserve eight-candidate limits, parallel checks,
-  negative results, failed-request eviction, and existing matching behavior.
-- `services/musicbrainz.ts`: review queued request ownership and tests for failed
-  requests and rate spacing. The module-level queue is intentionally shared;
-  do not convert it solely for stylistic consistency.
+- [x] `services/wikipedia.ts`: separated article resolution, optional Wikidata
+      enrichment, and optional page suggestions with named response contracts;
+      removed raw-response logging. Unit/browser coverage preserves request order,
+      language fallback, suggestion priority, and independent optional failures.
+- [x] `services/appleMusic.ts`: separated store candidates, parallel embed checks,
+      and cache coordination. Tests cover the eight-candidate limit, shared pending
+      searches, cached negative results, failed-request retry, and matching.
+- [x] `services/musicbrainz.ts`: retained the intentionally shared module queue.
+      Added coverage proving serialized requests, rate spacing, HTTP/transport
+      failures, and recovery without resetting queue ownership.
 - `services/saveLibrary.ts` and `libraryDelta.ts`: tighten RPC result and table
   contracts in a focused persistence review. Preserve atomic deltas, association
   replacement, and server timestamp reconciliation. Small auth, pagination,

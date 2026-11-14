@@ -56,7 +56,6 @@ async function query<T>(
   const result = await response.json();
   if (result.error)
     throw new Error(result.error.info || "Wikipedia request failed.");
-  console.log(result);
   return result;
 }
 
@@ -79,30 +78,40 @@ const stringValue = (entity: Entity, property: string) =>
     (value): value is string => typeof value === "string",
   );
 
-export async function resolveWikipediaArticle(
+interface ArticleResponse {
+  query?: {
+    pages: {
+      title: string;
+      missing?: boolean;
+      pageprops?: { wikibase_item?: string; disambiguation?: string };
+      thumbnail?: { source: string };
+      original?: { source: string };
+    }[];
+  };
+}
+interface EntitiesResponse {
+  entities: Record<string, Entity>;
+}
+interface PageResponse {
+  parse?: { text?: string };
+}
+type ArticlePage = NonNullable<ArticleResponse["query"]>["pages"][number];
+
+async function resolveArticlePage(
   article: WikipediaArticle,
-): Promise<WikipediaImport> {
-  if (!/^[a-z-]+$/.test(article.language) || !article.title)
-    throw new Error("Invalid Wikipedia article.");
-  const response = await query<{
-    query?: {
-      pages: {
-        title: string;
-        missing?: boolean;
-        pageprops?: { wikibase_item?: string; disambiguation?: string };
-        thumbnail?: { source: string };
-        original?: { source: string };
-      }[];
-    };
-  }>(`${article.language}.wikipedia.org`, {
-    action: "query",
-    titles: article.title,
-    redirects: "1",
-    prop: "pageimages|pageprops",
-    piprop: "thumbnail|original",
-    pithumbsize: "600",
-    pilicense: "any",
-  });
+): Promise<ArticlePage> {
+  const response = await query<ArticleResponse>(
+    `${article.language}.wikipedia.org`,
+    {
+      action: "query",
+      titles: article.title,
+      redirects: "1",
+      prop: "pageimages|pageprops",
+      piprop: "thumbnail|original",
+      pithumbsize: "600",
+      pilicense: "any",
+    },
+  );
   const page = response.query?.pages[0];
   if (!page || page.missing)
     throw new Error("This Wikipedia article could not be found.");
@@ -110,6 +119,15 @@ export async function resolveWikipediaArticle(
     throw new Error(
       "Choose the album’s article rather than a disambiguation page.",
     );
+  return page;
+}
+
+export async function resolveWikipediaArticle(
+  article: WikipediaArticle,
+): Promise<WikipediaImport> {
+  if (!/^[a-z-]+$/.test(article.language) || !article.title)
+    throw new Error("Invalid Wikipedia article.");
+  const page = await resolveArticlePage(article);
   const result: WikipediaImport = {
     title: page.title.replace(/\s+\([^)]*(?:album|soundtrack)[^)]*\)$/i, ""),
     url: `https://${article.language}.wikipedia.org/wiki/${encodeURIComponent(page.title.replaceAll(" ", "_"))}`,
@@ -121,14 +139,28 @@ export async function resolveWikipediaArticle(
     genreSuggestions: [],
     instrumentSuggestions: [],
   };
-  const entityId = page.pageprops?.wikibase_item;
+  await enrichFromWikidata(
+    result,
+    page.pageprops?.wikibase_item,
+    article.language,
+  );
+  await addPageSuggestions(result, page.title, article.language);
+  return result;
+}
+
+async function enrichFromWikidata(
+  result: WikipediaImport,
+  entityId: string | undefined,
+  language: string,
+): Promise<void> {
   if (entityId) {
     // Metadata is optional: an unavailable Wikidata service must not block artwork import.
     try {
-      const data = await query<{ entities: Record<string, Entity> }>(
-        "www.wikidata.org",
-        { action: "wbgetentities", ids: entityId, props: "claims" },
-      );
+      const data = await query<EntitiesResponse>("www.wikidata.org", {
+        action: "wbgetentities",
+        ids: entityId,
+        props: "claims",
+      });
       const entity = data.entities[entityId];
       const years = values(entity, "P577")
         .map((value) =>
@@ -173,18 +205,15 @@ export async function resolveWikipediaArticle(
         ...new Set([...artistIds, ...labelIds, ...genreIds, ...instrumentIds]),
       ];
       if (ids.length) {
-        const performers = await query<{ entities: Record<string, Entity> }>(
-          "www.wikidata.org",
-          {
-            action: "wbgetentities",
-            ids: ids.join("|"),
-            props: "labels|claims",
-            languages: `en|${article.language}`,
-            languagefallback: "1",
-          },
-        );
+        const performers = await query<EntitiesResponse>("www.wikidata.org", {
+          action: "wbgetentities",
+          ids: ids.join("|"),
+          props: "labels|claims",
+          languages: `en|${language}`,
+          languagefallback: "1",
+        });
         const nameOf = (item?: Entity) =>
-          item?.labels?.en?.value ?? item?.labels?.[article.language]?.value;
+          item?.labels?.en?.value ?? item?.labels?.[language]?.value;
         const suggestions = (ids: string[]) =>
           ids.flatMap((id) => {
             const name = nameOf(performers.entities[id]);
@@ -200,8 +229,7 @@ export async function resolveWikipediaArticle(
           const artist = performers.entities[id];
           if (!artist) return [];
           const name =
-            artist.labels?.en?.value ??
-            artist.labels?.[article.language]?.value;
+            artist.labels?.en?.value ?? artist.labels?.[language]?.value;
           const mbid = stringValue(artist, "P434");
           return name
             ? [
@@ -218,21 +246,25 @@ export async function resolveWikipediaArticle(
       /* Review allows missing metadata to be entered manually. */
     }
   }
+}
+
+async function addPageSuggestions(
+  result: WikipediaImport,
+  title: string,
+  language: string,
+): Promise<void> {
   // Article details often contain genres and personnel absent from Wikidata.
   // Keep this independent so either metadata source can fail without losing the other.
   try {
-    const parsed = await query<{ parse?: { text?: string } }>(
-      `${article.language}.wikipedia.org`,
-      {
-        action: "parse",
-        page: page.title,
-        prop: "text",
-        disableeditsection: "1",
-        disabletoc: "1",
-      },
-    );
+    const parsed = await query<PageResponse>(`${language}.wikipedia.org`, {
+      action: "parse",
+      page: title,
+      prop: "text",
+      disableeditsection: "1",
+      disabletoc: "1",
+    });
     if (typeof parsed.parse?.text === "string") {
-      const details = parseWikipediaPage(parsed.parse.text, article.language);
+      const details = parseWikipediaPage(parsed.parse.text, language);
       result.genreSuggestions = mergeSuggestions(
         result.genreSuggestions,
         details.genres,
@@ -245,5 +277,4 @@ export async function resolveWikipediaArticle(
   } catch {
     /* Article details are optional, just like Wikidata metadata. */
   }
-  return result;
 }
