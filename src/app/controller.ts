@@ -23,7 +23,7 @@ import { createMetadataSearch } from "./metadataSearch";
 import { createInstrumentFeature } from "./instrumentFeature";
 import { createGenreFeature } from "./genreFeature";
 import { createArtistFeature } from "./artistFeature";
-import { createAlbumEditor } from "./albumEditor";
+import { AlbumEditor } from "./albumEditor";
 import { createListening } from "./listening";
 import { readLayout, saveLayout } from "./layoutPreferences";
 import { createRouteHistory } from "./routeHistory";
@@ -307,26 +307,15 @@ export function initializeApp(
     openInstruments,
     commitInstrumentChoices,
   } = instrumentFeature;
-  const albumEditor = createAlbumEditor({
+  const albumEditor = new AlbumEditor({
     accountId,
-    applySuggestion: (kind, id, name) => {
-      const input = editor.querySelector<HTMLInputElement>(`#${kind}-query`)!;
-      input.value = name;
-      const button = document.createElement("button");
-      button.dataset.action = `${id ? "select" : "create"}-${kind}`;
-      if (id) button.dataset.id = id;
-      if (kind === "genre") genreFeature.click(button);
-      else instrumentFeature.click(button);
+    dialog: { element: editor, show: showDialog, formError },
+    drafts: { begin: beginDraft, capture: captureDraft },
+    persistence: { finishSave, finishCatalogSave },
+    lifecycle: {
+      isActive: () => lifecycle.active,
+      isSaving: () => library.saving,
     },
-    editor,
-    showDialog,
-    finishCatalogSave,
-    beginDraft,
-    captureDraft,
-    formError,
-    finishSave,
-    isActive: () => lifecycle.active,
-    isSaving: () => library.saving,
     library: {
       get albums() {
         return library.data.albums;
@@ -347,32 +336,42 @@ export function initializeApp(
         library.data.genres = value;
       },
     },
-    selections: {
-      get instrumentChoices() {
-        return instrumentFeature.state.instrumentChoices;
+    pickers: {
+      applySuggestion: (kind, id, name) => {
+        const input = editor.querySelector<HTMLInputElement>(`#${kind}-query`)!;
+        input.value = name;
+        const button = document.createElement("button");
+        button.dataset.action = `${id ? "select" : "create"}-${kind}`;
+        if (id) button.dataset.id = id;
+        if (kind === "genre") genreFeature.click(button);
+        else instrumentFeature.click(button);
       },
-      get selectedArtists() {
-        return artistFeature.state.selectedArtists;
+      selections: {
+        get instrumentChoices() {
+          return instrumentFeature.state.instrumentChoices;
+        },
+        get selectedArtists() {
+          return artistFeature.state.selectedArtists;
+        },
+        get selectedGenres() {
+          return genreFeature.state.selectedGenres;
+        },
+        get selectedInstruments() {
+          return instrumentFeature.state.selectedInstruments;
+        },
+        get genreChoices() {
+          return genreFeature.state.genreChoices;
+        },
       },
-      get selectedGenres() {
-        return genreFeature.state.selectedGenres;
-      },
-      get selectedInstruments() {
-        return instrumentFeature.state.selectedInstruments;
-      },
-      get genreChoices() {
-        return genreFeature.state.genreChoices;
-      },
+      artistPicker,
+      genrePicker,
+      instrumentPicker,
+      updateArtists,
+      updateGenres,
+      updateInstruments,
+      commitInstrumentChoices,
     },
-    artistPicker,
-    genrePicker,
-    instrumentPicker,
-    updateArtists,
-    updateGenres,
-    updateInstruments,
-    commitInstrumentChoices,
   });
-  const { openAlbumForm, saveAlbumForm } = albumEditor;
   const metadataSearch = createMetadataSearch({
     editor,
     showDialog,
@@ -381,7 +380,7 @@ export function initializeApp(
       drafts.state.target = undefined;
     },
     resumeDraft,
-    openAlbumForm,
+    openAlbumForm: (album, mode) => albumEditor.openAlbumForm(album, mode),
     canDismissDialog,
     clearDraft,
     isActive: () => lifecycle.active,
@@ -439,7 +438,14 @@ export function initializeApp(
       renderRoute();
       switch (target.kind) {
         case "album":
-          openAlbumForm(target.item as Partial<Album>, target.mode);
+          albumEditor.openAlbumForm(
+            target.item as Partial<Album>,
+            target.mode === "edit" ||
+              target.mode === "review" ||
+              target.mode === "links"
+              ? target.mode
+              : "manual",
+          );
           break;
         case "artist":
           openCatalogArtist(target.item as Artist | undefined);
@@ -906,7 +912,7 @@ export function initializeApp(
     }
     if ((event.target as HTMLElement).id === "album-form") {
       event.preventDefault();
-      saveAlbumForm(event.target as HTMLFormElement);
+      albumEditor.saveAlbumForm(event.target as HTMLFormElement);
     }
     if ((event.target as HTMLElement).id === "listen-form") {
       event.preventDefault();

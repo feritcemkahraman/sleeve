@@ -1,6 +1,5 @@
 import { today } from "./date";
-import { createDialog } from "./dialog";
-import { createEditorDrafts } from "./editorDrafts";
+import type { DraftTarget } from "./editorDrafts";
 import type { LibraryData } from "../types/library";
 import {
   catalogImageField,
@@ -28,23 +27,31 @@ import { escapeHtml } from "../components/html";
 import { webUrl, cover } from "../components/presentation";
 import { focusForTyping } from "./device";
 
-export function createAlbumEditor(ops: {
-  accountId: string;
-  applySuggestion: (
-    kind: "genre" | "instrument",
-    id: string | null,
-    name: string,
+export type AlbumEditorMode = "manual" | "edit" | "review" | "links";
+type SuggestionKind = "genre" | "instrument";
+
+interface AlbumEditorDialog {
+  element: HTMLDialogElement;
+  show: (
+    title: string,
+    content: string,
+    focusSelector: string,
+    backToSearch?: boolean,
   ) => void;
-  editor: HTMLDialogElement;
-  showDialog: ReturnType<typeof createDialog>["showDialog"];
-  beginDraft: ReturnType<typeof createEditorDrafts>["beginDraft"];
-  captureDraft: () => void;
-  finishCatalogSave: (message: string, destination: string) => Promise<void>;
   formError: (message: string, input: HTMLInputElement) => void;
+}
+
+interface AlbumEditorDrafts {
+  begin: (target: DraftTarget) => boolean;
+  capture: () => void;
+}
+
+interface AlbumEditorPersistence {
   finishSave: (id: string, message: string) => Promise<void>;
-  isActive: () => boolean;
-  isSaving: () => boolean;
-  library: Pick<LibraryData, "albums" | "artists" | "genres">;
+  finishCatalogSave: (message: string, destination: string) => Promise<void>;
+}
+
+interface AlbumEditorPickers {
   selections: {
     selectedArtists: AlbumArtist[];
     selectedGenres: AlbumGenre[];
@@ -65,33 +72,87 @@ export function createAlbumEditor(ops: {
   updateGenres: () => void;
   updateInstruments: () => void;
   commitInstrumentChoices: () => void;
-}) {
-  let reviewAlbum: Album | undefined;
-  let appleVersion = 0;
-  let appleResults: AppleMusicAlbum[] = [];
+  applySuggestion: (
+    kind: SuggestionKind,
+    id: string | null,
+    name: string,
+  ) => void;
+}
 
-  const mappingKey = `jazzlog:import-mappings:v1:${ops.accountId}`;
-  const readMappings = (): Record<string, string> => {
-    try {
-      const data = JSON.parse(localStorage.getItem(mappingKey) ?? "{}");
-      return data && typeof data === "object" && !Array.isArray(data)
-        ? data
-        : {};
-    } catch {
-      return {};
+export interface AlbumEditorDependencies {
+  accountId: string;
+  dialog: AlbumEditorDialog;
+  drafts: AlbumEditorDrafts;
+  persistence: AlbumEditorPersistence;
+  pickers: AlbumEditorPickers;
+  library: Pick<LibraryData, "albums" | "artists" | "genres">;
+  lifecycle: { isActive: () => boolean; isSaving: () => boolean };
+}
+
+function readMappings(key: string): Record<string, string> {
+  try {
+    const data: unknown = JSON.parse(localStorage.getItem(key) ?? "{}");
+    if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+
+    return Object.fromEntries(
+      Object.entries(data).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function readMusicLinks(
+  form: HTMLFormElement,
+  formError: AlbumEditorDialog["formError"],
+): AlbumLink[] | undefined {
+  const links: AlbumLink[] = [];
+
+  for (const row of form.querySelectorAll(".link-fields")) {
+    const input = row.querySelector<HTMLInputElement>('[name="linkUrl"]')!;
+    const url = input.value.trim();
+    const label = row
+      .querySelector<HTMLInputElement>('[name="linkLabel"]')!
+      .value.trim();
+    if (!url && !label) continue;
+
+    if (!webUrl(url)) {
+      formError("Enter an HTTP or HTTPS URL for each music link.", input);
+      return undefined;
     }
-  };
 
-  function suggestions(
+    links.push({ id: makeId(), url, label });
+  }
+
+  return links;
+}
+
+export class AlbumEditor {
+  private readonly dependencies: AlbumEditorDependencies;
+  private readonly mappingKey: string;
+  private reviewAlbum: Album | undefined;
+  private appleVersion = 0;
+  private appleResults: AppleMusicAlbum[] = [];
+
+  constructor(dependencies: AlbumEditorDependencies) {
+    this.dependencies = dependencies;
+    this.mappingKey = `jazzlog:import-mappings:v1:${dependencies.accountId}`;
+  }
+
+  private suggestions(
     kind: "genre" | "instrument",
     items: { id: string; name: string }[] = [],
-  ) {
+  ): string {
     if (!items.length) return "";
+
     const choices =
       kind === "genre"
-        ? ops.selections.genreChoices
-        : ops.selections.instrumentChoices;
-    const mappings = readMappings();
+        ? this.dependencies.pickers.selections.genreChoices
+        : this.dependencies.pickers.selections.instrumentChoices;
+    const mappings = readMappings(this.mappingKey);
+
     return /* HTML */ `<div class="import-suggestions">
       <p class="form-hint">
         Suggested ${kind === "genre" ? "genres" : "instruments"} from Wikipedia.
@@ -108,6 +169,7 @@ export function createAlbumEditor(ops: {
                 choice.name.trim().toLowerCase() ===
                 item.name.trim().toLowerCase(),
             );
+
           return /* HTML */ `<div class="field-grid" data-suggestion-row>
             <label class="field"
               ><span>${escapeHtml(item.name)}</span>
@@ -145,9 +207,11 @@ export function createAlbumEditor(ops: {
     </div>`;
   }
 
-  function hasAppleLink() {
+  private hasAppleLink(): boolean {
     return [
-      ...ops.editor.querySelectorAll<HTMLInputElement>('[name="linkUrl"]'),
+      ...this.dependencies.dialog.element.querySelectorAll<HTMLInputElement>(
+        '[name="linkUrl"]',
+      ),
     ].some((input) => {
       try {
         return ["music.apple.com", "itunes.apple.com"].includes(
@@ -159,51 +223,66 @@ export function createAlbumEditor(ops: {
     });
   }
 
-  function addAppleLink(item: AppleMusicAlbum) {
-    if (hasAppleLink()) return;
-    ops.editor
+  private addAppleLink(item: AppleMusicAlbum): void {
+    if (this.hasAppleLink()) return;
+
+    this.dependencies.dialog.element
       .querySelector("#link-rows")
       ?.insertAdjacentHTML(
         "beforeend",
         linkRow({ url: item.url, label: "Apple Music" }),
       );
-    ops.captureDraft();
+
+    this.dependencies.drafts.capture();
   }
 
-  async function searchAppleMusic() {
-    const version = ++appleVersion;
-    const form = ops.editor.querySelector<HTMLFormElement>("#album-form");
-    const status = ops.editor.querySelector<HTMLElement>("#apple-music-status");
-    const button = ops.editor.querySelector<HTMLButtonElement>(
-      '[data-action="find-apple-music"]',
+  private async searchAppleMusic(): Promise<void> {
+    const version = ++this.appleVersion;
+    const form =
+      this.dependencies.dialog.element.querySelector<HTMLFormElement>(
+        "#album-form",
+      );
+    const status = this.dependencies.dialog.element.querySelector<HTMLElement>(
+      "#apple-music-status",
     );
+    const button =
+      this.dependencies.dialog.element.querySelector<HTMLButtonElement>(
+        '[data-action="find-apple-music"]',
+      );
     if (!form || !status || !button) return;
-    appleResults = [];
+
+    this.appleResults = [];
+
     const title = form
       .querySelector<HTMLInputElement>('[name="title"]')!
       .value.trim();
-    const names = ops.selections.selectedArtists
+    const names = this.dependencies.pickers.selections.selectedArtists
       .filter((artist) => artist.role === "primary")
       .map((artist) => artist.name);
-    if (hasAppleLink()) {
+
+    if (this.hasAppleLink()) {
       status.textContent =
         "Remove the existing Apple Music link to choose a different album.";
       return;
     }
+
     if (!title || !names.length) {
       status.textContent =
         "Add an album title and primary artist before searching.";
       return;
     }
+
     const current = () =>
-      ops.isActive() &&
-      version === appleVersion &&
-      ops.editor.open &&
-      !ops.isSaving() &&
-      ops.editor.querySelector("#album-form") === form;
+      this.dependencies.lifecycle.isActive() &&
+      version === this.appleVersion &&
+      this.dependencies.dialog.element.open &&
+      !this.dependencies.lifecycle.isSaving() &&
+      this.dependencies.dialog.element.querySelector("#album-form") === form;
+
     button.disabled = true;
     button.textContent = "Searching…";
     status.textContent = `Searching Apple Music (US) for ${title} by ${names.join(", ")}…`;
+
     try {
       const results = relevantAppleMusicAlbums(
         await findAppleMusicAlbums(title, names.join(" ")),
@@ -211,11 +290,13 @@ export function createAlbumEditor(ops: {
         names,
       );
       if (!current()) return;
-      if (hasAppleLink()) {
+
+      if (this.hasAppleLink()) {
         status.textContent = "An Apple Music link is already added.";
         return;
       }
-      appleResults = results;
+
+      this.appleResults = results;
       status.innerHTML = results.length
         ? /* HTML */ `<p class="form-hint">Choose the album to add its link.</p>
             <div class="apple-music-results">
@@ -253,185 +334,205 @@ export function createAlbumEditor(ops: {
     }
   }
 
-  function openAlbumForm(album: Partial<Album> = {}, mode = "manual") {
-    if (!ops.beginDraft({ kind: "album", item: album, mode })) return;
-    if (mode === "review") reviewAlbum = album as Album;
-    if (mode === "links") {
-      ops.showDialog(
-        "Edit music links",
-        /* HTML */ `<form id="links-form" data-id="${escapeHtml(album.id)}">
-          <div class="dialog-body">
-            <p class="dialog-intro">${escapeHtml(album.title)}</p>
-            <div id="link-rows">
-              ${(album.links?.length ? album.links : [{}]).map(linkRow).join("")}
-            </div>
+  private renderLinksForm(album: Partial<Album>): string {
+    return /* HTML */ `<form id="links-form" data-id="${escapeHtml(album.id)}">
+      <div class="dialog-body">
+        <p class="dialog-intro">${escapeHtml(album.title)}</p>
+        <div id="link-rows">
+          ${(album.links?.length ? album.links : [{}]).map(linkRow).join("")}
+        </div>
+        <button
+          type="button"
+          class="button secondary compact"
+          data-action="add-link"
+        >
+          ${icon("plus", 15)} Add link manually
+        </button>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="button secondary" data-action="close">
+          Cancel
+        </button>
+        <button type="submit" class="button primary">Save links</button>
+      </div>
+    </form>`;
+  }
+
+  private renderAlbumForm(
+    album: Partial<Album>,
+    mode: AlbumEditorMode,
+  ): string {
+    const isEdit = mode === "edit";
+    const fromSearch = mode === "review";
+
+    return /* HTML */ `<form
+      id="album-form"
+      data-mode="${mode}"
+      data-id="${escapeHtml(album.id)}"
+    >
+      <div class="dialog-body">
+        ${
+          fromSearch
+            ? /* HTML */ `<div class="review-preview">
+                ${cover(album)}
+                <div>
+                  <strong>${escapeHtml(album.title)}</strong>
+                  <p class="muted">
+                    Imported album. Review the artwork, details, and artist
+                    roles before saving.
+                  </p>
+                </div>
+              </div>`
+            : ""
+        }
+        ${isEdit ? "" : '<p class="form-hint">Album title is required. The other fields are optional.</p>'}
+        <div class="field-grid">
+          ${field("Album title", "title", album.title, { attributes: 'required maxlength="150"', placeholder: "Album title" })}
+          ${field("Release year", "year", album.releaseYear, { type: "number", attributes: 'min="1000" max="9999" step="1"', placeholder: "e.g. 1976" })}
+        </div>
+        ${this.dependencies.pickers.artistPicker(album.artists ?? [])}
+        ${this.dependencies.pickers.genrePicker(album.genres ?? [], () => this.suggestions("genre", album.genreSuggestions))}
+        ${this.dependencies.pickers.instrumentPicker(album.instruments ?? [], () => this.suggestions("instrument", album.instrumentSuggestions))}
+        <section class="link-form" aria-labelledby="music-links-title">
+          <h3 id="music-links-title">Music links</h3>
+          <div class="apple-music-search">
             <button
               type="button"
               class="button secondary compact"
-              data-action="add-link"
+              data-action="find-apple-music"
             >
-              ${icon("plus", 15)} Add link manually
+              ${icon("music", 15)} Search Apple Music
             </button>
-            <p class="form-error" id="form-error" role="alert" hidden></p>
+            <div
+              id="apple-music-status"
+              class="apple-music-status"
+              role="status"
+              aria-live="polite"
+            ></div>
           </div>
-          <div class="dialog-footer">
-            <button type="button" class="button secondary" data-action="close">
-              Cancel
-            </button>
-            <button type="submit" class="button primary">Save links</button>
-          </div>
-        </form>`,
+          <div id="link-rows">${(album.links ?? []).map(linkRow).join("")}</div>
+          <button
+            type="button"
+            class="button secondary compact"
+            data-action="add-link"
+          >
+            ${icon("plus", 15)} Add link manually
+          </button>
+        </section>
+        <section class="extra-fields" aria-labelledby="album-details-title">
+          <h3 id="album-details-title">More album details</h3>
+          ${field("Record label", "label", album.recordLabel, { attributes: 'maxlength="100"', placeholder: "Optional" })}
+          ${catalogImageField("Artwork URL", album.title ?? "", webUrl(album.artworkUrl)?.href, false, [], "artwork")}
+        </section>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="button secondary" data-action="close">
+          Cancel</button
+        ><button type="submit" class="button primary">
+          ${isEdit ? "Save changes" : "Save album"}
+        </button>
+      </div>
+    </form>`;
+  }
+
+  public openAlbumForm(
+    album: Partial<Album> = {},
+    mode: AlbumEditorMode = "manual",
+  ): void {
+    if (!this.dependencies.drafts.begin({ kind: "album", item: album, mode }))
+      return;
+
+    if (mode === "review") this.reviewAlbum = album as Album;
+
+    if (mode === "links") {
+      this.dependencies.dialog.show(
+        "Edit music links",
+        this.renderLinksForm(album),
         '[name="linkUrl"]',
       );
       return;
     }
+
     const isEdit = mode === "edit";
-    const fromSearch = mode === "review";
     const title = isEdit ? "Edit album" : "Create album";
-    ops.showDialog(
+
+    this.dependencies.dialog.show(
       title,
-      /* HTML */ `<form
-        id="album-form"
-        data-mode="${mode}"
-        data-id="${escapeHtml(album.id)}"
-      >
-        <div class="dialog-body">
-          ${
-            fromSearch
-              ? /* HTML */ `<div class="review-preview">
-                  ${cover(album)}
-                  <div>
-                    <strong>${escapeHtml(album.title)}</strong>
-                    <p class="muted">
-                      Imported album. Review the artwork, details, and artist
-                      roles before saving.
-                    </p>
-                  </div>
-                </div>`
-              : ""
-          }
-          ${isEdit ? "" : '<p class="form-hint">Album title is required. The other fields are optional.</p>'}
-          <div class="field-grid">
-            ${field("Album title", "title", album.title, { attributes: 'required maxlength="150"', placeholder: "Album title" })}
-            ${field("Release year", "year", album.releaseYear, { type: "number", attributes: 'min="1000" max="9999" step="1"', placeholder: "e.g. 1976" })}
-          </div>
-          ${ops.artistPicker(album.artists ?? [])}
-          ${ops.genrePicker(album.genres ?? [], () => suggestions("genre", album.genreSuggestions))}
-          ${ops.instrumentPicker(album.instruments ?? [], () => suggestions("instrument", album.instrumentSuggestions))}
-          <section class="link-form" aria-labelledby="music-links-title">
-            <h3 id="music-links-title">Music links</h3>
-            <div class="apple-music-search">
-              <button
-                type="button"
-                class="button secondary compact"
-                data-action="find-apple-music"
-              >
-                ${icon("music", 15)} Search Apple Music
-              </button>
-              <div
-                id="apple-music-status"
-                class="apple-music-status"
-                role="status"
-                aria-live="polite"
-              ></div>
-            </div>
-            <div id="link-rows">
-              ${(album.links ?? []).map(linkRow).join("")}
-            </div>
-            <button
-              type="button"
-              class="button secondary compact"
-              data-action="add-link"
-            >
-              ${icon("plus", 15)} Add link manually
-            </button>
-          </section>
-          <section class="extra-fields" aria-labelledby="album-details-title">
-            <h3 id="album-details-title">More album details</h3>
-            ${field("Record label", "label", album.recordLabel, { attributes: 'maxlength="100"', placeholder: "Optional" })}
-            ${catalogImageField("Artwork URL", album.title ?? "", webUrl(album.artworkUrl)?.href, false, [], "artwork")}
-          </section>
-          <p class="form-error" id="form-error" role="alert" hidden></p>
-        </div>
-        <div class="dialog-footer">
-          <button type="button" class="button secondary" data-action="close">
-            Cancel</button
-          ><button type="submit" class="button primary">
-            ${isEdit ? "Save changes" : "Save album"}
-          </button>
-        </div>
-      </form>`,
+      this.renderAlbumForm(album, mode),
       '[name="title"]',
       !isEdit,
     );
-    ops.editor
+
+    this.dependencies.dialog.element
       .querySelector<HTMLInputElement>('[name="artwork"]')!
       .addEventListener("input", (event) => {
         updateCatalogImage(event.currentTarget as HTMLInputElement);
       });
-    ops.updateInstruments();
-    ops.updateArtists();
-    ops.updateGenres();
+
+    this.dependencies.pickers.updateInstruments();
+    this.dependencies.pickers.updateArtists();
+    this.dependencies.pickers.updateGenres();
   }
 
-  function saveAlbumForm(form: HTMLFormElement) {
+  public saveAlbumForm(form: HTMLFormElement): void {
     const data = new FormData(form);
     const value = (name: string) => formValue(data, name);
+
     const mode = form.dataset.mode;
     const original =
       mode === "edit"
-        ? ops.library.albums.find((album) => album.id === form.dataset.id)
+        ? this.dependencies.library.albums.find(
+            (album) => album.id === form.dataset.id,
+          )
         : mode === "review"
-          ? reviewAlbum
+          ? this.reviewAlbum
           : undefined;
     if ((mode === "edit" || mode === "review") && !original) return;
+
     const title = value("title");
     const artwork = value("artwork");
     const mbid = original?.musicbrainzReleaseGroupId;
+
     if (!title)
-      return ops.formError(
+      return this.dependencies.dialog.formError(
         "Enter an album title.",
         form.querySelector<HTMLInputElement>("[name=title]")!,
       );
+
     if (artwork && !webUrl(artwork))
-      return ops.formError(
+      return this.dependencies.dialog.formError(
         "Enter an HTTP or HTTPS artwork URL.",
         form.querySelector<HTMLInputElement>("[name=artwork]")!,
       );
+
     if (
       mbid &&
-      ops.library.albums.some(
+      this.dependencies.library.albums.some(
         (album) =>
           album.id !== (mode === "edit" ? original?.id : undefined) &&
           album.musicbrainzReleaseGroupId?.toLowerCase() === mbid.toLowerCase(),
       )
     )
-      return ops.formError(
+      return this.dependencies.dialog.formError(
         "This MusicBrainz album is already in your library.",
         form.querySelector<HTMLInputElement>("[name=title]")!,
       );
-    const links = [];
-    for (const row of form.querySelectorAll(".link-fields")) {
-      const input = row.querySelector<HTMLInputElement>('[name="linkUrl"]')!;
-      const url = input.value.trim();
-      const label = row
-        .querySelector<HTMLInputElement>('[name="linkLabel"]')!
-        .value.trim();
-      if (!url && !label) continue;
-      if (!webUrl(url))
-        return ops.formError(
-          "Enter an HTTP or HTTPS URL for each music link.",
-          input,
-        );
-      links.push({ id: makeId(), url, label });
-    }
-    ops.commitInstrumentChoices();
+
+    const links = readMusicLinks(form, this.dependencies.dialog.formError);
+    if (!links) return;
+
+    this.dependencies.pickers.commitInstrumentChoices();
     const committedArtists = commitAlbumArtists(
-      ops.library.artists,
-      ops.selections.selectedArtists,
+      this.dependencies.library.artists,
+      this.dependencies.pickers.selections.selectedArtists,
     );
-    ops.library.artists = committedArtists.artists;
-    ops.library.genres = structuredClone(ops.selections.genreChoices);
+    this.dependencies.library.artists = committedArtists.artists;
+    this.dependencies.library.genres = structuredClone(
+      this.dependencies.pickers.selections.genreChoices,
+    );
+
     const saved: Album = {
       id: mode === "edit" ? original!.id : makeId(),
       sourceId: mode === "edit" ? original?.sourceId : undefined,
@@ -439,7 +540,9 @@ export function createAlbumEditor(ops: {
       sortTitle: original?.sortTitle ?? null,
       artists: committedArtists.credits,
       releaseYear: Number(value("year")) || null,
-      genres: structuredClone(ops.selections.selectedGenres),
+      genres: structuredClone(
+        this.dependencies.pickers.selections.selectedGenres,
+      ),
       recordLabel: value("label"),
       artworkUrl:
         artwork ||
@@ -448,108 +551,117 @@ export function createAlbumEditor(ops: {
       musicbrainzReleaseGroupId: mbid || null,
       links,
       createdAt: mode === "edit" ? original!.createdAt : today(),
-      instruments: structuredClone(ops.selections.selectedInstruments),
+      instruments: structuredClone(
+        this.dependencies.pickers.selections.selectedInstruments,
+      ),
       updatedAt: new Date().toISOString(),
       listeningEntries: mode === "edit" ? original!.listeningEntries : [],
     };
-    ops.library.albums =
+
+    this.dependencies.library.albums =
       mode === "edit"
-        ? ops.library.albums.map((album) =>
+        ? this.dependencies.library.albums.map((album) =>
             album.id === saved.id ? saved : album,
           )
-        : [saved, ...ops.library.albums];
-    ops.finishSave(
+        : [saved, ...this.dependencies.library.albums];
+
+    this.dependencies.persistence.finishSave(
       saved.id,
       mode === "edit" ? "Album updated." : "Album added to your library.",
     );
   }
 
-  function saveLinks(form: HTMLFormElement) {
-    const album = ops.library.albums.find(
+  public saveLinks(form: HTMLFormElement): void {
+    const album = this.dependencies.library.albums.find(
       (item) => item.id === form.dataset.id,
     );
     if (!album) return;
-    const links: AlbumLink[] = [];
-    for (const row of form.querySelectorAll(".link-fields")) {
-      const input = row.querySelector<HTMLInputElement>('[name="linkUrl"]')!;
-      const url = input.value.trim();
-      const label = row
-        .querySelector<HTMLInputElement>('[name="linkLabel"]')!
-        .value.trim();
-      if (!url && !label) continue;
-      if (!webUrl(url))
-        return ops.formError(
-          "Enter an HTTP or HTTPS URL for each music link.",
-          input,
-        );
-      links.push({ id: makeId(), url, label });
-    }
+
+    const links = readMusicLinks(form, this.dependencies.dialog.formError);
+    if (!links) return;
+
     album.links = links;
     album.updatedAt = new Date().toISOString();
-    ops.finishSave(album.id, "Album music links updated.");
+
+    this.dependencies.persistence.finishSave(
+      album.id,
+      "Album music links updated.",
+    );
   }
 
-  function click(button: HTMLButtonElement, album?: Album) {
+  public click(button: HTMLButtonElement, album?: Album): boolean {
     switch (button.dataset.action) {
       case "skip-import-suggestion": {
         const row = button.closest<HTMLElement>("[data-suggestion-row]")!;
         row.querySelector<HTMLSelectElement>("select")!.value = "__done";
         row.hidden = true;
-        ops.captureDraft();
+
+        this.dependencies.drafts.capture();
         break;
       }
+
       case "apply-import-suggestion": {
         const row = button.closest("[data-suggestion-row]")!;
         const select = row.querySelector<HTMLSelectElement>("select")!;
+
         if (!select.value) {
           select.focus();
           break;
         }
+
         const kind = button.dataset.kind as "genre" | "instrument";
         const name = button.dataset.name!;
         const choices =
           kind === "genre"
-            ? ops.selections.genreChoices
-            : ops.selections.instrumentChoices;
+            ? this.dependencies.pickers.selections.genreChoices
+            : this.dependencies.pickers.selections.instrumentChoices;
         const chosen =
           select.value === "__create"
             ? choices.find(
                 (item) => item.name.toLowerCase() === name.toLowerCase(),
               )
             : choices.find((item) => item.id === select.value);
-        ops.applySuggestion(
+
+        this.dependencies.pickers.applySuggestion(
           kind,
           chosen?.id ?? (select.value === "__create" ? null : select.value),
           name,
         );
+
         const added =
           chosen ??
           choices.find(
             (item) => item.name.toLowerCase() === name.toLowerCase(),
           );
         if (added) {
-          const mappings = readMappings();
+          const mappings = readMappings(this.mappingKey);
           mappings[`${kind}:${button.dataset.source}`] = added.id;
+
           try {
-            localStorage.setItem(mappingKey, JSON.stringify(mappings));
+            localStorage.setItem(this.mappingKey, JSON.stringify(mappings));
           } catch {
             /* Storage is optional. */
           }
         }
+
         select.value = "__done";
         (row as HTMLElement).hidden = true;
-        ops.captureDraft();
+
+        this.dependencies.drafts.capture();
         break;
       }
+
       case "edit-links":
-        if (album) openAlbumForm(album, "links");
+        if (album) this.openAlbumForm(album, "links");
         break;
+
       case "edit":
-        if (album) openAlbumForm(album, "edit");
+        if (album) this.openAlbumForm(album, "edit");
         break;
+
       case "delete-album":
         if (album)
-          ops.showDialog(
+          this.dependencies.dialog.show(
             "Delete album?",
             /* HTML */ `<div class="dialog-body">
                 <p>
@@ -574,51 +686,71 @@ export function createAlbumEditor(ops: {
             '.dialog-footer [data-action="close"]',
           );
         break;
+
       case "confirm-delete-album":
-        if (ops.library.albums.some((item) => item.id === button.dataset.id)) {
-          ops.library.albums = ops.library.albums.filter(
-            (item) => item.id !== button.dataset.id,
+        if (
+          this.dependencies.library.albums.some(
+            (item) => item.id === button.dataset.id,
+          )
+        ) {
+          this.dependencies.library.albums =
+            this.dependencies.library.albums.filter(
+              (item) => item.id !== button.dataset.id,
+            );
+
+          this.dependencies.persistence.finishCatalogSave(
+            "Album deleted.",
+            "#",
           );
-          ops.finishCatalogSave("Album deleted.", "#");
         }
         break;
 
       case "find-apple-music":
-        searchAppleMusic();
+        this.searchAppleMusic();
         break;
+
       case "pick-apple-music": {
-        const item = appleResults[Number(button.dataset.index)];
+        const item = this.appleResults[Number(button.dataset.index)];
         if (item) {
-          addAppleLink(item);
-          ops.editor.querySelector("#apple-music-status")!.replaceChildren();
-          appleResults = [];
+          this.addAppleLink(item);
+          this.dependencies.dialog.element
+            .querySelector("#apple-music-status")!
+            .replaceChildren();
+          this.appleResults = [];
         }
         break;
       }
+
       case "add-link": {
-        const rows = document.querySelector<HTMLElement>("#link-rows")!;
+        const rows =
+          this.dependencies.dialog.element.querySelector<HTMLElement>(
+            "#link-rows",
+          )!;
+
         rows.insertAdjacentHTML("beforeend", linkRow());
         focusForTyping(
           rows.lastElementChild!.querySelector<HTMLInputElement>("input"),
         );
         break;
       }
+
       case "remove-link":
         button.closest(".link-fields")?.remove();
-        ops.editor
+        this.dependencies.dialog.element
           .querySelector<HTMLElement>('[data-action="add-link"]')
           ?.focus();
         break;
+
       default:
         return false;
     }
+
     return true;
   }
 
-  function dispose() {
-    appleVersion++;
-    appleResults = [];
-    reviewAlbum = undefined;
+  public dispose(): void {
+    this.appleVersion++;
+    this.appleResults = [];
+    this.reviewAlbum = undefined;
   }
-  return { openAlbumForm, saveAlbumForm, saveLinks, click, dispose };
 }

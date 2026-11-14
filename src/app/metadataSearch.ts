@@ -1,3 +1,4 @@
+import type { AlbumEditorMode } from "./albumEditor";
 import { createDialog } from "./dialog";
 
 import {
@@ -19,7 +20,7 @@ export function createMetadataSearch(ops: {
   hasDraft: () => boolean;
   clearDraftTarget: () => void;
   resumeDraft: () => void;
-  openAlbumForm: (album?: Partial<Album>, mode?: string) => void;
+  openAlbumForm: (album?: Partial<Album>, mode?: AlbumEditorMode) => void;
   canDismissDialog: () => boolean;
   clearDraft: () => void;
   isActive: () => boolean;
