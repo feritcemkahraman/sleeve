@@ -41,9 +41,45 @@ test("account saves roll back, retain input for retry, and reconcile server time
   });
   await page.locator('a[href^="#album/"]').first().click();
   const original = await page.locator("#page-title").textContent();
+  const chip = page.locator("#vinyl-status-button");
+  await chip.click();
+  await page.getByRole("button", { name: "Add to wishlist" }).click();
+  await expect(chip).toBeDisabled();
+  await page.waitForFunction(() => !!(window as any).resolveSave);
+  await page.evaluate(() =>
+    (window as any).resolveSave({
+      data: null,
+      error: { message: "Rejected vinyl save" },
+    }),
+  );
+  await expect(page.locator("#toast")).toContainText("Rejected vinyl save");
+  await expect(chip).toBeEnabled();
+  await expect(chip).toHaveText("Vinyl");
+  await page.evaluate(() => {
+    delete (window as any).resolveSave;
+  });
+  await chip.click();
+  await page.getByRole("button", { name: "Add to wishlist" }).click();
+  await page.waitForFunction(() => !!(window as any).resolveSave);
+  await page.evaluate(() => {
+    const w = window as any;
+    const row = w.savePayload.changes.albums.saved[0];
+    w.resolveSave({
+      error: null,
+      data: {
+        albums: [
+          {
+            ...row,
+            created_at: "2020-01-01T00:00:00Z",
+            updated_at: "2030-01-01T00:00:00Z",
+          },
+        ],
+      },
+    });
+  });
+  await expect(chip).toHaveText("Vinyl wishlist");
   await page.locator('[data-action="edit"]').click();
   await page.locator('[name="title"]').fill("Account candidate");
-  await page.locator('[name="vinylStatus"]').selectOption("wishlisted");
   await page.locator('#album-form button[type="submit"]').click();
   await expect(page.locator("#editor")).toHaveAttribute("aria-busy", "true");
   await expect(page.locator('[name="title"]')).toBeDisabled();
@@ -59,7 +95,6 @@ test("account saves roll back, retain input for retry, and reconcile server time
   );
   await expect(page.locator("#form-error")).toContainText("Rejected test save");
   await expect(page.locator('[name="title"]')).toHaveValue("Account candidate");
-  await expect(page.locator('[name="vinylStatus"]')).toHaveValue("wishlisted");
   await expect(page.locator('[name="title"]')).toBeEnabled();
   await expect(page.locator("main")).toContainText(original!);
   // Existing navigation closes the dialog while retaining its form. Reopen

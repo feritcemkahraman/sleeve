@@ -117,6 +117,71 @@ function renderInstrumentation(instruments: Album["instruments"]): string {
   </section>`;
 }
 
+function vinylStatusIcon(status: Album["vinylStatus"]): string {
+  switch (status) {
+    case "owned":
+      return "disc";
+    case "wishlisted":
+      return "heart";
+    default:
+      return "plus";
+  }
+}
+
+function renderVinylControl(album: Album): string {
+  const status = album.vinylStatus;
+
+  return /* HTML */ `<div class="vinyl-control">
+    <button
+      type="button"
+      id="vinyl-status-button"
+      class="button vinyl-status-chip"
+      data-status="${status ?? ""}"
+      popovertarget="vinyl-status-options"
+    >
+      ${icon(vinylStatusIcon(status), 16)}
+      ${status ? vinylStatusLabel(status) : "Vinyl"} ${icon("down", 14)}
+    </button>
+    <div
+      id="vinyl-status-options"
+      class="vinyl-status-options"
+      popover
+      role="group"
+      aria-label="Vinyl status"
+    >
+      <button
+        type="button"
+        data-action="set-vinyl-status"
+        data-status="owned"
+        aria-pressed="${status === "owned"}"
+      >
+        ${icon("disc", 16)} Mark as owned
+        ${status === "owned" ? icon("check", 16) : ""}
+      </button>
+      <button
+        type="button"
+        data-action="set-vinyl-status"
+        data-status="wishlisted"
+        aria-pressed="${status === "wishlisted"}"
+      >
+        ${icon("heart", 16)} Add to wishlist
+        ${status === "wishlisted" ? icon("check", 16) : ""}
+      </button>
+      ${
+        status
+          ? /* HTML */ `<button
+              type="button"
+              data-action="set-vinyl-status"
+              data-status=""
+            >
+              ${icon("close", 16)} Clear status
+            </button>`
+          : ""
+      }
+    </div>
+  </div>`;
+}
+
 export function renderAlbumDetailView(album: Album): string {
   const listens = orderedListens(album);
   const credits = [...album.artists].sort((a, b) => a.position - b.position);
@@ -147,11 +212,11 @@ export function renderAlbumDetailView(album: Album): string {
               : "Unknown artist"
           }
           ${album.releaseYear ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.releaseYear)}</span>` : ""}
-          ${album.vinylStatus ? /* HTML */ `<span class="detail-year"> · ${vinylStatusLabel(album.vinylStatus)}</span>` : ""}
           ${album.recordLabel ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.recordLabel)}</span>` : ""}
         </p>
         ${album.genres.length ? /* HTML */ `<div class="tags">${album.genres.map((g) => /* HTML */ `<a class="chip" href="${genreUrl(g.id)}">${escapeHtml(g.name)}</a>`).join("")}</div>` : ""}
         <div class="detail-rating">${renderRating(listens[0]?.rating)}</div>
+        ${renderVinylControl(album)}
         <div class="detail-actions">
           <button type="button" class="button secondary" data-action="edit">
             ${icon("edit", 17)} Edit album

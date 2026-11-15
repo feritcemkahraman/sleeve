@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { vinylStatuses } from "./vinylStatus.ts";
 import { today } from "./date.ts";
 import { webUrl } from "../components/presentation.ts";
 
@@ -18,10 +17,6 @@ export const albumSubmissionSchema = z.object({
   artwork: optionalHttpUrlSchema,
   // Native number constraints handle range/step feedback before submission.
   year: z.string().transform((value) => Number(value) || null),
-  vinylStatus: z
-    .union([z.enum(vinylStatuses), z.literal("")])
-    .default("")
-    .transform((value) => value || null),
   label: z.string(),
 });
 export const musicLinkSubmissionSchema = z.object({

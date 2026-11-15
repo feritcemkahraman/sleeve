@@ -20,6 +20,8 @@ const paths: Record<string, string> = {
     '<circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2m1-16a3 3 0 0 1 0 6m2 4a6 6 0 0 1 3 5v1"/>',
   filter:
     '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="currentColor"/><circle cx="15" cy="17" r="2" fill="currentColor"/>',
+  heart:
+    '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   search: '<circle cx="10.75" cy="10.75" r="6.25"/><path d="m16 16 4 4"/>',
   arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',

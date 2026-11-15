@@ -32,7 +32,7 @@ test("album fields and music links survive save and reload", async ({
   await page.locator('[data-action="edit"]').click();
   await page.locator('[name="title"]').fill('Regression "album" & friends');
   await page.locator('[name="label"]').fill("Test label");
-  await page.locator('[name="vinylStatus"]').selectOption("owned");
+
   await page.locator('[data-action="add-link"]').click();
   await page
     .locator('[name="linkUrl"]')
@@ -53,7 +53,7 @@ test("album fields and music links survive save and reload", async ({
   ).toHaveAttribute("href", "https://example.com/record?a=1&b=2");
   await page.locator('[data-action="edit"]').click();
   await expect(page.locator('[name="label"]')).toHaveValue("Test label");
-  await expect(page.locator('[name="vinylStatus"]')).toHaveValue("owned");
+  await expect(page.locator('[name="vinylStatus"]')).toHaveCount(0);
 });
 
 test("new listening entry survives reload", async ({ page }) => {
@@ -95,7 +95,6 @@ test("unfinished album edits recover after reload without changing saved data", 
   const title = await page.locator("#page-title").textContent();
   await page.locator('[data-action="edit"]').click();
   await page.locator('[name="title"]').fill("Unfinished regression draft");
-  await page.locator('[name="vinylStatus"]').selectOption("wishlisted");
   await expect(page.locator("[data-draft-status]")).toHaveText(
     "Draft saved on this device",
   );
@@ -103,7 +102,6 @@ test("unfinished album edits recover after reload without changing saved data", 
   await expect(page.locator('[name="title"]')).toHaveValue(
     "Unfinished regression draft",
   );
-  await expect(page.locator('[name="vinylStatus"]')).toHaveValue("wishlisted");
   await expect(page.locator("#page-title")).toHaveText(title!);
   await page.locator('#album-form [data-action="close"]').click();
   await page.locator("[data-draft-discard]").click();
@@ -775,10 +773,11 @@ test("vinyl collection and wishlist filters follow saved status and clear correc
   const title = await page.locator("#page-title").textContent();
   const albumHash = await page.evaluate(() => location.hash);
   for (const status of ["wishlisted", "owned", ""]) {
-    await page.locator('[data-action="edit"]').click();
-    await page.getByLabel("Vinyl", { exact: true }).selectOption(status);
-    await page.locator('#album-form button[type="submit"]').click();
-    await expect(page.locator("#editor")).not.toBeVisible();
+    await page.locator("#vinyl-status-button").click();
+    await page
+      .locator(`[data-action="set-vinyl-status"][data-status="${status}"]`)
+      .click();
+    await expect(page.locator("#vinyl-status-options")).not.toBeVisible();
     await reloadDemo(page);
     if (status)
       await expect(page.locator("main")).toContainText(
@@ -811,4 +810,48 @@ test("vinyl collection and wishlist filters follow saved status and clear correc
     await page.goto("/" + albumHash);
     await expect(page.locator("#page-title")).toHaveText(title!);
   }
+});
+
+test("vinyl chip supports keyboard dismissal, current choices, and album edits", async ({
+  page,
+}) => {
+  await openAlbum(page);
+  const chip = page.locator("#vinyl-status-button");
+  const options = page.locator("#vinyl-status-options");
+  await expect(chip).toHaveText("Vinyl");
+  await chip.focus();
+  await page.keyboard.press("Enter");
+  await expect(options).toBeVisible();
+  await expect(
+    options.getByRole("button", { name: "Clear status" }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(options).not.toBeVisible();
+  await expect(chip).toBeFocused();
+  await chip.click();
+  await page.locator("#page-title").click();
+  await expect(options).not.toBeVisible();
+  await chip.click();
+  await options.getByRole("button", { name: "Add to wishlist" }).click();
+  await expect(chip).toHaveText("Vinyl wishlist");
+  await expect(chip).toBeFocused();
+  await chip.click();
+  await expect(
+    options.getByRole("button", { name: "Add to wishlist" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await options.getByRole("button", { name: "Mark as owned" }).click();
+  await expect(chip).toHaveText("Owned on vinyl");
+  await page.locator('[data-action="edit"]').click();
+  await expect(page.locator('[name="vinylStatus"]')).toHaveCount(0);
+  await page.locator('[name="label"]').fill("Updated label");
+  await page.locator('#album-form button[type="submit"]').click();
+  await reloadDemo(page);
+  await expect(chip).toHaveText("Owned on vinyl");
+  await chip.click();
+  await expect(
+    options.getByRole("button", { name: "Mark as owned" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await options.getByRole("button", { name: "Clear status" }).click();
+  await reloadDemo(page);
+  await expect(chip).toHaveText("Vinyl");
 });

@@ -1,9 +1,14 @@
+import { isVinylStatus, vinylStatusLabel } from "./vinylStatus";
 import { LibraryConnection } from "./libraryConnection";
 import { AppRouter } from "./appRouter";
 import { EditorPersistence } from "./editorPersistence";
 import type { EditorDialog, PickerInteraction } from "./editorContracts";
 import { createDiscovery, type Discovery } from "./discovery";
-import { createLibraryState, type LibraryStore } from "./libraryState";
+import {
+  createLibraryState,
+  type LibraryStore,
+  type SaveResult,
+} from "./libraryState";
 import { Dialog, type DialogController } from "./dialog";
 import {
   EditorDraftController,
@@ -13,7 +18,7 @@ import {
 import { createLifecycle } from "./lifecycle";
 import type { LibraryData } from "../types/library";
 import type { Genre } from "../types/albums";
-import type { Album, Artist, Instrument } from "../types/albums";
+import type { Album, Artist, Instrument, VinylStatus } from "../types/albums";
 import { icon } from "../components/icons";
 import { escapeHtml } from "../components/html";
 import {
@@ -25,6 +30,20 @@ import { GenreFeature } from "./genreFeature";
 import { ArtistFeature } from "./artistFeature";
 import { AlbumEditor } from "./albumEditor";
 import { createListening, type Listening } from "./listening";
+
+function vinylSaveMessage(
+  result: SaveResult,
+  status: VinylStatus | null,
+): string {
+  switch (result.status) {
+    case "rejected":
+      return `Couldn’t save vinyl status. ${result.message}`;
+    case "volatile":
+      return "Updated for this visit. Browser storage is unavailable.";
+    case "saved":
+      return status ? `${vinylStatusLabel(status)}.` : "Vinyl status cleared.";
+  }
+}
 
 export class AppController {
   private readonly lifecycle = createLifecycle();
@@ -426,11 +445,47 @@ export class AppController {
       return;
 
     switch (button.dataset.action) {
+      case "set-vinyl-status":
+        if (album) void this.saveVinylStatus(album, button);
+        return;
+
       case "close":
         this.dismissDialog();
         break;
     }
     this.router.click(button);
+  }
+
+  private async saveVinylStatus(
+    album: Album,
+    button: HTMLButtonElement,
+  ): Promise<void> {
+    const value = button.dataset.status;
+    if (value !== "" && !isVinylStatus(value)) return;
+
+    const status = value || null;
+    const control = this.main.querySelector<HTMLElement>(".vinyl-control");
+    control?.setAttribute("aria-busy", "true");
+    control?.querySelectorAll<HTMLButtonElement>("button").forEach((item) => {
+      item.disabled = true;
+    });
+    this.main
+      .querySelector<HTMLElement>("#vinyl-status-options")
+      ?.hidePopover();
+    album.vinylStatus = status;
+    album.updatedAt = new Date().toISOString();
+
+    const result = await this.library.save();
+    if (!this.lifecycle.active) return;
+
+    if (result.status !== "rejected") this.connection.cacheCommitted();
+    if (this.router.activeAlbum()?.id === album.id && !this.editor.open) {
+      this.router.render();
+      this.main
+        .querySelector<HTMLElement>("#vinyl-status-button")
+        ?.focus({ preventScroll: true });
+    }
+    this.announce(vinylSaveMessage(result, status));
   }
 
   private onInput(event: Event): void {
