@@ -1,7 +1,14 @@
 import { isLibrarySort } from "../components/sortOptions";
 import type { Album, Artist, Genre, Instrument } from "../types/albums";
 import type { LibraryData } from "../types/library";
-import { isVinylStatus } from "./vinylStatus";
+import { filterFields } from "./libraryFilters";
+import {
+  readLibraryFilters,
+  renderFilterChips,
+  toggleSelectedRating,
+} from "../components/libraryFilters";
+import { categoryFields } from "./libraryCategoryFilters";
+import { updateCategoryFilter } from "../components/libraryCategoryFilters";
 import type { LibraryState } from "../views/libraryView";
 import { renderLibraryView, updateLibrary } from "../views/libraryView";
 import { renderAlbumDetailView } from "../views/albumDetailView";
@@ -66,8 +73,7 @@ export class AppRouter {
   };
   private readonly state: LibraryState = {
     query: "",
-    genre: "",
-    vinyl: "",
+    filters: {},
     sort: "updated",
     layout: readLayout("library"),
   };
@@ -107,10 +113,13 @@ export class AppRouter {
     else if (hash === "#genres") this.dependencies.lists.genres(root);
     else if (hash === "#instruments") this.dependencies.lists.instruments(root);
     else {
-      const { albums, genres } = this.dependencies.library();
-      this.normalizeLibraryGenre(genres);
+      const { albums } = this.dependencies.library();
       const featured = albums[Math.floor(Math.random() * albums.length)];
-      root.innerHTML = renderLibraryView(featured, this.state, genres);
+      root.innerHTML = renderLibraryView(
+        featured,
+        this.state,
+        this.dependencies.library(),
+      );
       updateLibrary(
         this.dependencies.library().albums,
         this.state,
@@ -118,11 +127,6 @@ export class AppRouter {
         root,
       );
     }
-  }
-
-  private normalizeLibraryGenre(genres: Genre[]): void {
-    if (!genres.some((genre) => genre.name === this.state.genre))
-      this.state.genre = "";
   }
 
   public render(focus = false): void {
@@ -327,10 +331,73 @@ export class AppRouter {
         );
         return true;
       }
+      case "remove-library-filter": {
+        const field = filterFields.find(
+          (field) => field === button.dataset.filter,
+        );
+        if (field) delete this.state.filters[field];
+        this.render();
+        this.dependencies.main
+          .querySelector<HTMLElement>(".library-toolbar summary")
+          ?.focus();
+        return true;
+      }
+      case "add-library-category":
+      case "remove-library-category": {
+        const field = categoryFields.find(
+          (field) => field === button.dataset.category,
+        );
+        const data = this.dependencies.library();
+        const item =
+          field && data[field].find((item) => item.id === button.dataset.id);
+        if (!field || !item) return false;
+        const ids = new Set(this.state.filters[field]?.ids ?? []);
+        const adding = button.dataset.action === "add-library-category";
+        if (adding) ids.add(item.id);
+        else ids.delete(item.id);
+        if (ids.size) this.state.filters[field] = { ids: [...ids] };
+        else delete this.state.filters[field];
+
+        updateCategoryFilter(
+          this.dependencies.main,
+          field,
+          this.state.filters,
+          data,
+        );
+        this.updateLibraryResults();
+        const group = this.dependencies.main.querySelector<HTMLElement>(
+          `.category-filter[data-category="${field}"]`,
+        )!;
+        const buttons = group.querySelectorAll<HTMLButtonElement>(
+          adding
+            ? "[data-category-selected] button"
+            : "[data-category-results] button",
+        );
+        const focus =
+          [...buttons].find((candidate) => candidate.dataset.id === item.id) ??
+          buttons[0] ??
+          group.querySelector<HTMLInputElement>("input")!;
+        focus.focus({ preventScroll: true });
+        return true;
+      }
+      case "clear-library-year": {
+        const root = this.dependencies.main;
+        const min = root.querySelector<HTMLSelectElement>("#releaseYear-min");
+        const max = root.querySelector<HTMLSelectElement>("#releaseYear-max");
+        if (!min || !max) return false;
+
+        min.value = "";
+        max.value = "";
+        min.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+      }
+      case "clear-library-filters":
+        this.state.filters = {};
+        this.updateCatalogFilters("rating-unset");
+        return true;
       case "clear":
         this.state.query = "";
-        this.state.genre = "";
-        this.state.vinyl = "";
+        this.state.filters = {};
         this.render();
         focusForTyping(
           document.querySelector<HTMLInputElement>("#library-query"),
@@ -343,6 +410,19 @@ export class AppRouter {
   }
 
   public input(input: HTMLInputElement): void {
+    if (input.dataset.categorySearch) {
+      const field = categoryFields.find(
+        (field) => field === input.dataset.categorySearch,
+      );
+      if (field)
+        updateCategoryFilter(
+          this.dependencies.main,
+          field,
+          this.state.filters,
+          this.dependencies.library(),
+        );
+      return;
+    }
     if (input.id !== "library-query") return;
     this.state.query = input.value;
     updateLibrary(
@@ -354,15 +434,12 @@ export class AppRouter {
 
   public change(input: HTMLInputElement): void {
     if (
-      input.id === "vinyl-filter" &&
-      (input.value === "" || isVinylStatus(input.value))
+      input.closest(".library-filter-controls") &&
+      !input.dataset.categorySearch
     ) {
-      this.state.vinyl = input.value;
-      this.updateCatalogFilters(input.id);
-    }
-    if (input.id === "genre-filter") {
-      this.state.genre = input.value;
-      this.updateCatalogFilters(input.id);
+      const root = this.dependencies.main;
+      this.state.filters = readLibraryFilters(root, this.state.filters);
+      this.updateLibraryResults();
     }
     if (input.id === "sort-order" && isLibrarySort(input.value)) {
       this.state.sort = input.value;
@@ -374,8 +451,36 @@ export class AppRouter {
     }
   }
 
+  private updateLibraryResults(): void {
+    const root = this.dependencies.main;
+    root.querySelector("#library-filter-chips")!.innerHTML = renderFilterChips(
+      this.state.filters,
+      this.dependencies.library(),
+    );
+    const count = Object.keys(this.state.filters).length;
+    const summary = root.querySelector(".library-toolbar summary")!;
+    summary.setAttribute(
+      "aria-label",
+      `Filters${count ? `, ${count} active` : ""}`,
+    );
+    summary.querySelector(".genre-filter-count")?.remove();
+    if (count)
+      summary.insertAdjacentHTML(
+        "beforeend",
+        /* HTML */ `<span class="genre-filter-count">${count}</span>`,
+      );
+    updateLibrary(
+      this.dependencies.library().albums,
+      this.state,
+      this.dependencies.library().genres,
+      root,
+    );
+  }
+
   private listen(): void {
     this.lifecycle.listen(document).addEventListener("click", (event) => {
+      if (event.target instanceof HTMLInputElement)
+        toggleSelectedRating(event.target);
       this.routeHistory.saveScroll();
       const backLink = (event.target as Element).closest("a[data-route-back]");
       if (
@@ -393,7 +498,7 @@ export class AppRouter {
       const dropdown = this.dependencies.main.querySelector<HTMLDetailsElement>(
         ".genre-filter-dropdown[open]",
       );
-      if (dropdown && !dropdown.contains(event.target as Node))
+      if (dropdown && !event.composedPath().includes(dropdown))
         dropdown.open = false;
     });
     this.lifecycle.listen(document).addEventListener("keydown", (event) => {

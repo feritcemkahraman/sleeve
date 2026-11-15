@@ -121,7 +121,11 @@ export function renderGenreDetail(
   albums: Album[],
   layout = "grid",
 ): string {
-  const used = albums.filter((album) => includesGenre(album, genre.id, genres));
+  const used = albums
+    .filter((album) => includesGenre(album, genre.id, genres))
+    .sort((a, b) =>
+      (a.sortTitle || a.title).localeCompare(b.sortTitle || b.title),
+    );
   const children = genres.filter((child) => child.parentGenreId === genre.id);
   const direct = albums.some((album) =>
     album.genres.some((assigned) => assigned.id === genre.id),

@@ -472,10 +472,23 @@
 }
 
 .toolbar.library-toolbar {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto 180px;
   align-items: center;
   gap: 8px;
 }
 .toolbar.library-toolbar .search-field {
   grid-column: auto;
+}
+
+@media (max-width: 640px) {
+  .toolbar.library-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .toolbar.library-toolbar .search-field {
+    grid-column: 1 / -1;
+  }
+  .library-toolbar .genre-filter-panel {
+    left: 0;
+    right: auto;
+  }
 }

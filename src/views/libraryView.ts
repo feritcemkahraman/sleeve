@@ -7,7 +7,15 @@ import {
   renderSortOptions,
 } from "../components/sortOptions";
 import type { Genre } from "../types/albums";
-import { includesGenre } from "../app/genres";
+import type { LibraryData } from "../types/library";
+import {
+  matchesLibraryFilters,
+  type LibraryFilters,
+} from "../app/libraryFilters";
+import {
+  renderLibraryFilters,
+  renderFilterChips,
+} from "../components/libraryFilters";
 import type { Album } from "../types/albums";
 import {
   cover,
@@ -18,13 +26,11 @@ import {
 import { escapeHtml } from "../components/html";
 import { icon } from "../components/icons";
 import { renderAlbumGrid } from "../components/albumGrid";
-import type { VinylStatus } from "../types/albums";
 import { matches } from "../app/search";
 
 export interface LibraryState {
   query: string;
-  genre: string;
-  vinyl: VinylStatus | "";
+  filters: LibraryFilters;
   sort: LibrarySort;
   layout: Layout;
 }
@@ -32,9 +38,8 @@ export interface LibraryState {
 export function renderLibraryView(
   featured: Album | undefined,
   state: LibraryState,
-  catalog: Genre[],
+  data: LibraryData,
 ): string {
-  const genres = catalog.map((g) => g.name).sort((a, b) => a.localeCompare(b));
   return /* HTML */ `<section class="hero" aria-labelledby="page-title">
       <div class="hero-copy">
         <h1 id="page-title">The Listening <em>Room.</em></h1>
@@ -76,40 +81,16 @@ export function renderLibraryView(
             placeholder="Search albums or artists…"
             value="${escapeHtml(state.query)}"
         /></label>
-        ${renderCatalogFilters(
-          /* HTML */ `<label class="field"
-              ><span>Genre</span
-              ><select id="genre-filter">
-                <option value="">All genres</option>
-                ${genres.map((genre) => /* HTML */ `<option ${genre === state.genre ? "selected" : ""}>${escapeHtml(genre)}</option>`).join("")}
-              </select></label
-            >
-            <label class="field"
-              ><span id="vinyl-filter-label">Vinyl</span
-              ><select id="vinyl-filter" aria-labelledby="vinyl-filter-label">
-                <option value="">All albums</option>
-                <option
-                  value="owned"
-                  ${state.vinyl === "owned" ? "selected" : ""}
-                >
-                  Vinyl collection
-                </option>
-                <option
-                  value="wishlisted"
-                  ${state.vinyl === "wishlisted" ? "selected" : ""}
-                >
-                  Vinyl wishlist
-                </option>
-              </select></label
-            >
-            <label class="field"
-              ><span>Sort albums</span
-              ><select id="sort-order">
-                ${renderSortOptions(librarySortOptions, state.sort)}
-              </select></label
-            >`,
-          Number(Boolean(state.genre)) + Number(Boolean(state.vinyl)),
-        )}
+        ${renderCatalogFilters(renderLibraryFilters(state.filters, data), Object.keys(state.filters).length)}
+        <label class="select-wrap"
+          ><span class="sr-only">Sort albums</span
+          ><select id="sort-order">
+            ${renderSortOptions(librarySortOptions, state.sort)}</select
+          >${icon("chevron", 16)}</label
+        >
+      </div>
+      <div id="library-filter-chips" class="library-filter-chips">
+        ${renderFilterChips(state.filters, data)}
       </div>
       <p class="result-count" id="library-count" aria-live="polite"></p>
       <div id="library-results"></div>
@@ -138,13 +119,7 @@ export function updateLibrary(
   };
   const filtered = albums.filter(
     (album) =>
-      (!state.vinyl || album.vinylStatus === state.vinyl) &&
-      (!state.genre ||
-        includesGenre(
-          album,
-          catalog.find((g) => g.name === state.genre)?.id ?? "",
-          catalog,
-        )) &&
+      matchesLibraryFilters(album, state.filters, catalog) &&
       matches(
         state.query,
         album.title,

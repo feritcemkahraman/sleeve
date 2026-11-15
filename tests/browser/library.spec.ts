@@ -852,7 +852,11 @@ test("vinyl collection and wishlist filters follow saved status and clear correc
     }
     const filters = page.locator(".genre-filter-dropdown");
     await filters.locator("summary").click();
-    await page.locator("#vinyl-filter").selectOption(status || "owned");
+    await page
+      .locator(
+        `input[name="library-vinyl-status"][value="${status || "owned"}"]`,
+      )
+      .check();
     const results = page.locator("#library-results");
     if (status) {
       await expect(results).toContainText(title!);
@@ -865,10 +869,14 @@ test("vinyl collection and wishlist filters follow saved status and clear correc
         .click();
       await expect(page.locator("#library-query")).toHaveValue("");
       await filters.locator("summary").click();
-      await expect(page.locator("#vinyl-filter")).toHaveValue("");
+      await expect(
+        page.locator('input[name="library-vinyl-status"]:checked'),
+      ).toHaveCount(0);
       await page
-        .locator("#vinyl-filter")
-        .selectOption(status === "owned" ? "wishlisted" : "owned");
+        .locator(
+          `input[name="library-vinyl-status"][value="${status === "owned" ? "wishlisted" : "owned"}"]`,
+        )
+        .check();
     }
     await expect(results).toContainText("No matching albums");
     await page.goto("/" + albumHash);
