@@ -5,6 +5,7 @@ import {
 import { cycleLibrarySort } from "./librarySort";
 import type { Album, Artist, Genre, Instrument } from "../types/albums";
 import type { LibraryData } from "../types/library";
+import { isLibraryRoute, libraryUrl, parseLibraryUrl } from "./libraryUrl";
 import { filterFields } from "./libraryFilters";
 import {
   readLibraryFilters,
@@ -69,6 +70,7 @@ export interface AppRouterDependencies {
     instruments: (root: HTMLElement) => void;
   };
   onRendered: () => void;
+  onUrlChanged: () => void;
 }
 
 export class AppRouter {
@@ -95,11 +97,29 @@ export class AppRouter {
     this.lifecycle
       .listen(window)
       .addEventListener("scroll", () => this.routeHistory.saveScroll());
+    this.readLibraryUrl();
     this.listen();
   }
 
   public arrive(): number {
+    this.readLibraryUrl();
     return this.routeHistory.arrive();
+  }
+
+  private readLibraryUrl(): void {
+    if (!isLibraryRoute(location.hash)) return;
+    const state = parseLibraryUrl(location.hash);
+    this.state.query = state.query;
+    this.state.filters = state.filters;
+  }
+
+  private syncLibraryUrl(): void {
+    if (!isLibraryRoute(location.hash)) return;
+    const hash = libraryUrl(this.state);
+    if (hash === location.hash) return;
+    history.replaceState(history.state, "", hash);
+    this.routeHistory.replace();
+    this.dependencies.onUrlChanged();
   }
 
   public replaceHistory(): void {
@@ -123,16 +143,20 @@ export class AppRouter {
     else if (hash === "#genres") this.dependencies.lists.genres(root);
     else if (hash === "#instruments") this.dependencies.lists.instruments(root);
     else {
+      const state =
+        root === this.dependencies.main
+          ? this.state
+          : { ...this.state, ...parseLibraryUrl(hash) };
       const { albums } = this.dependencies.library();
       const featured = albums[Math.floor(Math.random() * albums.length)];
       root.innerHTML = renderLibraryView(
         featured,
-        this.state,
+        state,
         this.dependencies.library(),
       );
       updateLibrary(
         this.dependencies.library().albums,
-        this.state,
+        state,
         this.dependencies.library().genres,
         root,
       );
@@ -252,6 +276,7 @@ export class AppRouter {
   }
 
   private routeLabel(hash: string): string {
+    if (isLibraryRoute(hash)) return "library";
     if (hash === "#profile") return "profile";
     const listLabel = listRouteLabels.get(hash);
     if (listLabel !== undefined) return listLabel;
@@ -393,6 +418,7 @@ export class AppRouter {
           (field) => field === button.dataset.filter,
         );
         if (field) delete this.state.filters[field];
+        this.syncLibraryUrl();
         this.render();
         this.dependencies.main
           .querySelector<HTMLElement>(".library-toolbar summary")
@@ -450,11 +476,13 @@ export class AppRouter {
       }
       case "clear-library-filters":
         this.state.filters = {};
+        this.syncLibraryUrl();
         this.updateCatalogFilters("rating-unset");
         return true;
       case "clear":
         this.state.query = "";
         this.state.filters = {};
+        this.syncLibraryUrl();
         this.render();
         focusForTyping(
           document.querySelector<HTMLInputElement>("#library-query"),
@@ -482,6 +510,7 @@ export class AppRouter {
     }
     if (input.id !== "library-query") return;
     this.state.query = input.value;
+    this.syncLibraryUrl();
     updateLibrary(
       this.dependencies.library().albums,
       this.state,
@@ -501,6 +530,7 @@ export class AppRouter {
   }
 
   private updateLibraryResults(): void {
+    this.syncLibraryUrl();
     const root = this.dependencies.main;
     root.querySelector("#library-filter-chips")!.innerHTML = renderFilterChips(
       this.state.filters,

@@ -109,6 +109,9 @@ export class AppController {
         instruments: (root) => this.instrumentFeature.renderList(root),
       },
       onRendered: () => this.connection.update(),
+      onUrlChanged: () => {
+        this.viewHash = location.hash;
+      },
     });
 
     this.persistence = new EditorPersistence({
