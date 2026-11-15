@@ -25,6 +25,73 @@ test.beforeEach(async ({ page }) => {
   await enterDemo(page);
 });
 
+test("catalog album headings keep compact layout toggles on the title row", async ({
+  page,
+}) => {
+  for (const width of [1280, 393, 320]) {
+    await page.setViewportSize({ width, height: 850 });
+    for (const catalog of ["artists", "genres"]) {
+      await page.locator(`[data-nav="${catalog}"]`).click();
+      const singular = catalog.slice(0, -1);
+      await page.locator(`main a[href^="#${singular}/"]`).first().click();
+      const heading = page.locator(".album-list-heading");
+      await expect(heading).toBeVisible();
+      const title = await heading.locator(".detail-heading").boundingBox();
+      const toggle = await heading.locator(".layout-toggle").boundingBox();
+      expect(toggle!.width).toBeLessThan(100);
+      expect(
+        Math.abs(title!.y + title!.height / 2 - toggle!.y - toggle!.height / 2),
+      ).toBeLessThan(1);
+      await heading
+        .getByRole("button", { name: "List view", exact: true })
+        .click();
+      await expect(
+        page
+          .locator(".album-list-heading")
+          .getByRole("button", { name: "List view", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await page
+        .locator(".album-list-heading")
+        .getByRole("button", { name: "Grid view", exact: true })
+        .click();
+      await expect(
+        page
+          .locator(".album-list-heading")
+          .getByRole("button", { name: "Grid view", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+    }
+  }
+});
+
+test("library heading matches catalog typography and spacing", async ({
+  page,
+}) => {
+  for (const width of [1280, 393]) {
+    await page.setViewportSize({ width, height: 850 });
+    const measureHeading = () =>
+      page.locator("#page-title").evaluate((heading) => {
+        const style = getComputedStyle(heading);
+        const toolbar = heading
+          .closest("section")!
+          .querySelector(".search-field")!;
+        return {
+          font: style.font,
+          letterSpacing: style.letterSpacing,
+          top: heading.getBoundingClientRect().top,
+          gap:
+            toolbar.getBoundingClientRect().top -
+            heading.getBoundingClientRect().bottom,
+        };
+      });
+    const library = await measureHeading();
+    await page.locator('[data-nav="artists"]').click();
+    await expect(page.locator("#page-title")).toHaveText("Artists");
+    expect(await measureHeading()).toEqual(library);
+    await page.locator('[data-nav="library"]').click();
+    await expect(page.locator("#page-title")).toHaveText("Your library");
+  }
+});
+
 test("library toolbar stays on one row and the sort dropdown orders albums", async ({
   page,
 }) => {
@@ -697,8 +764,6 @@ test("route previews match live lists and remounting handles each save once", as
   // Start at the auth screen so this test owns the controller lifecycle.
   await page.goto("/");
   const previews = await page.evaluate(async () => {
-    // Compare the same featured album in the live page and its preview.
-    Math.random = () => 0;
     const appPath = "/src/app/app.ts";
     const controllerPath = "/src/app/controller.ts";
     const { renderApp } = await import(/* @vite-ignore */ appPath);

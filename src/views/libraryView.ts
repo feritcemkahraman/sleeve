@@ -17,7 +17,6 @@ import {
   renderFilterChips,
 } from "../components/libraryFilters";
 import type { Album } from "../types/albums";
-import { cover, albumUrl, artistText } from "../components/presentation";
 import { escapeHtml } from "../components/html";
 import { icon } from "../components/icons";
 import { renderAlbumGrid } from "../components/albumGrid";
@@ -31,70 +30,43 @@ export interface LibraryState {
 }
 
 export function renderLibraryView(
-  featured: Album | undefined,
   state: LibraryState,
   data: LibraryData,
 ): string {
-  return /* HTML */ `<section class="hero" aria-labelledby="page-title">
-      <div class="hero-copy">
-        <h1 id="page-title">The Listening <em>Room.</em></h1>
+  return /* HTML */ `<section class="library" aria-labelledby="page-title">
+    <div class="instrument-page-heading catalog-heading">
+      <h1 id="page-title">Your library</h1>
+      <div class="library-heading-actions">
+        <button type="button" class="button secondary" data-action="discover">
+          Discover</button
+        >${renderLayoutToggle(state.layout)}
       </div>
-      ${
-        featured
-          ? /* HTML */ `<a class="feature" href="${albumUrl(featured.id)}">
-              <span class="feature-art"
-                ><span class="vinyl" aria-hidden="true"></span
-                >${cover(featured, true)}</span
-              >
-              <span class="feature-copy"
-                ><strong>${escapeHtml(featured.title)}</strong
-                ><span class="feature-artist"
-                  >${escapeHtml(artistText(featured))}${featured.releaseYear ? ` · ${featured.releaseYear}` : ""}</span
-                ><span class="feature-open"
-                  >View album ${icon("arrow", 16)}</span
-                ></span
-              >
-            </a>`
-          : ""
-      }
-    </section>
-    <section class="library" aria-labelledby="library-title">
-      <div class="library-heading">
-        <h2 id="library-title">Your library</h2>
-        <div class="library-heading-actions">
-          <button type="button" class="button secondary" data-action="discover">
-            Discover</button
-          >${renderLayoutToggle(state.layout)}
+    </div>
+    <div class="toolbar library-toolbar">
+      <label class="search-field"
+        >${icon("search")}<span class="sr-only">Search library</span
+        ><input
+          id="library-query"
+          type="search"
+          placeholder="Search albums or artists…"
+          value="${escapeHtml(state.query)}"
+      /></label>
+      ${renderCatalogFilters(renderLibraryFilters(state.filters, data), Object.keys(state.filters).length)}
+      <details class="library-sort-dropdown">
+        <summary class="button secondary library-sort" aria-label="Sort albums">
+          ${icon("sort", 18)}<span class="library-sort-text">Sort</span>
+        </summary>
+        <div class="library-sort-panel" role="group" aria-label="Sort albums">
+          ${renderLibrarySortChoices(state.sort)}
         </div>
-      </div>
-      <div class="toolbar library-toolbar">
-        <label class="search-field"
-          >${icon("search")}<span class="sr-only">Search library</span
-          ><input
-            id="library-query"
-            type="search"
-            placeholder="Search albums or artists…"
-            value="${escapeHtml(state.query)}"
-        /></label>
-        ${renderCatalogFilters(renderLibraryFilters(state.filters, data), Object.keys(state.filters).length)}
-        <details class="library-sort-dropdown">
-          <summary
-            class="button secondary library-sort"
-            aria-label="Sort albums"
-          >
-            ${icon("sort", 18)}<span class="library-sort-text">Sort</span>
-          </summary>
-          <div class="library-sort-panel" role="group" aria-label="Sort albums">
-            ${renderLibrarySortChoices(state.sort)}
-          </div>
-        </details>
-      </div>
-      <div id="library-filter-chips" class="library-filter-chips">
-        ${renderFilterChips(state.filters, data)}
-      </div>
-      <p class="result-count" id="library-count" aria-live="polite"></p>
-      <div id="library-results"></div>
-    </section>`;
+      </details>
+    </div>
+    <div id="library-filter-chips" class="library-filter-chips">
+      ${renderFilterChips(state.filters, data)}
+    </div>
+    <p class="result-count" id="library-count" aria-live="polite"></p>
+    <div id="library-results"></div>
+  </section>`;
 }
 
 export function updateLibrary(
