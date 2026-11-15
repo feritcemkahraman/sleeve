@@ -408,10 +408,9 @@
 .star-fill svg {
   fill: currentColor;
 }
-.unrated {
-  display: inline-flex;
-  color: var(--quiet);
-  font: 500 11px/1.4 var(--mono);
+.unrated .star > svg {
+  fill: var(--quiet);
+  fill-opacity: 0.3;
 }
 .album-list {
   display: grid;
