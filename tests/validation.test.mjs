@@ -291,3 +291,27 @@ test("route snapshot and marker schemas preserve finite scroll and integer marke
       false,
     );
 });
+
+test("vinyl status validates form and stored values while accepting legacy albums", () => {
+  const form = { title: "Album", artwork: "", year: "", label: "" };
+  for (const status of ["owned", "wishlisted", ""]) {
+    assert.equal(
+      albumSubmissionSchema.parse({ ...form, vinylStatus: status }).vinylStatus,
+      status || null,
+    );
+  }
+  assert.equal(
+    albumSubmissionSchema.safeParse({ ...form, vinylStatus: "invalid" })
+      .success,
+    false,
+  );
+  for (const status of [undefined, null, "owned", "wishlisted", "invalid"]) {
+    const data = library();
+    data.albums[0].vinylStatus = status;
+    assert.equal(isDemoAlbums(data.albums), status !== "invalid");
+    assert.equal(
+      isLibrarySnapshot({ version: 1, accountId: "a", syncedAt: 0, data }),
+      status !== "invalid",
+    );
+  }
+});

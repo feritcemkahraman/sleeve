@@ -18,11 +18,13 @@ import {
 import { escapeHtml } from "../components/html";
 import { icon } from "../components/icons";
 import { renderAlbumGrid } from "../components/albumGrid";
+import type { VinylStatus } from "../types/albums";
 import { matches } from "../app/search";
 
 export interface LibraryState {
   query: string;
   genre: string;
+  vinyl: VinylStatus | "";
   sort: LibrarySort;
   layout: Layout;
 }
@@ -83,12 +85,30 @@ export function renderLibraryView(
               </select></label
             >
             <label class="field"
+              ><span id="vinyl-filter-label">Vinyl</span
+              ><select id="vinyl-filter" aria-labelledby="vinyl-filter-label">
+                <option value="">All albums</option>
+                <option
+                  value="owned"
+                  ${state.vinyl === "owned" ? "selected" : ""}
+                >
+                  Vinyl collection
+                </option>
+                <option
+                  value="wishlisted"
+                  ${state.vinyl === "wishlisted" ? "selected" : ""}
+                >
+                  Vinyl wishlist
+                </option>
+              </select></label
+            >
+            <label class="field"
               ><span>Sort albums</span
               ><select id="sort-order">
                 ${renderSortOptions(librarySortOptions, state.sort)}
               </select></label
             >`,
-          Number(Boolean(state.genre)),
+          Number(Boolean(state.genre)) + Number(Boolean(state.vinyl)),
         )}
       </div>
       <p class="result-count" id="library-count" aria-live="polite"></p>
@@ -118,6 +138,7 @@ export function updateLibrary(
   };
   const filtered = albums.filter(
     (album) =>
+      (!state.vinyl || album.vinylStatus === state.vinyl) &&
       (!state.genre ||
         includesGenre(
           album,

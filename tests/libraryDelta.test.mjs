@@ -103,3 +103,16 @@ test("primary genres and instrument categories replace changed associations with
     },
   ]);
 });
+
+test("vinyl status changes send album updates, including explicit null to clear", () => {
+  const before = base();
+  for (const status of ["wishlisted", "owned", null]) {
+    const next = structuredClone(before);
+    next.albums[0].vinylStatus = status;
+    if (status === null) before.albums[0].vinylStatus = "owned";
+    const delta = libraryDelta(before, next);
+    assert.equal(delta.albums.saved.length, 1);
+    assert.equal(delta.albums.saved[0].vinyl_status, status);
+    assert.deepEqual(delta.albums.deleted, []);
+  }
+});

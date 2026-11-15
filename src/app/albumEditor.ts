@@ -393,6 +393,24 @@ export class AlbumEditor {
         ${isEdit ? "" : /* HTML */ `<p class="form-hint">Album title is required. The other fields are optional.</p>`}
         <div class="field-grid">
           ${field("Album title", "title", album.title, { attributes: 'required maxlength="150"', placeholder: "Album title" })}
+          <label class="field"
+            ><span id="album-vinyl-label">Vinyl</span
+            ><select name="vinylStatus" aria-labelledby="album-vinyl-label">
+              <option value="">None</option>
+              <option
+                value="owned"
+                ${album.vinylStatus === "owned" ? "selected" : ""}
+              >
+                Owned
+              </option>
+              <option
+                value="wishlisted"
+                ${album.vinylStatus === "wishlisted" ? "selected" : ""}
+              >
+                Wishlisted
+              </option>
+            </select></label
+          >
           ${field("Release year", "year", album.releaseYear, { type: "number", attributes: 'min="1000" max="9999" step="1"', placeholder: "e.g. 1976" })}
         </div>
         ${this.dependencies.pickers.artistPicker(album.artists ?? [])}
@@ -510,19 +528,34 @@ export class AlbumEditor {
       artwork: value("artwork"),
       year: value("year"),
       label: value("label"),
+      vinylStatus: value("vinylStatus"),
     });
     if (!parsed.success) {
-      const field =
-        parsed.error.issues[0].path[0] === "title" ? "title" : "artwork";
+      let field: string;
+      let message: string;
+      switch (parsed.error.issues[0].path[0]) {
+        case "title":
+          field = "title";
+          message = "Enter an album title.";
+          break;
+        case "vinylStatus":
+          field = "vinylStatus";
+          message = "Choose a valid vinyl status.";
+          break;
+        default:
+          field = "artwork";
+          message = "Enter an HTTP or HTTPS artwork URL.";
+      }
+
       return this.dependencies.dialog.formError(
-        field === "title"
-          ? "Enter an album title."
-          : "Enter an HTTP or HTTPS artwork URL.",
-        form.querySelector<HTMLInputElement>(`[name=${field}]`)!,
+        message,
+        form.querySelector<HTMLInputElement | HTMLSelectElement>(
+          `[name=${field}]`,
+        )!,
       );
     }
 
-    const { title, artwork, year, label } = parsed.data;
+    const { title, artwork, year, label, vinylStatus } = parsed.data;
     const mbid = original?.musicbrainzReleaseGroupId;
 
     if (
@@ -562,6 +595,7 @@ export class AlbumEditor {
         this.dependencies.pickers.selections.selectedGenres,
       ),
       recordLabel: label,
+      vinylStatus,
       artworkUrl: savedArtwork(artwork, original?.artworkUrl),
       musicbrainzReleaseGroupId: mbid || null,
       links,

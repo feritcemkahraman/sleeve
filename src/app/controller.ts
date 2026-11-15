@@ -671,7 +671,7 @@ export class AppController {
     }
   }
 
-  private formError(message: string, input: HTMLInputElement): void {
+  private formError(message: string, input: HTMLElement): void {
     const error = document.querySelector<HTMLElement>("#form-error")!;
     error.hidden = false;
     error.textContent = message;

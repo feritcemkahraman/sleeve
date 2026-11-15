@@ -8,7 +8,7 @@ export interface EditorDialog {
     focusSelector: string,
     backToSearch?: boolean,
   ) => void;
-  formError: (message: string, input: HTMLInputElement) => void;
+  formError: (message: string, input: HTMLElement) => void;
 }
 
 export interface PickerInteraction {

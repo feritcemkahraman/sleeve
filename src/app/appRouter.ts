@@ -1,6 +1,7 @@
 import { isLibrarySort } from "../components/sortOptions";
 import type { Album, Artist, Genre, Instrument } from "../types/albums";
 import type { LibraryData } from "../types/library";
+import { isVinylStatus } from "./vinylStatus";
 import type { LibraryState } from "../views/libraryView";
 import { renderLibraryView, updateLibrary } from "../views/libraryView";
 import { renderAlbumDetailView } from "../views/albumDetailView";
@@ -66,6 +67,7 @@ export class AppRouter {
   private readonly state: LibraryState = {
     query: "",
     genre: "",
+    vinyl: "",
     sort: "updated",
     layout: readLayout("library"),
   };
@@ -328,6 +330,7 @@ export class AppRouter {
       case "clear":
         this.state.query = "";
         this.state.genre = "";
+        this.state.vinyl = "";
         this.render();
         focusForTyping(
           document.querySelector<HTMLInputElement>("#library-query"),
@@ -350,6 +353,13 @@ export class AppRouter {
   }
 
   public change(input: HTMLInputElement): void {
+    if (
+      input.id === "vinyl-filter" &&
+      (input.value === "" || isVinylStatus(input.value))
+    ) {
+      this.state.vinyl = input.value;
+      this.updateCatalogFilters(input.id);
+    }
     if (input.id === "genre-filter") {
       this.state.genre = input.value;
       this.updateCatalogFilters(input.id);

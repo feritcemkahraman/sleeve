@@ -43,6 +43,7 @@ test("account saves roll back, retain input for retry, and reconcile server time
   const original = await page.locator("#page-title").textContent();
   await page.locator('[data-action="edit"]').click();
   await page.locator('[name="title"]').fill("Account candidate");
+  await page.locator('[name="vinylStatus"]').selectOption("wishlisted");
   await page.locator('#album-form button[type="submit"]').click();
   await expect(page.locator("#editor")).toHaveAttribute("aria-busy", "true");
   await expect(page.locator('[name="title"]')).toBeDisabled();
@@ -58,6 +59,7 @@ test("account saves roll back, retain input for retry, and reconcile server time
   );
   await expect(page.locator("#form-error")).toContainText("Rejected test save");
   await expect(page.locator('[name="title"]')).toHaveValue("Account candidate");
+  await expect(page.locator('[name="vinylStatus"]')).toHaveValue("wishlisted");
   await expect(page.locator('[name="title"]')).toBeEnabled();
   await expect(page.locator("main")).toContainText(original!);
   // Existing navigation closes the dialog while retaining its form. Reopen
@@ -69,6 +71,11 @@ test("account saves roll back, retain input for retry, and reconcile server time
   await page.locator('#album-form button[type="submit"]').click();
   await expect(page.locator("#editor")).toHaveAttribute("aria-busy", "true");
   await page.waitForFunction(() => !!(window as any).savePayload);
+  expect(
+    await page.evaluate(
+      () => (window as any).savePayload.changes.albums.saved[0].vinyl_status,
+    ),
+  ).toBe("wishlisted");
   await page.evaluate(() => {
     const w = window as any;
     const row = w.savePayload.changes.albums.saved[0];

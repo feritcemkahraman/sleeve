@@ -70,6 +70,7 @@ export function mapAlbum(row: AlbumQueryRow): Album {
     title: row.title,
     sortTitle: row.sort_title,
     recordLabel: row.record_label ?? undefined,
+    vinylStatus: row.vinyl_status,
     releaseYear: row.release_year,
     artworkUrl: row.artwork_url,
     musicbrainzReleaseGroupId: row.musicbrainz_release_group_id,

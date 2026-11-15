@@ -32,6 +32,7 @@ test("album fields and music links survive save and reload", async ({
   await page.locator('[data-action="edit"]').click();
   await page.locator('[name="title"]').fill('Regression "album" & friends');
   await page.locator('[name="label"]').fill("Test label");
+  await page.locator('[name="vinylStatus"]').selectOption("owned");
   await page.locator('[data-action="add-link"]').click();
   await page
     .locator('[name="linkUrl"]')
@@ -52,6 +53,7 @@ test("album fields and music links survive save and reload", async ({
   ).toHaveAttribute("href", "https://example.com/record?a=1&b=2");
   await page.locator('[data-action="edit"]').click();
   await expect(page.locator('[name="label"]')).toHaveValue("Test label");
+  await expect(page.locator('[name="vinylStatus"]')).toHaveValue("owned");
 });
 
 test("new listening entry survives reload", async ({ page }) => {
@@ -93,6 +95,7 @@ test("unfinished album edits recover after reload without changing saved data", 
   const title = await page.locator("#page-title").textContent();
   await page.locator('[data-action="edit"]').click();
   await page.locator('[name="title"]').fill("Unfinished regression draft");
+  await page.locator('[name="vinylStatus"]').selectOption("wishlisted");
   await expect(page.locator("[data-draft-status]")).toHaveText(
     "Draft saved on this device",
   );
@@ -100,6 +103,7 @@ test("unfinished album edits recover after reload without changing saved data", 
   await expect(page.locator('[name="title"]')).toHaveValue(
     "Unfinished regression draft",
   );
+  await expect(page.locator('[name="vinylStatus"]')).toHaveValue("wishlisted");
   await expect(page.locator("#page-title")).toHaveText(title!);
   await page.locator('#album-form [data-action="close"]').click();
   await page.locator("[data-draft-discard]").click();
@@ -762,4 +766,49 @@ test("malformed persisted draft selections do not prevent opening a new editor",
   await expect(page.getByRole("button", { name: "Resume draft" })).toBeHidden();
   await page.locator('[data-action="edit"]').click();
   await expect(page.locator('[name="title"]')).toHaveValue(title!);
+});
+
+test("vinyl collection and wishlist filters follow saved status and clear correctly", async ({
+  page,
+}) => {
+  await openAlbum(page);
+  const title = await page.locator("#page-title").textContent();
+  const albumHash = await page.evaluate(() => location.hash);
+  for (const status of ["wishlisted", "owned", ""]) {
+    await page.locator('[data-action="edit"]').click();
+    await page.getByLabel("Vinyl", { exact: true }).selectOption(status);
+    await page.locator('#album-form button[type="submit"]').click();
+    await expect(page.locator("#editor")).not.toBeVisible();
+    await reloadDemo(page);
+    if (status)
+      await expect(page.locator("main")).toContainText(
+        status === "owned" ? "Owned on vinyl" : "Vinyl wishlist",
+      );
+    await page.evaluate(() => {
+      location.hash = "";
+    });
+    const filters = page.locator(".genre-filter-dropdown");
+    await filters.locator("summary").click();
+    await page.locator("#vinyl-filter").selectOption(status || "owned");
+    const results = page.locator("#library-results");
+    if (status) {
+      await expect(results).toContainText(title!);
+      await expect(page.locator("#library-count")).toContainText("1 of");
+      await filters.locator("summary").click();
+      await page.locator("#library-query").fill("no-such-vinyl-title");
+      await expect(results).toContainText("No matching albums");
+      await page
+        .getByRole("button", { name: "Clear filters", exact: true })
+        .click();
+      await expect(page.locator("#library-query")).toHaveValue("");
+      await filters.locator("summary").click();
+      await expect(page.locator("#vinyl-filter")).toHaveValue("");
+      await page
+        .locator("#vinyl-filter")
+        .selectOption(status === "owned" ? "wishlisted" : "owned");
+    }
+    await expect(results).toContainText("No matching albums");
+    await page.goto("/" + albumHash);
+    await expect(page.locator("#page-title")).toHaveText(title!);
+  }
 });
