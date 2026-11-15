@@ -7,6 +7,7 @@ const row = () => ({
   title: "Title",
   sort_title: null,
   record_label: null,
+  vinyl_status: null,
   release_year: null,
   artwork_url: null,
   musicbrainz_release_group_id: null,
@@ -30,6 +31,7 @@ test("album mapper skips absent joins and keeps nullable album metadata", () => 
   assert.deepEqual(result.instruments, []);
   assert.equal(result.recordLabel, undefined);
   assert.equal(result.releaseYear, null);
+  assert.equal(result.vinylStatus, null);
   assert.equal(result.createdAt, "created");
   assert.equal(result.updatedAt, "updated");
 });
@@ -94,4 +96,13 @@ test("album mapper preserves credit positions, primary genre ordering, instrumen
     ["2026-03-01", "2026-02-01", "2026-01-01"],
   );
   assert.deepEqual(input, before);
+});
+
+test("album mapper preserves owned and wishlisted vinyl status", () => {
+  for (const vinyl_status of ["owned", "wishlisted"]) {
+    assert.equal(
+      mapAlbum({ ...row(), vinyl_status }).vinylStatus,
+      vinyl_status,
+    );
+  }
 });

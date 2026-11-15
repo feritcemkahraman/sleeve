@@ -9,6 +9,7 @@ const ALBUM_SELECT = `
     title,
     sort_title,
     record_label,
+    vinyl_status,
     release_year,
     artwork_url,
     musicbrainz_release_group_id,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { vinylStatuses } from "./vinylStatus.ts";
 import { instrumentCategories } from "./instruments.ts";
 import type { Album, Artist, Genre, Instrument } from "../types/albums";
 import type { LibrarySnapshot } from "./libraryCache";
@@ -17,6 +18,7 @@ const demoAlbumSchema = z.looseObject({
   artworkUrl: optionalStringSchema,
   sourceId: optionalStringSchema,
   recordLabel: optionalStringSchema,
+  vinylStatus: z.enum(vinylStatuses).nullish(),
   musicbrainzReleaseGroupId: optionalStringSchema,
   releaseYear: z.number().refine(Number.isInteger).nullable(),
   artists: z.array(z.looseObject({ name: z.string() })),
@@ -73,6 +75,7 @@ const librarySnapshotSchema = z.looseObject({
       z.looseObject({
         id: z.string(),
         title: z.string(),
+        vinylStatus: z.enum(vinylStatuses).nullish(),
         createdAt: z.string(),
         updatedAt: z.string(),
         artists: namedRowsSchema,

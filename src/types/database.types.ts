@@ -181,6 +181,7 @@ export type Database = {
           title: string;
           updated_at: string;
           user_id: string;
+          vinyl_status: Database["public"]["Enums"]["vinyl_status"] | null;
         };
         Insert: {
           artwork_url?: string | null;
@@ -193,6 +194,7 @@ export type Database = {
           title: string;
           updated_at?: string;
           user_id?: string;
+          vinyl_status?: Database["public"]["Enums"]["vinyl_status"] | null;
         };
         Update: {
           artwork_url?: string | null;
@@ -205,39 +207,40 @@ export type Database = {
           title?: string;
           updated_at?: string;
           user_id?: string;
+          vinyl_status?: Database["public"]["Enums"]["vinyl_status"] | null;
         };
         Relationships: [];
       };
       artists: {
         Row: {
-          photo_url: string | null;
           country: string | null;
           created_at: string;
           id: string;
           musicbrainz_id: string | null;
           name: string;
+          photo_url: string | null;
           sort_name: string | null;
           updated_at: string;
           user_id: string;
         };
         Insert: {
-          photo_url?: string | null;
           country?: string | null;
           created_at?: string;
           id?: string;
           musicbrainz_id?: string | null;
           name: string;
+          photo_url?: string | null;
           sort_name?: string | null;
           updated_at?: string;
           user_id?: string;
         };
         Update: {
-          photo_url?: string | null;
           country?: string | null;
           created_at?: string;
           id?: string;
           musicbrainz_id?: string | null;
           name?: string;
+          photo_url?: string | null;
           sort_name?: string | null;
           updated_at?: string;
           user_id?: string;
@@ -304,23 +307,23 @@ export type Database = {
       };
       instruments: {
         Row: {
-          image_url: string | null;
           created_at: string;
           id: string;
+          image_url: string | null;
           name: string;
           user_id: string;
         };
         Insert: {
-          image_url?: string | null;
           created_at?: string;
           id?: string;
+          image_url?: string | null;
           name: string;
           user_id?: string;
         };
         Update: {
-          image_url?: string | null;
           created_at?: string;
           id?: string;
+          image_url?: string | null;
           name?: string;
           user_id?: string;
         };
@@ -390,10 +393,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      save_library_changes: {
-        Args: { changes: Json };
-        Returns: Json;
-      };
+      save_library_changes: { Args: { changes: Json }; Returns: Json };
     };
     Enums: {
       artist_role: "primary" | "featured" | "other";
@@ -406,6 +406,7 @@ export type Database = {
         | "electronic"
         | "voice"
         | "other";
+      vinyl_status: "owned" | "wishlisted";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -544,6 +545,7 @@ export const Constants = {
         "voice",
         "other",
       ],
+      vinyl_status: ["owned", "wishlisted"],
     },
   },
 } as const;

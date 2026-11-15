@@ -1,5 +1,7 @@
 import type { Enums } from "./database.types";
 
+export type VinylStatus = Enums<"vinyl_status">;
+
 export type ArtistRole = Enums<"artist_role">;
 export type InstrumentCategory = Enums<"instrument_category">;
 
@@ -15,6 +17,7 @@ export interface Album {
   genreSuggestions?: { id: string; name: string }[];
   instrumentSuggestions?: { id: string; name: string }[];
   recordLabel?: string;
+  vinylStatus?: VinylStatus | null;
   sortTitle: string | null;
   releaseYear: number | null;
   artworkUrl: string | null;

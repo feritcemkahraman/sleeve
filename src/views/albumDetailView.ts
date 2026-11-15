@@ -2,6 +2,7 @@ import { genreUrl } from "../app/genres";
 import { artistUrl, roleLabel } from "./artistsView";
 import type { Album, AlbumLink, ListeningEntry } from "../types/albums";
 import { cover, orderedListens, webUrl } from "../components/presentation";
+import { vinylStatusLabel } from "../app/vinylStatus";
 import { escapeHtml } from "../components/html";
 import { instrumentUrl } from "../app/instruments";
 import { icon } from "../components/icons";
@@ -146,6 +147,7 @@ export function renderAlbumDetailView(album: Album): string {
               : "Unknown artist"
           }
           ${album.releaseYear ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.releaseYear)}</span>` : ""}
+          ${album.vinylStatus ? /* HTML */ `<span class="detail-year"> · ${vinylStatusLabel(album.vinylStatus)}</span>` : ""}
           ${album.recordLabel ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.recordLabel)}</span>` : ""}
         </p>
         ${album.genres.length ? /* HTML */ `<div class="tags">${album.genres.map((g) => /* HTML */ `<a class="chip" href="${genreUrl(g.id)}">${escapeHtml(g.name)}</a>`).join("")}</div>` : ""}

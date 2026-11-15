@@ -78,6 +78,7 @@ function rows(library: LibraryData): LibraryRows {
       id: a.id,
       title: a.title,
       record_label: a.recordLabel || null,
+      vinyl_status: a.vinylStatus ?? null,
       sort_title: a.sortTitle || null,
       release_year: a.releaseYear,
       artwork_url: a.artworkUrl || null,

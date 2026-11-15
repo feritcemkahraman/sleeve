@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { vinylStatuses } from "./vinylStatus.ts";
 import type { Draft, DraftTarget } from "./editorDrafts";
 import { albumEditorModeSchema } from "./editorContracts.ts";
 import { instrumentCategories } from "./instruments.ts";
@@ -52,6 +53,7 @@ const albumSchema = z.looseObject({
   updatedAt: z.string(),
   sourceId: z.string().optional(),
   recordLabel: z.string().optional(),
+  vinylStatus: z.enum(vinylStatuses).nullish(),
   genreSuggestions: z.array(suggestionSchema).optional(),
   instrumentSuggestions: z.array(suggestionSchema).optional(),
   artists: z.array(artistCreditSchema),

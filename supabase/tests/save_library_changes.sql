@@ -41,6 +41,59 @@ select public.save_library_changes('{
 select pg_temp.assert_true((select photo_url = 'https://example.com/new.jpg' from public.artists), 'Artist photo update missing');
 select pg_temp.assert_true((select image_url is null from public.instruments), 'Instrument image clear failed');
 select pg_temp.assert_true((select record_label = 'Blue Note' from public.albums), 'Record label missing');
+-- Existing/older payloads default to null; new clients can set and clear status.
+select pg_temp.assert_true((select vinyl_status is null from public.albums), 'Vinyl status must default to null');
+do $$
+declare
+    desired text;
+    result jsonb;
+begin
+    foreach desired in array array['wishlisted', 'owned', null, 'owned'] loop
+        result := public.save_library_changes(jsonb_build_object('albums', jsonb_build_object('saved',
+            jsonb_build_array(jsonb_build_object(
+                'id', '00000000-0000-4000-8000-000000000005',
+                'title', 'Album', 'record_label', 'Blue Note', 'vinyl_status', desired
+            )))));
+        perform pg_temp.assert_true(
+            (select vinyl_status::text is not distinct from desired from public.albums),
+            'Vinyl status did not persist');
+        perform pg_temp.assert_true(
+            (result->'albums'->0->>'vinyl_status') is not distinct from desired,
+            'Save result omitted vinyl status');
+    end loop;
+
+    perform public.save_library_changes('{
+        "albums": {"saved": [{"id": "00000000-0000-4000-8000-000000000005", "title": "Album", "record_label": "Blue Note"}]}
+    }'::jsonb);
+    perform pg_temp.assert_true((select vinyl_status = 'owned' from public.albums), 'Older client cleared vinyl status');
+
+    begin
+        perform public.save_library_changes('{
+            "albums": {"saved": [{"id": "00000000-0000-4000-8000-000000000005", "title": "Must roll back", "vinyl_status": "invalid"}]}
+        }'::jsonb);
+        raise exception 'Invalid vinyl status was accepted';
+    exception when invalid_text_representation then null;
+    end;
+    perform pg_temp.assert_true((select title = 'Album' and vinyl_status = 'owned' from public.albums), 'Invalid status changed album');
+
+    -- Also exercise insertion with each enum value, then remove the fixtures.
+    foreach desired in array array['owned', 'wishlisted'] loop
+        perform public.save_library_changes(jsonb_build_object('albums', jsonb_build_object('saved',
+            jsonb_build_array(jsonb_build_object(
+                'id', '00000000-0000-4000-8000-000000000008',
+                'title', 'Vinyl insert', 'vinyl_status', desired
+            )))));
+        perform pg_temp.assert_true(
+            (select vinyl_status::text = desired from public.albums where id = '00000000-0000-4000-8000-000000000008'),
+            'Vinyl status insert failed');
+        perform public.save_library_changes('{
+            "albums": {"deleted": [{"id": "00000000-0000-4000-8000-000000000008"}]}
+        }'::jsonb);
+    end loop;
+
+end;
+$$;
+
 select pg_temp.assert_true(
     (select count(*) = 1 from public.album_links), 'Related album records were not saved');
 select pg_temp.assert_true(
@@ -81,7 +134,7 @@ do $$
 begin
     begin
         perform public.save_library_changes('{
-            "albums": {"saved": [{"id": "00000000-0000-4000-8000-000000000005", "title": "Stolen"}]}
+            "albums": {"saved": [{"id": "00000000-0000-4000-8000-000000000005", "title": "Stolen", "vinyl_status": "wishlisted"}]}
         }'::jsonb);
         raise exception 'Cross-user write was accepted';
     exception when insufficient_privilege then null;
