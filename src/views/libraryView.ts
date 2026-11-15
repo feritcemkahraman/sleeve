@@ -34,7 +34,7 @@ export function renderLibraryView(
   data: LibraryData,
 ): string {
   return /* HTML */ `<section class="library" aria-labelledby="page-title">
-    <div class="library-heading">
+    <div class="instrument-page-heading catalog-heading">
       <h1 id="page-title">Your library</h1>
       <div class="library-heading-actions">
         <button type="button" class="button secondary" data-action="discover">

@@ -25,6 +25,35 @@ test.beforeEach(async ({ page }) => {
   await enterDemo(page);
 });
 
+test("library heading matches catalog typography and spacing", async ({
+  page,
+}) => {
+  for (const width of [1280, 393]) {
+    await page.setViewportSize({ width, height: 850 });
+    const measureHeading = () =>
+      page.locator("#page-title").evaluate((heading) => {
+        const style = getComputedStyle(heading);
+        const toolbar = heading
+          .closest("section")!
+          .querySelector(".search-field")!;
+        return {
+          font: style.font,
+          letterSpacing: style.letterSpacing,
+          top: heading.getBoundingClientRect().top,
+          gap:
+            toolbar.getBoundingClientRect().top -
+            heading.getBoundingClientRect().bottom,
+        };
+      });
+    const library = await measureHeading();
+    await page.locator('[data-nav="artists"]').click();
+    await expect(page.locator("#page-title")).toHaveText("Artists");
+    expect(await measureHeading()).toEqual(library);
+    await page.locator('[data-nav="library"]').click();
+    await expect(page.locator("#page-title")).toHaveText("Your library");
+  }
+});
+
 test("library toolbar stays on one row and the sort dropdown orders albums", async ({
   page,
 }) => {
