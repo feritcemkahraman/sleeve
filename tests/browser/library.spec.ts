@@ -780,12 +780,30 @@ test("vinyl collection and wishlist filters follow saved status and clear correc
     await expect(page.locator("#vinyl-status-options")).not.toBeVisible();
     await reloadDemo(page);
     if (status)
-      await expect(page.locator("main")).toContainText(
-        status === "owned" ? "Owned on vinyl" : "Vinyl wishlist",
+      await expect(page.locator("#vinyl-status-text")).toHaveText(
+        status === "owned" ? "Owned" : "Wishlist",
       );
     await page.evaluate(() => {
       location.hash = "";
     });
+    const card = page.locator(`.album-card[href="${albumHash}"]`);
+    for (const layout of ["grid", "list"]) {
+      await page
+        .locator(`[data-action="layout"][data-layout="${layout}"]`)
+        .click();
+      const badge = card.locator(".album-title .album-vinyl-status");
+      if (status) {
+        await expect(badge).toBeVisible();
+        await expect(badge).toHaveAccessibleName(
+          status === "owned" ? "Owned on vinyl" : "Vinyl wishlist",
+        );
+        const titleBox = await card.locator("strong").boundingBox();
+        const badgeBox = await badge.boundingBox();
+        expect(badgeBox!.x).toBeGreaterThanOrEqual(
+          titleBox!.x + titleBox!.width,
+        );
+      } else await expect(badge).toHaveCount(0);
+    }
     const filters = page.locator(".genre-filter-dropdown");
     await filters.locator("summary").click();
     await page.locator("#vinyl-filter").selectOption(status || "owned");
@@ -812,14 +830,18 @@ test("vinyl collection and wishlist filters follow saved status and clear correc
   }
 });
 
-test("vinyl chip supports keyboard dismissal, current choices, and album edits", async ({
+test("vinyl artwork supports keyboard dismissal, current choices, and album edits", async ({
   page,
+  isMobile,
 }) => {
   await openAlbum(page);
-  const chip = page.locator("#vinyl-status-button");
+  const change = page.locator("#vinyl-status-button");
+  const status = page.locator("#vinyl-status-text");
   const options = page.locator("#vinyl-status-options");
-  await expect(chip).toHaveText("Vinyl");
-  await chip.focus();
+  await expect(status).toHaveText("Not tracked");
+  await expect(page.locator(".album-artwork .album-vinyl")).toHaveCount(0);
+  await expect(change).toHaveAccessibleName("Track vinyl: Not tracked");
+  await change.focus();
   await page.keyboard.press("Enter");
   await expect(options).toBeVisible();
   await expect(
@@ -827,31 +849,53 @@ test("vinyl chip supports keyboard dismissal, current choices, and album edits",
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(options).not.toBeVisible();
-  await expect(chip).toBeFocused();
-  await chip.click();
+  await expect(change).toBeFocused();
+  await change.click();
   await page.locator("#page-title").click();
   await expect(options).not.toBeVisible();
-  await chip.click();
+  await change.click();
   await options.getByRole("button", { name: "Add to wishlist" }).click();
-  await expect(chip).toHaveText("Vinyl wishlist");
-  await expect(chip).toBeFocused();
-  await chip.click();
+  await expect(status).toHaveText("Wishlist");
+  await expect(change).toHaveAccessibleName("Track vinyl: Wishlist");
+  const disc = page.locator(".album-artwork .album-vinyl");
+  if (isMobile) await expect(disc).toBeHidden();
+  else {
+    await expect(disc).toBeVisible();
+    await page.locator(".album-artwork").hover();
+    await expect(disc).toHaveCSS("transform", "none");
+  }
+  await expect(change).toBeFocused();
+  await change.click();
   await expect(
     options.getByRole("button", { name: "Add to wishlist" }),
   ).toHaveAttribute("aria-pressed", "true");
   await options.getByRole("button", { name: "Mark as owned" }).click();
-  await expect(chip).toHaveText("Owned on vinyl");
+  await expect(status).toHaveText("Owned");
+  await expect(change).toHaveAccessibleName("Track vinyl: Owned");
+  if (isMobile) await expect(disc).toBeHidden();
+  else await expect(disc).toBeVisible();
+  const sleeveBox = await page.locator(".album-sleeve").boundingBox();
+  const buttonBox = await change.boundingBox();
+  expect(sleeveBox).not.toBeNull();
+  expect(buttonBox).not.toBeNull();
+  expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(
+    sleeveBox!.x + sleeveBox!.width,
+  );
+  expect(buttonBox!.y + buttonBox!.height).toBeLessThanOrEqual(
+    sleeveBox!.y + sleeveBox!.height,
+  );
+  await expect(page.locator(".album-vinyl-wish")).toHaveCount(0);
   await page.locator('[data-action="edit"]').click();
   await expect(page.locator('[name="vinylStatus"]')).toHaveCount(0);
   await page.locator('[name="label"]').fill("Updated label");
   await page.locator('#album-form button[type="submit"]').click();
   await reloadDemo(page);
-  await expect(chip).toHaveText("Owned on vinyl");
-  await chip.click();
+  await expect(status).toHaveText("Owned");
+  await change.click();
   await expect(
     options.getByRole("button", { name: "Mark as owned" }),
   ).toHaveAttribute("aria-pressed", "true");
   await options.getByRole("button", { name: "Clear status" }).click();
   await reloadDemo(page);
-  await expect(chip).toHaveText("Vinyl");
+  await expect(status).toHaveText("Not tracked");
 });

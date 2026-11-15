@@ -330,6 +330,22 @@
   padding: 12px 11px 0;
   gap: 3px;
 }
+.album-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+}
+.album-title strong {
+  min-width: 0;
+}
+.album-vinyl-status {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 18px;
+  color: var(--sage-strong);
+}
 .album-text strong {
   color: var(--ink);
   font-size: 14px;

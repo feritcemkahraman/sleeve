@@ -1,8 +1,8 @@
+import { vinylStatusIcon } from "../app/vinylStatus";
 import { genreUrl } from "../app/genres";
 import { artistUrl, roleLabel } from "./artistsView";
 import type { Album, AlbumLink, ListeningEntry } from "../types/albums";
 import { cover, orderedListens, webUrl } from "../components/presentation";
-import { vinylStatusLabel } from "../app/vinylStatus";
 import { escapeHtml } from "../components/html";
 import { instrumentUrl } from "../app/instruments";
 import { icon } from "../components/icons";
@@ -117,31 +117,48 @@ function renderInstrumentation(instruments: Album["instruments"]): string {
   </section>`;
 }
 
-function vinylStatusIcon(status: Album["vinylStatus"]): string {
+function vinylStatusText(status: Album["vinylStatus"]): string {
   switch (status) {
     case "owned":
-      return "disc";
+      return "Owned";
     case "wishlisted":
-      return "heart";
+      return "Wishlist";
     default:
-      return "plus";
+      return "Not tracked";
   }
 }
 
 function renderVinylControl(album: Album): string {
   const status = album.vinylStatus;
 
-  return /* HTML */ `<div class="vinyl-control">
-    <button
-      type="button"
-      id="vinyl-status-button"
-      class="button vinyl-status-chip"
-      data-status="${status ?? ""}"
-      popovertarget="vinyl-status-options"
+  return /* HTML */ `<div
+    class="album-artwork vinyl-control"
+    data-vinyl-status="${status ?? ""}"
+  >
+    ${
+      status
+        ? /* HTML */ `<span class="vinyl album-vinyl" aria-hidden="true">
+            ${status === "wishlisted" ? /* HTML */ `<span class="album-vinyl-wish">${icon("heart", 18)}</span>` : ""}
+          </span>`
+        : ""
+    }
+    <div class="album-sleeve">
+      ${cover(album, true)}
+      <button
+        type="button"
+        id="vinyl-status-button"
+        class="vinyl-art-button"
+        popovertarget="vinyl-status-options"
+        aria-label="Track vinyl: ${vinylStatusText(status)}"
+        title="Track vinyl · ${vinylStatusText(status)}"
+        aria-describedby="vinyl-status-text"
+      >
+        ${icon(vinylStatusIcon(status), 18)}
+      </button>
+    </div>
+    <span id="vinyl-status-text" class="sr-only"
+      >${vinylStatusText(status)}</span
     >
-      ${icon(vinylStatusIcon(status), 16)}
-      ${status ? vinylStatusLabel(status) : "Vinyl"} ${icon("down", 14)}
-    </button>
     <div
       id="vinyl-status-options"
       class="vinyl-status-options"
@@ -164,7 +181,7 @@ function renderVinylControl(album: Album): string {
         data-status="wishlisted"
         aria-pressed="${status === "wishlisted"}"
       >
-        ${icon("heart", 16)} Add to wishlist
+        ${icon("disc-wishlist", 16)} Add to wishlist
         ${status === "wishlisted" ? icon("check", 16) : ""}
       </button>
       ${
@@ -195,7 +212,7 @@ export function renderAlbumDetailView(album: Album): string {
   return /* HTML */ `<div class="detail">
     <a class="back-link" href="#">${icon("back", 17)} Back to library</a>
     <section class="album-hero" aria-labelledby="page-title">
-      ${cover(album, true)}
+      ${renderVinylControl(album)}
       <div class="album-hero-info">
         <h1 id="page-title">${escapeHtml(album.title)}</h1>
         <p class="detail-artist">
@@ -216,7 +233,6 @@ export function renderAlbumDetailView(album: Album): string {
         </p>
         ${album.genres.length ? /* HTML */ `<div class="tags">${album.genres.map((g) => /* HTML */ `<a class="chip" href="${genreUrl(g.id)}">${escapeHtml(g.name)}</a>`).join("")}</div>` : ""}
         <div class="detail-rating">${renderRating(listens[0]?.rating)}</div>
-        ${renderVinylControl(album)}
         <div class="detail-actions">
           <button type="button" class="button secondary" data-action="edit">
             ${icon("edit", 17)} Edit album

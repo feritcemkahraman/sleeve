@@ -41,10 +41,11 @@ test("account saves roll back, retain input for retry, and reconcile server time
   });
   await page.locator('a[href^="#album/"]').first().click();
   const original = await page.locator("#page-title").textContent();
-  const chip = page.locator("#vinyl-status-button");
-  await chip.click();
+  const change = page.locator("#vinyl-status-button");
+  const status = page.locator("#vinyl-status-text");
+  await change.click();
   await page.getByRole("button", { name: "Add to wishlist" }).click();
-  await expect(chip).toBeDisabled();
+  await expect(change).toBeDisabled();
   await page.waitForFunction(() => !!(window as any).resolveSave);
   await page.evaluate(() =>
     (window as any).resolveSave({
@@ -53,12 +54,12 @@ test("account saves roll back, retain input for retry, and reconcile server time
     }),
   );
   await expect(page.locator("#toast")).toContainText("Rejected vinyl save");
-  await expect(chip).toBeEnabled();
-  await expect(chip).toHaveText("Vinyl");
+  await expect(change).toBeEnabled();
+  await expect(status).toHaveText("Not tracked");
   await page.evaluate(() => {
     delete (window as any).resolveSave;
   });
-  await chip.click();
+  await change.click();
   await page.getByRole("button", { name: "Add to wishlist" }).click();
   await page.waitForFunction(() => !!(window as any).resolveSave);
   await page.evaluate(() => {
@@ -77,7 +78,7 @@ test("account saves roll back, retain input for retry, and reconcile server time
       },
     });
   });
-  await expect(chip).toHaveText("Vinyl wishlist");
+  await expect(status).toHaveText("Wishlist");
   await page.locator('[data-action="edit"]').click();
   await page.locator('[name="title"]').fill("Account candidate");
   await page.locator('#album-form button[type="submit"]').click();
