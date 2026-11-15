@@ -1,3 +1,4 @@
+import { isLibraryRoute } from "./libraryUrl";
 import { createLifecycle } from "./lifecycle";
 /** Keep the moving highlight and touch navigation in the same order as the links. */
 export function initializeNavigation(
@@ -84,7 +85,11 @@ export function initializeNavigation(
   let settling = false;
   let settlement = 0;
   const pageIndex = () =>
-    links.findIndex((link) => link.hash === location.hash);
+    links.findIndex((link) =>
+      isLibraryRoute(location.hash)
+        ? link.dataset.nav === "library"
+        : link.hash === location.hash,
+    );
 
   function cleanup() {
     clearTimeout(settlement);

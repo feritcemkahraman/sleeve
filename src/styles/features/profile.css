@@ -103,6 +103,7 @@
   );
 }
 .chart-column {
+  text-decoration: none;
   min-width: 0;
   overflow-wrap: anywhere;
   display: flex;

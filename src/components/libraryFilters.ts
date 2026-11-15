@@ -53,6 +53,11 @@ function renderBound(
     const currentYear = new Date().getFullYear();
     return /* HTML */ `<select ${attributes} class="filter-year-select">
       <option value="">Any</option>
+      ${
+        typeof value === "number" && value > currentYear
+          ? /* HTML */ `<option value="${value}" selected>${value}</option>`
+          : ""
+      }
       ${Array.from(
         { length: currentYear - 999 },
         (_, index) => currentYear - index,
@@ -357,11 +362,7 @@ function validBound(field: "rating" | "releaseYear", value: number): boolean {
       value <= 5 &&
       Number.isInteger(value * 2)
     );
-  return (
-    Number.isInteger(value) &&
-    value >= 1000 &&
-    value <= new Date().getFullYear()
-  );
+  return Number.isInteger(value) && value >= 1000 && value <= 9999;
 }
 
 // Incomplete numeric edits keep the last valid predicate active.
@@ -411,7 +412,7 @@ export function readLibraryFilters(
       maxInput.setAttribute("aria-invalid", String(invalidMax || reversed));
       error.textContent = reversed
         ? "The end must be at least the start. Your previous filter is still applied."
-        : `Choose a valid rating or a year from 1000 to ${new Date().getFullYear()}. Your previous filter is still applied.`;
+        : `Choose a valid rating or a year from 1000 to 9999. Your previous filter is still applied.`;
       continue;
     }
 

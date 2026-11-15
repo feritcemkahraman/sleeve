@@ -226,8 +226,9 @@ test("year bounds are inclusive, validate reversed ranges, and survive rerenderi
   await page
     .locator(".library-toolbar .genre-filter-dropdown > summary")
     .click();
+  const filteredUrl = page.url();
   await page.goto("/#artists");
-  await page.goto("/#");
+  await page.goto(filteredUrl);
   await page
     .locator(".library-toolbar .genre-filter-dropdown > summary")
     .click();

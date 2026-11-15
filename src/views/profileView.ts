@@ -1,3 +1,4 @@
+import { libraryUrl } from "../app/libraryUrl.ts";
 import type { Album } from "../types/albums";
 import { escapeHtml } from "../components/html.ts";
 import { icon } from "../components/icons.ts";
@@ -90,11 +91,32 @@ export function profileStatistics(
   };
 }
 
+function chartBinUrl(
+  bin: ChartBin,
+  rating: boolean,
+  grouping: YearGrouping,
+): string {
+  if (rating)
+    return libraryUrl({
+      filters: { rating: { operator: "eq", value: Number(bin.label) } },
+    });
+  const year = Number.parseInt(bin.label, 10);
+  return libraryUrl({
+    filters: {
+      releaseYear:
+        grouping === "decade"
+          ? { operator: "between", min: year, max: year + 9 }
+          : { operator: "eq", value: year },
+    },
+  });
+}
+
 function renderChart(
   bins: ChartBin[],
   label: string,
   stars = false,
   compact = false,
+  grouping: YearGrouping = "decade",
 ): string {
   const maximum = Math.max(1, ...bins.map((bin) => bin.count));
   return /* HTML */ `<div
@@ -111,7 +133,8 @@ function renderChart(
       ${bins
         .map(
           (bin) =>
-            /* HTML */ `<div
+            /* HTML */ `<a
+              href="${escapeHtml(chartBinUrl(bin, stars, grouping))}"
               class="chart-column"
               role="listitem"
               tabindex="0"
@@ -126,7 +149,7 @@ function renderChart(
                 ></span
               ></span>
               ${compact ? "" : /* HTML */ `<span class="chart-label">${escapeHtml(bin.label)}</span>`}
-            </div>`,
+            </a>`,
         )
         .join("")}
     </div>
@@ -204,7 +227,7 @@ export function renderProfileView(
             </button>
           </div>
         </div>
-        ${stats.years.length ? renderChart(stats.years, "Release year distribution", false, grouping === "year") : /* HTML */ `<p class="profile-chart-empty">Add release years to see your collection’s eras.</p>`}
+        ${stats.years.length ? renderChart(stats.years, "Release year distribution", false, grouping === "year", grouping) : /* HTML */ `<p class="profile-chart-empty">Add release years to see your collection’s eras.</p>`}
         <p class="profile-note">
           Unknown release year: ${stats.unknownYear} albums
         </p>

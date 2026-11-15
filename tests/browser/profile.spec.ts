@@ -103,3 +103,54 @@ test("all profile charts fit narrow screens without horizontal scrolling", async
     }
   }
 });
+
+test("histogram links replace filters and survive refresh and history navigation", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.locator("#auth-demo").click();
+  await page.locator("#library-query").fill("no-such-album");
+  await page.getByRole("link", { name: "Profile", exact: true }).click();
+
+  for (const chartName of [
+    "Rating distribution",
+    "Release year distribution",
+  ]) {
+    const chart = page.getByRole("region", { name: chartName });
+    const bars = chart.locator("a.chart-column");
+    const index = await bars.evaluateAll((elements) =>
+      elements.findIndex((element) =>
+        /: [1-9]\d* albums$/.test(element.getAttribute("aria-label") ?? ""),
+      ),
+    );
+    const bar = bars.nth(index);
+    const label = (await bar.getAttribute("aria-label"))!;
+    const count = Number(label.match(/: (\d+) albums/)![1]);
+    const href = (await bar.getAttribute("href"))!;
+    await bar.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(
+      new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"),
+    );
+    await expect(page.locator("#library-query")).toHaveValue("");
+    await expect(page.locator(".album-card")).toHaveCount(count);
+    await page.reload();
+    await page.locator("#auth-demo").click();
+    await expect(page.locator("#library-query")).toBeVisible();
+    await expect(page.locator(".album-card")).toHaveCount(count);
+    await page.goBack();
+    await expect(page.locator("#page-title")).toHaveText("Profile");
+    await page.goForward();
+    await expect(page.locator(".album-card")).toHaveCount(count);
+    await page.goBack();
+  }
+
+  await page.getByRole("button", { name: "By year", exact: true }).click();
+  const year = page
+    .getByRole("region", { name: "Release year distribution" })
+    .locator("a.chart-column")
+    .first();
+  const label = (await year.getAttribute("aria-label"))!;
+  await year.click();
+  await expect(page).toHaveURL(new RegExp(`year=${label.slice(0, 4)}$`));
+});
