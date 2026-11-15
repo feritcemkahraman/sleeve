@@ -29,7 +29,10 @@ import { readLayout, saveLayout } from "./layoutPreferences";
 import { createRouteHistory } from "./routeHistory";
 import { createLifecycle } from "./lifecycle";
 
-type RouteSection = "genres" | "artists" | "instruments" | "library";
+import { renderProfileView, type YearGrouping } from "../views/profileView";
+
+type RouteSection =
+  "profile" | "genres" | "artists" | "instruments" | "library";
 
 interface RouteItems {
   genre: Genre | undefined;
@@ -47,6 +50,7 @@ const listRouteLabels = new Map([
 ]);
 
 function routeSection(hash: string): RouteSection {
+  if (hash === "#profile") return "profile";
   if (hash === "#genres" || hash.startsWith("#genre/")) return "genres";
   if (hash === "#artists" || hash.startsWith("#artist/")) return "artists";
   if (hash === "#instruments" || hash.startsWith("#instrument/"))
@@ -56,6 +60,7 @@ function routeSection(hash: string): RouteSection {
 
 export interface AppRouterDependencies {
   accountId: string;
+  accountEmail: () => string | undefined;
   main: HTMLElement;
   library: () => LibraryData;
   lists: {
@@ -75,6 +80,7 @@ export class AppRouter {
     artist: readLayout("artist"),
     genre: readLayout("genre"),
   };
+  private yearGrouping: YearGrouping = "decade";
   private readonly state: LibraryState = {
     query: "",
     filters: {},
@@ -149,8 +155,20 @@ export class AppRouter {
         link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     }
+    const profileLink = document.querySelector('[href="#profile"]');
+    if (section === "profile")
+      profileLink?.setAttribute("aria-current", "page");
+    else profileLink?.removeAttribute("aria-current");
+
     const missing = location.hash.startsWith("#album/") && !album;
-    if (section === "genres") {
+    if (section === "profile") {
+      this.dependencies.main.innerHTML = renderProfileView(
+        this.dependencies.library().albums,
+        this.dependencies.accountEmail(),
+        this.dependencies.accountId !== "demo",
+        this.yearGrouping,
+      );
+    } else if (section === "genres") {
       if (genre)
         this.dependencies.main.innerHTML = renderGenreDetail(
           genre,
@@ -234,6 +252,7 @@ export class AppRouter {
   }
 
   private routeLabel(hash: string): string {
+    if (hash === "#profile") return "profile";
     const listLabel = listRouteLabels.get(hash);
     if (listLabel !== undefined) return listLabel;
 
@@ -267,6 +286,8 @@ export class AppRouter {
 
   private pageTitle(section: RouteSection, items: RouteItems): string {
     switch (section) {
+      case "profile":
+        return "Profile — JazzLog";
       case "genres":
         return `${items.genre?.name ?? "Genres"} — JazzLog`;
       case "artists":
@@ -303,6 +324,17 @@ export class AppRouter {
 
   public click(button: HTMLButtonElement): boolean {
     switch (button.dataset.action) {
+      case "profile-grouping": {
+        const grouping = button.dataset.grouping;
+        if (grouping !== "decade" && grouping !== "year") return false;
+
+        this.yearGrouping = grouping;
+        this.render();
+        this.dependencies.main
+          .querySelector<HTMLElement>(`[data-grouping="${grouping}"]`)
+          ?.focus({ preventScroll: true });
+        return true;
+      }
       case "library-sort": {
         const category = button.dataset.sort;
         if (!category || !isLibrarySort(category)) return false;

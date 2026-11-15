@@ -53,6 +53,8 @@ export class AppController {
   private readonly toast = document.querySelector<HTMLElement>("#toast")!;
   private readonly library: LibraryStore;
   private readonly browsingActions = new Set([
+    "profile-grouping",
+    "profile-account",
     "discover",
     "discovery-open",
     "discovery-copy",
@@ -79,7 +81,12 @@ export class AppController {
   private readonly albumEditor: AlbumEditor;
   private readonly metadataSearch: MetadataSearch;
 
-  constructor(data?: LibraryData, accountId = "demo", initialRefresh = false) {
+  constructor(
+    data?: LibraryData,
+    accountId = "demo",
+    initialRefresh = false,
+    accountEmail: () => string | undefined = () => undefined,
+  ) {
     this.library = createLibraryState(data);
     this.connection = new LibraryConnection({
       accountId,
@@ -93,6 +100,7 @@ export class AppController {
 
     this.router = new AppRouter({
       accountId,
+      accountEmail,
       main: this.main,
       library: () => this.library.data,
       lists: {
@@ -795,6 +803,7 @@ export function initializeApp(
   data?: LibraryData,
   accountId = "demo",
   initialRefresh = false,
+  accountEmail: () => string | undefined = () => undefined,
 ): AppController {
-  return new AppController(data, accountId, initialRefresh);
+  return new AppController(data, accountId, initialRefresh, accountEmail);
 }
