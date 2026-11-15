@@ -10,7 +10,9 @@ test("numeric filters validate ranges, combine with search, and can be removed",
   page,
 }) => {
   const original = await page.locator("#library-count").textContent();
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   await page
     .getByRole("radiogroup", { name: "From rating" })
     .getByRole("radio", { name: "4 stars", exact: true })
@@ -37,7 +39,9 @@ test("numeric filters validate ranges, combine with search, and can be removed",
   await expect(
     page.locator('#library-filter-chips [data-filter="rating"]'),
   ).toHaveAttribute("aria-description", "4 stars – 5 stars");
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   await page.locator("#library-query").fill("no-such-album-xyz");
   await expect(page.locator("#library-count")).toContainText("0 of");
   await page.locator("#library-query").fill("");
@@ -49,7 +53,9 @@ test("numeric filters validate ranges, combine with search, and can be removed",
 test("category pills preserve selections during search and return removed choices when relevant", async ({
   page,
 }) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   const group = page.locator('.category-filter[data-category="genres"]');
   const results = group.locator("[data-category-results]");
   const selected = group.locator("[data-category-selected]");
@@ -99,7 +105,9 @@ test("category pills preserve selections during search and return removed choice
 test("category selections use unions for genres/artists and intersections for instruments", async ({
   page,
 }) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   for (const field of ["genres", "artists", "instruments"]) {
     const group = page.locator(`.category-filter[data-category="${field}"]`);
     const results = group.locator("[data-category-results]");
@@ -142,7 +150,9 @@ test("category selections use unions for genres/artists and intersections for in
 test("rating bounds support either end, exact values, clearing, and unrated albums", async ({
   page,
 }) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   await page
     .getByRole("radiogroup", { name: "To rating" })
     .getByRole("radio", { name: "3 stars", exact: true })
@@ -191,7 +201,9 @@ test("rating bounds support either end, exact values, clearing, and unrated albu
 test("year bounds are inclusive, validate reversed ranges, and survive rerendering", async ({
   page,
 }) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   await page.locator("#releaseYear-max").selectOption("2000");
   await expect(
     page.locator('#library-filter-chips [data-filter="releaseYear"]'),
@@ -211,10 +223,14 @@ test("year bounds are inclusive, validate reversed ranges, and survive rerenderi
   await expect(
     page.locator('#library-filter-chips [data-filter="releaseYear"]'),
   ).toHaveText("1980–2000");
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   await page.goto("/#artists");
   await page.goto("/#");
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   await expect(page.locator("#releaseYear-min")).toHaveValue("1980");
   await expect(page.locator("#releaseYear-max")).toHaveValue("2000");
   await page.locator("#releaseYear-max").selectOption("");
@@ -230,7 +246,9 @@ test("year bounds are inclusive, validate reversed ranges, and survive rerenderi
 test("rating stars support half stars and keyboard selection", async ({
   page,
 }) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   await expect(
     page.getByRole("radio", { name: "Any", exact: true }),
   ).toHaveCount(0);
@@ -259,7 +277,9 @@ test("rating stars support half stars and keyboard selection", async ({
 test("rating controls fit on one line with a compact unrated toggle", async ({
   page,
 }, testInfo) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   const row = page.locator('[data-numeric="rating"] .numeric-filter-row');
   const label = await row.locator("#rating-label").boundingBox();
   const from = await row
@@ -294,7 +314,9 @@ test("rating controls fit on one line with a compact unrated toggle", async ({
 test("year pickers use a bounded year list and align with rating columns", async ({
   page,
 }) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   const currentYear = await page.evaluate(() => new Date().getFullYear());
   const minimum = page.getByRole("combobox", { name: "From year" });
   const maximum = page.getByRole("combobox", { name: "To year" });
@@ -343,7 +365,9 @@ test("year pickers use a bounded year list and align with rating columns", async
 test("vinyl icon toggles combine as a union and deselect independently", async ({
   page,
 }) => {
-  await page.locator(".library-toolbar summary").click();
+  await page
+    .locator(".library-toolbar .genre-filter-dropdown > summary")
+    .click();
   const group = page.getByRole("group", { name: "Vinyl", exact: true });
   const owned = group.getByRole("checkbox", {
     name: "Owned on vinyl",

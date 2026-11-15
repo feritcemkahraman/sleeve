@@ -209,6 +209,8 @@
   }
   .main-nav a {
     flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
     text-align: center;
     min-height: 40px;
   }

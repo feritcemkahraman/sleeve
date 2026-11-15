@@ -1,4 +1,8 @@
-import { isLibrarySort } from "../components/sortOptions";
+import {
+  isLibrarySort,
+  renderLibrarySortChoices,
+} from "../components/sortOptions";
+import { cycleLibrarySort } from "./librarySort";
 import type { Album, Artist, Genre, Instrument } from "../types/albums";
 import type { LibraryData } from "../types/library";
 import { filterFields } from "./libraryFilters";
@@ -74,7 +78,7 @@ export class AppRouter {
   private readonly state: LibraryState = {
     query: "",
     filters: {},
-    sort: "updated",
+    sort: null,
     layout: readLayout("library"),
   };
 
@@ -299,6 +303,27 @@ export class AppRouter {
 
   public click(button: HTMLButtonElement): boolean {
     switch (button.dataset.action) {
+      case "library-sort": {
+        const category = button.dataset.sort;
+        if (!category || !isLibrarySort(category)) return false;
+
+        this.state.sort = cycleLibrarySort(this.state.sort, category);
+        const panel = this.dependencies.main.querySelector(
+          ".library-sort-panel",
+        );
+        if (panel) {
+          panel.innerHTML = renderLibrarySortChoices(this.state.sort);
+          panel
+            .querySelector<HTMLElement>(`[data-sort="${category}"]`)
+            ?.focus({ preventScroll: true });
+        }
+        updateLibrary(
+          this.dependencies.library().albums,
+          this.state,
+          this.dependencies.library().genres,
+        );
+        return true;
+      }
       case "artist-layout":
       case "genre-layout": {
         const view =
@@ -441,14 +466,6 @@ export class AppRouter {
       this.state.filters = readLibraryFilters(root, this.state.filters);
       this.updateLibraryResults();
     }
-    if (input.id === "sort-order" && isLibrarySort(input.value)) {
-      this.state.sort = input.value;
-      updateLibrary(
-        this.dependencies.library().albums,
-        this.state,
-        this.dependencies.library().genres,
-      );
-    }
   }
 
   private updateLibraryResults(): void {
@@ -458,7 +475,9 @@ export class AppRouter {
       this.dependencies.library(),
     );
     const count = Object.keys(this.state.filters).length;
-    const summary = root.querySelector(".library-toolbar summary")!;
+    const summary = root.querySelector(
+      ".library-toolbar .genre-filter-dropdown > summary",
+    )!;
     summary.setAttribute(
       "aria-label",
       `Filters${count ? `, ${count} active` : ""}`,
@@ -495,18 +514,17 @@ export class AppRouter {
         history.back();
         return;
       }
-      const dropdown = this.dependencies.main.querySelector<HTMLDetailsElement>(
-        ".genre-filter-dropdown[open]",
-      );
-      if (dropdown && !event.composedPath().includes(dropdown))
-        dropdown.open = false;
+      for (const dropdown of this.dependencies.main.querySelectorAll<HTMLDetailsElement>(
+        ".genre-filter-dropdown[open], .library-sort-dropdown[open]",
+      )) {
+        if (!event.composedPath().includes(dropdown)) dropdown.open = false;
+      }
     });
     this.lifecycle.listen(document).addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
-      const dropdown = this.dependencies.main.querySelector<HTMLDetailsElement>(
-        ".genre-filter-dropdown[open]",
-      );
-      if (dropdown) {
+      for (const dropdown of this.dependencies.main.querySelectorAll<HTMLDetailsElement>(
+        ".genre-filter-dropdown[open], .library-sort-dropdown[open]",
+      )) {
         dropdown.open = false;
         dropdown.querySelector<HTMLElement>("summary")?.focus();
       }
