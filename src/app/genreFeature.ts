@@ -69,7 +69,12 @@ function renderGenreForm(genres: Genre[], item?: Genre): string {
                 g.id !== item?.id &&
                 !ancestors(g.id, genres).some((p) => p.id === item?.id),
             )
-            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort(
+              (a, b) =>
+                ancestors(a.id, genres).length -
+                  ancestors(b.id, genres).length ||
+                a.name.localeCompare(b.name),
+            )
             .map(
               (g) =>
                 /* HTML */ `<option
