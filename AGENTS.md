@@ -21,4 +21,5 @@
 
 # Pull request workflow
 
-- Complete every well-defined feature, fix, or refactor with a pull request unless the user explicitly asks otherwise. Follow the repository skill at [.agents/skills/publish-pr/SKILL.md](.agents/skills/publish-pr/SKILL.md), using gh api to create or update the PR. This authorizes committing and publishing the task's changes, but not merging or deploying them.
+- Create or update a pull request only when the user explicitly asks. Keep implementation changes local by default; completing a task does not authorize committing, pushing, or publishing it.
+- When the user requests a pull request, follow [.agents/skills/publish-pr/SKILL.md](.agents/skills/publish-pr/SKILL.md), using gh api to create or update the PR. That request authorizes committing and pushing the task's changes, but not merging or deploying them.
