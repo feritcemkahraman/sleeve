@@ -147,13 +147,7 @@ export class AppRouter {
         root === this.dependencies.main
           ? this.state
           : { ...this.state, ...parseLibraryUrl(hash) };
-      const { albums } = this.dependencies.library();
-      const featured = albums[Math.floor(Math.random() * albums.length)];
-      root.innerHTML = renderLibraryView(
-        featured,
-        state,
-        this.dependencies.library(),
-      );
+      root.innerHTML = renderLibraryView(state, this.dependencies.library());
       updateLibrary(
         this.dependencies.library().albums,
         state,
@@ -321,7 +315,7 @@ export class AppRouter {
         return `${items.instrument?.name ?? "Instruments"} — JazzLog`;
       case "library":
         if (items.album) return `${items.album.title} — JazzLog`;
-        return "JazzLog — The Listening Room";
+        return "JazzLog — Your library";
     }
   }
 

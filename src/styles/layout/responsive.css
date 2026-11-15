@@ -2,9 +2,6 @@
   .frame {
     width: calc(100% - 66px);
   }
-  .feature {
-    min-height: 216px;
-  }
   .album-grid {
     gap: 15px 12px;
   }
@@ -12,18 +9,6 @@
 @media (max-width: 850px) {
   .frame {
     width: calc(100% - 44px);
-  }
-  .hero {
-    gap: 12px;
-    padding-bottom: 34px;
-  }
-  .feature {
-    padding: 16px 13px 16px 17px;
-    gap: 10px;
-    min-height: 173px;
-  }
-  .feature-open {
-    margin-top: 12px;
   }
   .album-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -48,36 +33,6 @@
   .top-add {
     min-height: 38px;
     padding-inline: 10px;
-  }
-  .hero {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding-bottom: 24px;
-  }
-  .hero h1 {
-    font-size: clamp(40px, 10.2vw, 61px);
-    margin: 0 0 11px;
-  }
-  .hero h1 em {
-    display: inline;
-  }
-  .hero-stats {
-    margin-top: 14px;
-  }
-  .feature {
-    grid-template-columns: minmax(115px, 42%) minmax(0, 1fr);
-    min-height: 139px;
-    gap: 16px;
-    padding: 13px 16px;
-  }
-  .feature-art {
-    max-width: 165px;
-  }
-  .feature-copy strong {
-    font-size: 29px;
-  }
-  .feature-open {
-    margin-top: 8px;
   }
   .library {
     padding-top: 14px;
@@ -219,12 +174,6 @@
 @media (max-width: 360px) {
   .masthead-inner {
     gap: 8px;
-  }
-  .hero h1 em {
-    display: block;
-  }
-  .feature {
-    gap: 10px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
