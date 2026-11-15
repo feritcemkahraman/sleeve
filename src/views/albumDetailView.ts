@@ -1,8 +1,8 @@
+import { vinylStatusIcon } from "../app/vinylStatus";
 import { genreUrl } from "../app/genres";
 import { artistUrl, roleLabel } from "./artistsView";
 import type { Album, AlbumLink, ListeningEntry } from "../types/albums";
 import { cover, orderedListens, webUrl } from "../components/presentation";
-import { vinylStatusLabel } from "../app/vinylStatus";
 import { escapeHtml } from "../components/html";
 import { instrumentUrl } from "../app/instruments";
 import { icon } from "../components/icons";
@@ -117,6 +117,88 @@ function renderInstrumentation(instruments: Album["instruments"]): string {
   </section>`;
 }
 
+function vinylStatusText(status: Album["vinylStatus"]): string {
+  switch (status) {
+    case "owned":
+      return "Owned";
+    case "wishlisted":
+      return "Wishlist";
+    default:
+      return "Not tracked";
+  }
+}
+
+function renderVinylControl(album: Album): string {
+  const status = album.vinylStatus;
+
+  return /* HTML */ `<div
+    class="album-artwork vinyl-control"
+    data-vinyl-status="${status ?? ""}"
+  >
+    ${
+      status
+        ? /* HTML */ `<span class="vinyl album-vinyl" aria-hidden="true">
+            ${status === "wishlisted" ? /* HTML */ `<span class="album-vinyl-wish">${icon("heart", 18)}</span>` : ""}
+          </span>`
+        : ""
+    }
+    <div class="album-sleeve">
+      ${cover(album, true)}
+      <button
+        type="button"
+        id="vinyl-status-button"
+        class="vinyl-art-button"
+        popovertarget="vinyl-status-options"
+        aria-label="Track vinyl: ${vinylStatusText(status)}"
+        title="Track vinyl · ${vinylStatusText(status)}"
+        aria-describedby="vinyl-status-text"
+      >
+        ${icon(vinylStatusIcon(status), 18)}
+      </button>
+    </div>
+    <span id="vinyl-status-text" class="sr-only"
+      >${vinylStatusText(status)}</span
+    >
+    <div
+      id="vinyl-status-options"
+      class="vinyl-status-options"
+      popover
+      role="group"
+      aria-label="Vinyl status"
+    >
+      <button
+        type="button"
+        data-action="set-vinyl-status"
+        data-status="owned"
+        aria-pressed="${status === "owned"}"
+      >
+        ${icon("disc", 16)} Mark as owned
+        ${status === "owned" ? icon("check", 16) : ""}
+      </button>
+      <button
+        type="button"
+        data-action="set-vinyl-status"
+        data-status="wishlisted"
+        aria-pressed="${status === "wishlisted"}"
+      >
+        ${icon("disc-wishlist", 16)} Add to wishlist
+        ${status === "wishlisted" ? icon("check", 16) : ""}
+      </button>
+      ${
+        status
+          ? /* HTML */ `<button
+              type="button"
+              data-action="set-vinyl-status"
+              data-status=""
+            >
+              ${icon("close", 16)} Clear status
+            </button>`
+          : ""
+      }
+    </div>
+  </div>`;
+}
+
 export function renderAlbumDetailView(album: Album): string {
   const listens = orderedListens(album);
   const credits = [...album.artists].sort((a, b) => a.position - b.position);
@@ -130,7 +212,7 @@ export function renderAlbumDetailView(album: Album): string {
   return /* HTML */ `<div class="detail">
     <a class="back-link" href="#">${icon("back", 17)} Back to library</a>
     <section class="album-hero" aria-labelledby="page-title">
-      ${cover(album, true)}
+      ${renderVinylControl(album)}
       <div class="album-hero-info">
         <h1 id="page-title">${escapeHtml(album.title)}</h1>
         <p class="detail-artist">
@@ -147,7 +229,6 @@ export function renderAlbumDetailView(album: Album): string {
               : "Unknown artist"
           }
           ${album.releaseYear ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.releaseYear)}</span>` : ""}
-          ${album.vinylStatus ? /* HTML */ `<span class="detail-year"> · ${vinylStatusLabel(album.vinylStatus)}</span>` : ""}
           ${album.recordLabel ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.recordLabel)}</span>` : ""}
         </p>
         ${album.genres.length ? /* HTML */ `<div class="tags">${album.genres.map((g) => /* HTML */ `<a class="chip" href="${genreUrl(g.id)}">${escapeHtml(g.name)}</a>`).join("")}</div>` : ""}

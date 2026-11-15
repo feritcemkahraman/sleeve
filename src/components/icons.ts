@@ -20,6 +20,8 @@ const paths: Record<string, string> = {
     '<circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2m1-16a3 3 0 0 1 0 6m2 4a6 6 0 0 1 3 5v1"/>',
   filter:
     '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="currentColor"/><circle cx="15" cy="17" r="2" fill="currentColor"/>',
+  heart:
+    '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   search: '<circle cx="10.75" cy="10.75" r="6.25"/><path d="m16 16 4 4"/>',
   arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
@@ -30,6 +32,8 @@ const paths: Record<string, string> = {
   grid: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
   list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h1M4 12h1M4 18h1"/>',
   disc: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2"/><path d="M7.3 9a5.6 5.6 0 0 1 3-2.3m6.4 8.3a5.6 5.6 0 0 1-3 2.3"/>',
+  "disc-wishlist":
+    '<circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="1.8"/><path d="M5.5 7.5a5.2 5.2 0 0 1 2.2-2M14.5 12.5a5.2 5.2 0 0 1-2.2 2"/><path d="M17 14c-3.4-4-7.3.5-4.4 3.5L17 22l4.4-4.5C24.3 14.5 20.4 10 17 14Z" fill="var(--panel)" stroke-linejoin="round"/>',
   edit: '<path d="m14.5 6.5 3 3M5 19l4-.8 10.1-10.1a2.1 2.1 0 0 0-3-3L6 15.2 5 19Z"/>',
   close: '<path d="m6 6 12 12M18 6 6 18"/>',
   music:

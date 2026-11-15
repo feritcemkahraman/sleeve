@@ -18,14 +18,14 @@
   display: grid;
   grid-template-columns: minmax(180px, 276px) minmax(0, 1fr);
   align-items: center;
-  gap: clamp(20px, 4vw, 49px);
+  gap: clamp(16px, 2vw, 24px);
   padding: 28px;
   border: 1px solid #394338;
   border-radius: 12px;
   background:
     radial-gradient(ellipse at 8% 22%, #323f31, transparent 85%), var(--panel);
 }
-.album-hero > .cover {
+.album-sleeve > .cover {
   border-radius: 7px;
   box-shadow: 0 9px 25px #11171085;
 }
@@ -86,7 +86,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 12px;
   font-size: 11px;
 }
 .detail-rating .star {
@@ -100,7 +100,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 25px;
+  margin-top: 12px;
 }
 .album-music-shortcut {
   padding: 9px 12px;
@@ -230,4 +230,115 @@
 }
 .external-link .icon {
   color: var(--sage);
+}
+
+.album-artwork {
+  position: relative;
+  isolation: isolate;
+  padding-right: 11%;
+}
+.album-sleeve {
+  position: relative;
+}
+.album-sleeve > .cover {
+  width: 100%;
+}
+.album-artwork .album-vinyl {
+  top: 3%;
+  left: 17%;
+  width: 83%;
+  pointer-events: none;
+}
+.album-artwork[data-vinyl-status="wishlisted"] .album-vinyl {
+  filter: grayscale(1);
+  opacity: 0.48;
+  transition: none;
+}
+.album-vinyl-wish {
+  position: absolute;
+  top: 50%;
+  right: 1%;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  border: 1px solid #92998b;
+  border-radius: 50%;
+  background: #41483c;
+  color: #f1f2e9;
+}
+.vinyl-art-button {
+  anchor-name: --vinyl-status;
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #66715d;
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--sage-strong);
+  box-shadow: 0 3px 9px #11171085;
+  cursor: pointer;
+}
+.vinyl-art-button:hover {
+  background: var(--panel-hover);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .album-artwork[data-vinyl-status="owned"]:hover .album-vinyl,
+  .album-artwork[data-vinyl-status="owned"]:focus-within .album-vinyl {
+    transform: rotate(12deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .album-artwork .album-vinyl {
+    transition: none;
+  }
+}
+.vinyl-status-options {
+  position: fixed;
+  position-anchor: --vinyl-status;
+  position-try-fallbacks: flip-block;
+  inset: auto;
+  top: anchor(bottom);
+  left: clamp(12px, anchor(left), calc(100vw - 217px));
+  margin: 7px 0 0;
+  padding: 5px;
+  min-width: 205px;
+  max-width: calc(100vw - 24px);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 8px 25px #11171085;
+}
+.vinyl-status-options button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.vinyl-status-options button:hover,
+.vinyl-status-options button:focus-visible {
+  background: var(--panel-hover);
+}
+.vinyl-status-options button[aria-pressed="true"] {
+  color: var(--sage-strong);
+}
+.vinyl-status-options button .icon:last-child:not(:first-child) {
+  margin-left: auto;
 }

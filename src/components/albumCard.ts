@@ -1,3 +1,4 @@
+import { vinylStatusIcon, vinylStatusLabel } from "../app/vinylStatus";
 import type { Album } from "../types/albums";
 import { cover, artistText, albumUrl, latest } from "./presentation";
 import { escapeHtml } from "./html";
@@ -9,7 +10,9 @@ export function renderAlbumCard(album: Album): string {
     <a class="album-card" href="${albumUrl(album.id)}">
       ${cover(album)}
       <span class="album-text"
-        ><strong>${escapeHtml(album.title)}</strong
+        ><span class="album-title">
+          <strong>${escapeHtml(album.title)}</strong>
+          ${album.vinylStatus ? /* HTML */ `<span class="album-vinyl-status" role="img" aria-label="${vinylStatusLabel(album.vinylStatus)}" title="${vinylStatusLabel(album.vinylStatus)}">${icon(vinylStatusIcon(album.vinylStatus), 15)}</span>` : ""} </span
         ><span class="album-artist"
           >${escapeHtml(artistText(album))}${album.releaseYear ? /* HTML */ `<span class="separator">·</span>${album.releaseYear}` : ""}</span
         ></span

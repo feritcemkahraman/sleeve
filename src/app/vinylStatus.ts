@@ -17,3 +17,16 @@ export function vinylStatusLabel(status: VinylStatus): string {
       return "Vinyl wishlist";
   }
 }
+
+export function vinylStatusIcon(
+  status: VinylStatus | null | undefined,
+): string {
+  switch (status) {
+    case "owned":
+      return "disc";
+    case "wishlisted":
+      return "disc-wishlist";
+    default:
+      return "plus";
+  }
+}

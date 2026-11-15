@@ -121,9 +121,13 @@
     gap: 14px;
     text-align: center;
   }
-  .album-hero > .cover {
+  .album-hero > .album-artwork {
     width: min(80%, 260px);
+    padding-right: 0;
     justify-self: center;
+  }
+  .album-artwork .album-vinyl {
+    display: none;
   }
   .album-hero-info {
     min-width: 0;
@@ -150,7 +154,7 @@
   .album-hero .detail-rating {
     justify-content: center;
     gap: 6px;
-    margin-top: 20px;
+    margin-top: 10px;
   }
   .album-hero .detail-rating > .muted {
     font-size: 10px;
@@ -158,8 +162,8 @@
   .album-hero .detail-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 22px;
-    padding-top: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid var(--line);
   }
   .album-hero .detail-actions .button {
