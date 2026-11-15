@@ -9,6 +9,9 @@
 .genre-filter-dropdown > summary::-webkit-details-marker {
   display: none;
 }
+.genre-filter-dropdown:not([open]) > .genre-filter-panel {
+  display: none;
+}
 .genre-filter-count {
   display: inline-flex;
   align-items: center;

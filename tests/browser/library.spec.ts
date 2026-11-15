@@ -25,6 +25,151 @@ test.beforeEach(async ({ page }) => {
   await enterDemo(page);
 });
 
+test("library toolbar stays on one row and the sort dropdown orders albums", async ({
+  page,
+}) => {
+  for (const width of [1280, 640, 393, 320]) {
+    await page.setViewportSize({ width, height: 850 });
+    const search = await page
+      .locator(".library-toolbar .search-field")
+      .boundingBox();
+    const filters = await page
+      .locator(".library-toolbar .genre-filter-dropdown > summary")
+      .boundingBox();
+    const sort = await page.locator(".library-sort").boundingBox();
+
+    expect(search).not.toBeNull();
+    expect(filters).not.toBeNull();
+    expect(sort).not.toBeNull();
+    expect(sort!.height).toBe(filters!.height);
+    expect(sort!.y).toBe(filters!.y);
+    expect(Math.abs(search!.y - sort!.y)).toBeLessThanOrEqual(1);
+    expect(sort!.x + sort!.width).toBeLessThanOrEqual(width);
+    await expect(page.locator(".library-sort-text")).toBeVisible({
+      visible: width > 480,
+    });
+
+    const expectNoOverflow = async () => {
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBe(width);
+    };
+
+    await expectNoOverflow();
+    await page
+      .locator(".library-toolbar .genre-filter-dropdown > summary")
+      .click();
+    const panel = await page
+      .locator(".library-toolbar .genre-filter-panel")
+      .boundingBox();
+    expect(panel!.x).toBeGreaterThanOrEqual(0);
+    expect(panel!.x + panel!.width).toBeLessThanOrEqual(width);
+    await expectNoOverflow();
+    await page
+      .locator(".library-toolbar .genre-filter-dropdown > summary")
+      .click();
+    await page.locator(".library-sort").click();
+    const year = page.locator('[data-sort="year"]');
+    await year.click();
+    await expect(page.locator(".library-sort-dropdown")).toHaveAttribute(
+      "open",
+    );
+    await page.keyboard.press("Escape");
+    await expectNoOverflow();
+  }
+
+  await page.locator(".library-sort").click();
+  await page.locator('[data-sort="title"]').click();
+  await page.keyboard.press("Escape");
+  const titles = await page
+    .locator("#library-results .album-title strong")
+    .allTextContents();
+  expect(titles.length).toBeGreaterThan(1);
+  expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b)));
+
+  await page.locator(".library-sort").click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".library-sort-dropdown")).not.toHaveAttribute(
+    "open",
+  );
+  await expect(page.locator(".library-sort")).toBeFocused();
+  await page.locator(".library-sort").click();
+  await page.locator("#library-query").click();
+  await expect(page.locator(".library-sort-dropdown")).not.toHaveAttribute(
+    "open",
+  );
+
+  await page.locator('[data-nav="artists"]').click();
+  await page.locator('[data-nav="library"]').click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    320,
+  );
+  await page.locator(".library-sort").click();
+  await expect(page.locator('[data-sort="title"]')).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.keyboard.press("Escape");
+  await page.reload();
+  await page.locator("#auth-demo").click();
+  await expect(page.locator("#library-query")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    320,
+  );
+});
+
+test("sort categories cycle both directions and off, replacing the active category", async ({
+  page,
+}) => {
+  const titles = page.locator("#library-results .album-title strong");
+  const original = await titles.allTextContents();
+  const dropdown = page.locator(".library-sort-dropdown");
+  await page.locator(".library-sort").click();
+
+  for (const category of ["recent", "updated", "title", "rating", "year"]) {
+    const choice = page.locator(`[data-sort="${category}"]`);
+    await choice.click();
+    await expect(choice).toHaveAccessibleName(/, ascending$/);
+    await expect(choice.locator(".ascending svg")).toHaveCount(1);
+    await expect(
+      page.locator('.library-sort-choice[aria-pressed="true"]'),
+    ).toHaveCount(1);
+    await expect(dropdown).toHaveAttribute("open");
+    if (category === "title")
+      expect(await titles.allTextContents()).toEqual(
+        [...original].sort((a, b) => a.localeCompare(b)),
+      );
+
+    await page.keyboard.press("Enter");
+    await expect(choice).toHaveAccessibleName(/, descending$/);
+    await expect(choice.locator(".descending svg")).toHaveCount(1);
+    if (category === "title")
+      expect(await titles.allTextContents()).toEqual(
+        [...original].sort((a, b) => b.localeCompare(a)),
+      );
+
+    await choice.click();
+    await expect(choice).toHaveAccessibleName(/, off$/);
+    await expect(
+      page.locator('.library-sort-choice[aria-pressed="true"]'),
+    ).toHaveCount(0);
+    expect(await titles.allTextContents()).toEqual(original);
+  }
+
+  await page.locator('[data-sort="title"]').click();
+  await page.locator('[data-sort="rating"]').click();
+  await expect(page.locator('[data-sort="title"]')).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect(page.locator('[data-sort="rating"]')).toHaveAccessibleName(
+    "Rating, ascending",
+  );
+  await expect(
+    page.locator('.library-sort-choice[aria-pressed="true"]'),
+  ).toHaveCount(1);
+});
+
 test("unrated albums use muted stars in the library and omit the detail rating", async ({
   page,
 }) => {

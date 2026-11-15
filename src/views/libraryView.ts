@@ -1,11 +1,11 @@
 import { renderCatalogFilters } from "../components/catalogFilters";
 import { renderLayoutToggle } from "../components/layoutToggle";
 import type { Layout } from "../app/layoutPreferences";
-import type { LibrarySort } from "../components/sortOptions";
 import {
-  librarySortOptions,
-  renderSortOptions,
-} from "../components/sortOptions";
+  compareLibraryAlbums,
+  type LibrarySortSelection,
+} from "../app/librarySort";
+import { renderLibrarySortChoices } from "../components/sortOptions";
 import type { Genre } from "../types/albums";
 import type { LibraryData } from "../types/library";
 import {
@@ -17,12 +17,7 @@ import {
   renderFilterChips,
 } from "../components/libraryFilters";
 import type { Album } from "../types/albums";
-import {
-  cover,
-  albumUrl,
-  artistText,
-  latest,
-} from "../components/presentation";
+import { cover, albumUrl, artistText } from "../components/presentation";
 import { escapeHtml } from "../components/html";
 import { icon } from "../components/icons";
 import { renderAlbumGrid } from "../components/albumGrid";
@@ -31,7 +26,7 @@ import { matches } from "../app/search";
 export interface LibraryState {
   query: string;
   filters: LibraryFilters;
-  sort: LibrarySort;
+  sort: LibrarySortSelection | null;
   layout: Layout;
 }
 
@@ -82,12 +77,17 @@ export function renderLibraryView(
             value="${escapeHtml(state.query)}"
         /></label>
         ${renderCatalogFilters(renderLibraryFilters(state.filters, data), Object.keys(state.filters).length)}
-        <label class="select-wrap"
-          ><span class="sr-only">Sort albums</span
-          ><select id="sort-order">
-            ${renderSortOptions(librarySortOptions, state.sort)}</select
-          >${icon("chevron", 16)}</label
-        >
+        <details class="library-sort-dropdown">
+          <summary
+            class="button secondary library-sort"
+            aria-label="Sort albums"
+          >
+            ${icon("sort", 18)}<span class="library-sort-text">Sort</span>
+          </summary>
+          <div class="library-sort-panel" role="group" aria-label="Sort albums">
+            ${renderLibrarySortChoices(state.sort)}
+          </div>
+        </details>
       </div>
       <div id="library-filter-chips" class="library-filter-chips">
         ${renderFilterChips(state.filters, data)}
@@ -105,18 +105,6 @@ export function updateLibrary(
 ): void {
   const list = root.querySelector("#library-results");
   if (!list) return;
-  const titleOrder = (a: Album, b: Album) =>
-    (a.sortTitle || a.title).localeCompare(b.sortTitle || b.title);
-  const order: Record<LibrarySort, (a: Album, b: Album) => number> = {
-    recent: (a, b) =>
-      (latest(b)?.listenedAt ?? b.createdAt).localeCompare(
-        latest(a)?.listenedAt ?? a.createdAt,
-      ),
-    updated: (a, b) => b.updatedAt.localeCompare(a.updatedAt),
-    title: titleOrder,
-    rating: (a, b) => (latest(b)?.rating ?? 0) - (latest(a)?.rating ?? 0),
-    year: (a, b) => (a.releaseYear ?? Infinity) - (b.releaseYear ?? Infinity),
-  };
   const filtered = albums.filter(
     (album) =>
       matchesLibraryFilters(album, state.filters, catalog) &&
@@ -129,7 +117,8 @@ export function updateLibrary(
         ...album.genres.map((genre) => genre.name),
       ),
   );
-  filtered.sort((a, b) => order[state.sort](a, b) || titleOrder(a, b));
+  const sort = state.sort;
+  if (sort) filtered.sort((a, b) => compareLibraryAlbums(a, b, sort));
   root.querySelector("#library-count")!.textContent =
     filtered.length === albums.length
       ? `${filtered.length} ${filtered.length === 1 ? "album" : "albums"}`

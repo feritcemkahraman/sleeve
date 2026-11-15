@@ -472,23 +472,107 @@
 }
 
 .toolbar.library-toolbar {
-  grid-template-columns: minmax(0, 1fr) auto 180px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
 }
 .toolbar.library-toolbar .search-field {
   grid-column: auto;
 }
+.library-sort-dropdown {
+  position: relative;
+}
+.library-sort {
+  min-height: 40px;
+  cursor: pointer;
+  list-style: none;
+}
+.library-sort::-webkit-details-marker {
+  display: none;
+}
+.library-sort-dropdown:not([open]) > .library-sort-panel {
+  display: none;
+}
+.library-sort-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  width: 232px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px #0005;
+}
+.library-sort-hint {
+  margin: 4px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+}
+.library-sort-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.library-sort-choice:hover,
+.library-sort-choice:focus-visible {
+  background: var(--panel-hover);
+  color: var(--ink);
+}
+.library-sort-choice[aria-pressed="true"] {
+  background: var(--panel-hover);
+  color: var(--sage-strong);
+  border-color: var(--line);
+}
+.library-sort-direction {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+.library-sort-choice[aria-pressed="true"] .library-sort-direction {
+  background: var(--sage);
+  color: var(--bg);
+}
+.library-sort-direction.ascending .icon {
+  transform: rotate(-90deg);
+}
+.library-sort-direction.descending .icon {
+  transform: rotate(90deg);
+}
 
 @media (max-width: 640px) {
   .toolbar.library-toolbar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    position: relative;
   }
-  .toolbar.library-toolbar .search-field {
-    grid-column: 1 / -1;
+  .library-toolbar .genre-filter-dropdown {
+    position: static;
   }
   .library-toolbar .genre-filter-panel {
     left: 0;
     right: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .library-sort-text {
+    display: none;
   }
 }
