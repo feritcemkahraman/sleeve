@@ -160,7 +160,9 @@ export function renderInstrumentDetail(
   item: Instrument,
   albums: Album[],
 ): string {
-  const used = albumsUsing(albums, item.id);
+  const used = albumsUsing(albums, item.id).sort((a, b) =>
+    (a.sortTitle || a.title).localeCompare(b.sortTitle || b.title),
+  );
   return /* HTML */ `<section
     class="instrument-page"
     aria-labelledby="page-title"
