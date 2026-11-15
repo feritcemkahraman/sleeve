@@ -1,9 +1,9 @@
 ---
 name: publish-pr
-description: Publish a completed, well-defined JazzLog change as a GitHub pull request using gh api. Apply after implementing a feature, fix, or refactor in this repository.
+description: Publish a completed, well-defined JazzLog change as a GitHub pull request using gh api. Use only when the user explicitly asks to create or update a pull request.
 ---
 
-Complete each well-defined change with a pull request unless the user explicitly requests otherwise. This repository convention authorizes creating a branch, committing the task's changes, pushing it, and opening the PR; it does not authorize merging or deployment.
+Create or update a pull request only when the user explicitly requests it. Completing implementation alone does not trigger this workflow. A request to publish a PR authorizes creating a branch, committing the task's changes, pushing it, and opening or updating the PR; it does not authorize merging or deployment.
 
 1. Inspect the working tree, branch, remotes, and recent commits. Preserve unrelated user changes and include only the current task. Create a descriptive feature branch from the intended base; avoid carrying commits from an unrelated or unmerged PR.
 2. Finish the implementation and run the TypeScript production build, relevant existing tests (including browser coverage for changed flows), formatting checks for changed files, and git diff --check. Resolve failures caused by the change. Disclose any remaining validation limits.
