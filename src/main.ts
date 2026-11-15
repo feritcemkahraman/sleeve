@@ -26,6 +26,7 @@ let libraryMounted = false;
 let disposeLibrary: (() => void) | undefined;
 let accountId: string | null = null;
 let signingOut = false;
+let accountEmail: string | undefined;
 let stopAuth: (() => void) | undefined;
 let disposeAuthView: (() => void) | undefined;
 
@@ -52,6 +53,7 @@ function enterLibrary(
     data,
     authenticated ? accountId! : "demo",
     cached,
+    () => accountEmail,
   );
   const disposeHeader = initializeMobileHeader();
   const disposeNavigation = initializeNavigation((hash) =>
@@ -63,13 +65,33 @@ function enterLibrary(
     disposeHeader();
     libraryMounted = false;
   };
-  const account = document.createElement("button");
-  account.type = "button";
+  const account = document.createElement("a");
+  account.href = "#profile";
+  if (location.hash === "#profile")
+    account.setAttribute("aria-current", "page");
   account.className = "auth-text-button account-button";
-  account.textContent = authenticated ? "Sign out" : "Sign in";
+  account.innerHTML = /* HTML */ `<svg
+      class="icon"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.7"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 22v-2a8 8 0 0 1 16 0v2" />
+    </svg>
+    Profile`;
   document.querySelector(".masthead-inner")!.append(account);
-  account.addEventListener("click", async () => {
-    account.disabled = true;
+  const handleAccount = async (event: MouseEvent): Promise<void> => {
+    const button = (event.target as Element).closest<HTMLButtonElement>(
+      '[data-action="profile-account"]',
+    );
+    if (!button || button.disabled) return;
+
+    button.disabled = true;
     try {
       if (authenticated) {
         signingOut = true;
@@ -80,12 +102,18 @@ function enterLibrary(
       window.location.reload();
     } catch {
       signingOut = false;
-      account.disabled = false;
+      button.disabled = false;
       const toast = document.querySelector<HTMLElement>("#toast")!;
       toast.textContent = "Couldn’t sign out. Please try again.";
       toast.classList.add("visible");
     }
-  });
+  };
+  root!.addEventListener("click", handleAccount);
+  const disposeMountedLibrary = disposeLibrary;
+  disposeLibrary = () => {
+    root!.removeEventListener("click", handleAccount);
+    disposeMountedLibrary();
+  };
   window.scrollTo(0, 0);
 }
 
@@ -171,6 +199,9 @@ async function start(): Promise<void> {
       // Supabase invokes this callback while holding its auth lock. Keep it
       // synchronous and do not call another auth method from here.
       if (session) {
+        accountEmail = session.user.email;
+        const email = document.querySelector("#profile-email");
+        if (email) email.textContent = accountEmail ?? "Your account";
         if (accountId === session.user.id) return;
         accountId = session.user.id;
         if (libraryMounted) {

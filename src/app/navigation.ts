@@ -19,6 +19,7 @@ export function initializeNavigation(
 
   function updateHighlight(animate = true) {
     const next = links.find((link) => link.hasAttribute("aria-current"));
+    highlight.hidden = !next;
     if (!next) return;
     const previous = highlight.getBoundingClientRect();
     const bounds = next.getBoundingClientRect();
