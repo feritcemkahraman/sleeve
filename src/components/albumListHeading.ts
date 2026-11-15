@@ -8,7 +8,7 @@ export function renderAlbumListHeading(
   action: string,
   id?: string,
 ): string {
-  return /* HTML */ `<div class="library-heading album-list-heading">
+  return /* HTML */ `<div class="album-list-heading">
     <div class="detail-heading">
       <h2 ${id ? `id="${escapeHtml(id)}"` : ""}>${escapeHtml(title)}</h2>
       <span class="count-pill">${count}</span>

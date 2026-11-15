@@ -25,6 +25,44 @@ test.beforeEach(async ({ page }) => {
   await enterDemo(page);
 });
 
+test("catalog album headings keep compact layout toggles on the title row", async ({
+  page,
+}) => {
+  for (const width of [1280, 393, 320]) {
+    await page.setViewportSize({ width, height: 850 });
+    for (const catalog of ["artists", "genres"]) {
+      await page.locator(`[data-nav="${catalog}"]`).click();
+      const singular = catalog.slice(0, -1);
+      await page.locator(`main a[href^="#${singular}/"]`).first().click();
+      const heading = page.locator(".album-list-heading");
+      await expect(heading).toBeVisible();
+      const title = await heading.locator(".detail-heading").boundingBox();
+      const toggle = await heading.locator(".layout-toggle").boundingBox();
+      expect(toggle!.width).toBeLessThan(100);
+      expect(
+        Math.abs(title!.y + title!.height / 2 - toggle!.y - toggle!.height / 2),
+      ).toBeLessThan(1);
+      await heading
+        .getByRole("button", { name: "List view", exact: true })
+        .click();
+      await expect(
+        page
+          .locator(".album-list-heading")
+          .getByRole("button", { name: "List view", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await page
+        .locator(".album-list-heading")
+        .getByRole("button", { name: "Grid view", exact: true })
+        .click();
+      await expect(
+        page
+          .locator(".album-list-heading")
+          .getByRole("button", { name: "Grid view", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+    }
+  }
+});
+
 test("library heading matches catalog typography and spacing", async ({
   page,
 }) => {
