@@ -232,7 +232,7 @@ export function renderAlbumDetailView(album: Album): string {
           ${album.recordLabel ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.recordLabel)}</span>` : ""}
         </p>
         ${album.genres.length ? /* HTML */ `<div class="tags">${album.genres.map((g) => /* HTML */ `<a class="chip" href="${genreUrl(g.id)}">${escapeHtml(g.name)}</a>`).join("")}</div>` : ""}
-        <div class="detail-rating">${renderRating(listens[0]?.rating)}</div>
+        ${listens[0]?.rating ? /* HTML */ `<div class="detail-rating">${renderRating(listens[0].rating)}</div>` : ""}
         <div class="detail-actions">
           <button type="button" class="button secondary" data-action="edit">
             ${icon("edit", 17)} Edit album

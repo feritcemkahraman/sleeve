@@ -25,6 +25,52 @@ test.beforeEach(async ({ page }) => {
   await enterDemo(page);
 });
 
+test("unrated albums use muted stars in the library and omit the detail rating", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Add album", exact: true }).click();
+  await page.locator('[data-action="manual"]').click();
+  await page.locator('[name="title"]').fill("Unrated stars experiment");
+  await page.locator('#album-form button[type="submit"]').click();
+  await expect(page.locator("#editor")).not.toBeVisible();
+  await expect(page.locator(".detail-rating")).toHaveCount(0);
+  await page.goto("/#");
+
+  const unratedCard = page
+    .locator(".album-card")
+    .filter({ has: page.locator(".unrated") })
+    .first();
+  const rating = unratedCard.locator(".rating");
+  await expect(rating).toHaveAttribute("aria-label", "Unrated");
+  await expect(rating).toHaveText("");
+  await expect(rating.locator(".star")).toHaveCount(5);
+  await expect(rating.locator(".star-fill").first()).toHaveAttribute(
+    "style",
+    "--fill:0%",
+  );
+  await expect(rating.locator(".stars")).toHaveCSS("opacity", "1");
+  const star = rating.locator(".star").first();
+  const starColor = await star.evaluate(
+    (element) => getComputedStyle(element).color,
+  );
+  await expect(star.locator(":scope > svg")).toHaveCSS("stroke", starColor);
+  const ratedStar = page.locator(".rating:not(.unrated) .star").first();
+  await expect(ratedStar).toHaveCSS("color", starColor);
+  const ratedFillColor = await ratedStar
+    .locator(".star-fill")
+    .evaluate((element) => getComputedStyle(element).color);
+  await expect(ratedStar.locator(".star-fill svg")).toHaveCSS(
+    "stroke",
+    ratedFillColor,
+  );
+  await expect(star.locator(":scope > svg")).toHaveCSS("fill-opacity", "0.3");
+  await expect(star.locator(":scope > svg")).toHaveCSS("stroke-opacity", "1");
+  await unratedCard.click();
+  await expect(page.locator(".album-hero")).toBeVisible();
+  await expect(page.locator(".detail-rating")).toHaveCount(0);
+  await expect(page.getByText("Unrated", { exact: true })).toHaveCount(0);
+});
+
 test("album fields and music links survive save and reload", async ({
   page,
 }) => {
