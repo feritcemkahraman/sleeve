@@ -23,30 +23,35 @@ export async function getLibrary(): Promise<LibraryData> {
 }
 
 async function fetchLibrary(): Promise<LibraryData> {
-  const [albums, artistRows, genreRows, instrumentRows] = await Promise.all([
-    getAlbums(),
-    readAll((from, to) =>
-      supabase
-        .from("artists")
-        .select("id,name,sort_name,country,musicbrainz_id,photo_url")
-        .order("id")
-        .range(from, to),
-    ),
-    readAll((from, to) =>
-      supabase
-        .from("genres")
-        .select("id,name,parent_genre_id")
-        .order("id")
-        .range(from, to),
-    ),
-    readAll((from, to) =>
-      supabase
-        .from("instruments")
-        .select("id,name,image_url,instrument_categories(category)")
-        .order("id")
-        .range(from, to),
-    ),
-  ]);
+  const [albums, artistRows, genreRows, parentRows, instrumentRows] =
+    await Promise.all([
+      getAlbums(),
+      readAll((from, to) =>
+        supabase
+          .from("artists")
+          .select("id,name,sort_name,country,musicbrainz_id,photo_url")
+          .order("id")
+          .range(from, to),
+      ),
+      readAll((from, to) =>
+        supabase.from("genres").select("id,name").order("id").range(from, to),
+      ),
+      readAll((from, to) =>
+        supabase
+          .from("genre_parents")
+          .select("parent_genre_id,child_genre_id")
+          .order("parent_genre_id")
+          .order("child_genre_id")
+          .range(from, to),
+      ),
+      readAll((from, to) =>
+        supabase
+          .from("instruments")
+          .select("id,name,image_url,instrument_categories(category)")
+          .order("id")
+          .range(from, to),
+      ),
+    ]);
   return {
     albums,
     artists: artistRows.map((row) => ({
@@ -60,7 +65,9 @@ async function fetchLibrary(): Promise<LibraryData> {
     genres: genreRows.map((row) => ({
       id: row.id,
       name: row.name,
-      parentGenreId: row.parent_genre_id,
+      parentGenreIds: parentRows
+        .filter((edge) => edge.child_genre_id === row.id)
+        .map((edge) => edge.parent_genre_id),
     })),
     instruments: instrumentRows.map((row) => ({
       id: row.id,

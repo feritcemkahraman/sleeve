@@ -59,7 +59,12 @@ const demoArtistCatalogSchema = z.looseObject({
   ),
 });
 const demoGenreCatalogSchema = z.looseObject({
-  genres: z.array(namedSchema.extend({ parentGenreId: optionalStringSchema })),
+  genres: z.array(
+    namedSchema.extend({
+      parentGenreId: optionalStringSchema,
+      parentGenreIds: z.array(z.string()).optional(),
+    }),
+  ),
 });
 const librarySnapshotSchema = z.looseObject({
   version: z.literal(1),

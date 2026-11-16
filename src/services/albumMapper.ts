@@ -29,7 +29,7 @@ export function mapAlbum(row: AlbumQueryRow): Album {
     .map(({ entry, genre }) => ({
       id: genre.id,
       name: genre.name,
-      parentGenreId: genre.parent_genre_id,
+      parentGenreIds: genre.genre_parents.map((edge) => edge.parent_genre_id),
       isPrimary: entry.is_primary,
     }));
 

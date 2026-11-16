@@ -254,7 +254,7 @@ export const catalog: Album[] = records.map(
     genres: genres.map((name, index) => ({
       id: "genre-" + name.toLowerCase().replaceAll(" ", "-"),
       name,
-      parentGenreId: null,
+      parentGenreIds: [],
       isPrimary: index === 0,
     })),
     instruments: [],

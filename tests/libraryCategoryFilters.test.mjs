@@ -4,9 +4,9 @@ import { categoryChoices } from "../src/app/libraryCategoryFilters.ts";
 
 const data = {
   genres: [
-    { id: "jazz", name: "Jazz", parentGenreId: null },
-    { id: "bebop", name: "Bebop", parentGenreId: "jazz" },
-    { id: "house", name: "House", parentGenreId: null },
+    { id: "jazz", name: "Jazz", parentGenreIds: [] },
+    { id: "bebop", name: "Bebop", parentGenreIds: ["jazz"] },
+    { id: "house", name: "House", parentGenreIds: [] },
   ],
   artists: [
     { id: "primary", name: "Leader" },

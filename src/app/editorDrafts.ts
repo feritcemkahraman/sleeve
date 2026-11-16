@@ -275,7 +275,19 @@ export class EditorDraftController implements EditorDrafts {
         localStorage.getItem(this.draftKey) ?? "null",
       );
       const result = draftSchema.safeParse(stored);
-      if (result.success) this.draft = result.data;
+      if (result.success) {
+        this.draft = result.data;
+        const parentField = this.draft.fields.find(
+          (field) => field.name === "parentGenreId",
+        );
+        if (parentField?.value)
+          this.draft.fields.push({
+            name: "parentGenreIds",
+            id: `genre-parent-${parentField.value}`,
+            value: parentField.value,
+            checked: true,
+          });
+      }
     } catch {
       /* An unavailable or damaged draft must not prevent opening the library. */
     }

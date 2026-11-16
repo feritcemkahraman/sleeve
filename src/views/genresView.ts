@@ -2,7 +2,7 @@ import { renderCatalogHeading } from "../components/catalogHeading";
 import { renderCatalogFilters } from "../components/catalogFilters";
 import type { Album, Genre } from "../types/albums";
 import { escapeHtml as e } from "../components/html";
-import { ancestors, genreUrl, includesGenre } from "../app/genres";
+import { genrePaths, genreUrl, includesGenre } from "../app/genres";
 import { renderAlbumListHeading } from "../components/albumListHeading";
 import { renderAlbumGrid } from "../components/albumGrid";
 function renderGenreLeaf(genre: Genre, count: number): string {
@@ -15,16 +15,23 @@ function renderGenreTree(
   parent: string | null,
   genres: Genre[],
   counts: Map<string, number>,
+  path: string[] = [],
 ): string {
   return /* HTML */ `<ul>
     ${genres
-      .filter((genre) => genre.parentGenreId === parent)
+      .filter(
+        (genre) =>
+          !path.includes(genre.id) &&
+          (parent === null
+            ? !genre.parentGenreIds.length
+            : genre.parentGenreIds.includes(parent)),
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(
         (genre) =>
           /* HTML */ `<li class="genre-tree-item">
             ${
-              genres.some((child) => child.parentGenreId === genre.id)
+              genres.some((child) => child.parentGenreIds.includes(genre.id))
                 ? /* HTML */ `<details>
                     <summary>
                       <span class="genre-toggle-label"
@@ -39,7 +46,7 @@ function renderGenreTree(
                         >View <span aria-hidden="true">↗</span></a
                       >
                     </summary>
-                    ${renderGenreTree(genre.id, genres, counts)}
+                    ${renderGenreTree(genre.id, genres, counts, [...path, genre.id])}
                   </details>`
                 : renderGenreLeaf(genre, counts.get(genre.id) ?? 0)
             }
@@ -61,9 +68,10 @@ function renderAlphabeticalGenres(
           /* HTML */ `<li>
             ${renderGenreLeaf(genre, counts.get(genre.id) ?? 0)}
             <p class="muted">
-              ${ancestors(genre.id, genres)
+              ${genres
+                .filter((parent) => genre.parentGenreIds.includes(parent.id))
                 .map((parent) => e(parent.name))
-                .join(" › ")}
+                .join(", ")}
             </p>
           </li>`,
       )
@@ -126,22 +134,44 @@ export function renderGenreDetail(
     .sort((a, b) =>
       (a.sortTitle || a.title).localeCompare(b.sortTitle || b.title),
     );
-  const children = genres.filter((child) => child.parentGenreId === genre.id);
+  const children = genres.filter((child) =>
+    child.parentGenreIds.includes(genre.id),
+  );
   const direct = albums.some((album) =>
     album.genres.some((assigned) => assigned.id === genre.id),
   );
   return /* HTML */ `<section class="instrument-page genre-detail">
     <a class="back-link" href="#genres">Back to genres</a>
-    <p class="genre-breadcrumb">
-      ${ancestors(genre.id, genres)
-        .map(
-          (parent) =>
-            /* HTML */ `<a href="${genreUrl(parent.id)}">${e(parent.name)}</a>`,
-        )
-        .join(" › ")}
-    </p>
     <div class="instrument-page-heading">
-      <h1 id="page-title">${e(genre.name)}</h1>
+      <div class="genre-title">
+        <h1 id="page-title">${e(genre.name)}</h1>
+        ${
+          genre.parentGenreIds.length
+            ? /* HTML */ `<p
+                class="genre-breadcrumb"
+                aria-label="Genre ancestry"
+              >
+                ${genrePaths(genre.id, genres)
+                  .map(
+                    (path) =>
+                      /* HTML */ `<span class="genre-breadcrumb-path"
+                        >${path
+                          .map(
+                            (ancestor) =>
+                              /* HTML */ `<a
+                                href="${genreUrl(ancestor.id)}"
+                                ${ancestor.id === genre.id ? 'aria-current="page"' : ""}
+                                >${e(ancestor.name)}</a
+                              >`,
+                          )
+                          .join(' <span aria-hidden="true">›</span> ')}</span
+                      >`,
+                  )
+                  .join(", ")}
+              </p>`
+            : ""
+        }
+      </div>
       <button class="button secondary" data-action="edit-catalog-genre">
         Edit genre
       </button>

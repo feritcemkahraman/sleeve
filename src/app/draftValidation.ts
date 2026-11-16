@@ -1,3 +1,4 @@
+import { upgradeGenre } from "./genres.ts";
 import { z } from "zod";
 import { vinylStatuses } from "./vinylStatus.ts";
 import type { Draft, DraftTarget } from "./editorDrafts";
@@ -14,11 +15,13 @@ const artistSchema = z.looseObject({
   musicbrainzId: z.string().nullable(),
   photoUrl: z.string().nullish(),
 });
-const genreSchema = z.looseObject({
+const storedGenreSchema = z.looseObject({
   id: z.string(),
   name: z.string(),
-  parentGenreId: z.string().nullable(),
+  parentGenreIds: z.array(z.string()).optional(),
+  parentGenreId: z.string().nullish(),
 });
+const genreSchema = storedGenreSchema.transform(upgradeGenre);
 const instrumentSchema = z.looseObject({
   id: z.string(),
   name: z.string(),
@@ -29,7 +32,12 @@ const artistCreditSchema = artistSchema.extend({
   role: z.enum(["primary", "featured", "other"]),
   position: z.number().int(),
 });
-const albumGenreSchema = genreSchema.extend({ isPrimary: z.boolean() });
+const albumGenreSchema = storedGenreSchema
+  .extend({ isPrimary: z.boolean() })
+  .transform((genre) => ({
+    ...upgradeGenre(genre),
+    isPrimary: genre.isPrimary,
+  }));
 const albumInstrumentSchema = instrumentSchema.extend({
   notes: z.string().nullable(),
 });
