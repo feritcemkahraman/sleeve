@@ -53,9 +53,9 @@ export function renderHeader(): string {
   return /* HTML */ `
     <header class="masthead">
       <div class="frame masthead-inner">
-        <a class="brand" href="#" aria-label="JazzLog library"
+        <a class="brand" href="#" aria-label="Sleeve library"
           ><img src="./favicon.svg" alt="" width="38" height="38" /><span
-            >JazzLog<span class="brand-period">.</span></span
+            >Sleeve<span class="brand-period">.</span></span
           ></a
         >
         <nav class="main-nav" aria-label="Main navigation">

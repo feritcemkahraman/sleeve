@@ -119,7 +119,7 @@ export function createDiscovery({
                 id="discovery-request"
                 rows="3"
                 maxlength="500"
-                placeholder="Japanese jazz with electric piano, something mellow…"
+                placeholder="Soulful vocals, textured guitars, something mellow…"
               ></textarea>
             </label>
             <p

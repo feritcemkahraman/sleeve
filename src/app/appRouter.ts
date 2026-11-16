@@ -306,16 +306,16 @@ export class AppRouter {
   private pageTitle(section: RouteSection, items: RouteItems): string {
     switch (section) {
       case "profile":
-        return "Profile — JazzLog";
+        return "Profile — Sleeve";
       case "genres":
-        return `${items.genre?.name ?? "Genres"} — JazzLog`;
+        return `${items.genre?.name ?? "Genres"} — Sleeve`;
       case "artists":
-        return `${items.artist?.name ?? "Artists"} — JazzLog`;
+        return `${items.artist?.name ?? "Artists"} — Sleeve`;
       case "instruments":
-        return `${items.instrument?.name ?? "Instruments"} — JazzLog`;
+        return `${items.instrument?.name ?? "Instruments"} — Sleeve`;
       case "library":
-        if (items.album) return `${items.album.title} — JazzLog`;
-        return "JazzLog — Your library";
+        if (items.album) return `${items.album.title} — Sleeve`;
+        return "Sleeve — Your library";
     }
   }
 

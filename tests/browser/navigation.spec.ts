@@ -82,7 +82,7 @@ test("catalog routes retain titles, navigation sections, and history labels", as
     await expect(page.locator("main .back-link")).toBeVisible();
     const name = await page.locator("#page-title").innerText();
     const hash = new URL(page.url()).hash;
-    await expect(page).toHaveTitle(name + " — JazzLog");
+    await expect(page).toHaveTitle(name + " — Sleeve");
     await expect(page.locator('[data-nav="' + section + '"]')).toHaveAttribute(
       "aria-current",
       "page",
@@ -107,7 +107,7 @@ test("catalog routes retain titles, navigation sections, and history labels", as
     await page.evaluate((prefix) => {
       location.hash = "#" + prefix + "/unavailable";
     }, prefix);
-    await expect(page).toHaveTitle(title + " — JazzLog");
+    await expect(page).toHaveTitle(title + " — Sleeve");
     await expect(page.locator('[data-nav="' + section + '"]')).toHaveAttribute(
       "aria-current",
       "page",

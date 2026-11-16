@@ -5,7 +5,7 @@ test("profile charts, grouping, and return navigation", async ({ page }) => {
   await page.locator("#auth-demo").click();
   await page.locator("#library-query").fill("a");
   await page.getByRole("link", { name: "Profile", exact: true }).click();
-  await expect(page).toHaveTitle("Profile — JazzLog");
+  await expect(page).toHaveTitle("Profile — Sleeve");
   await expect(page.locator(".main-nav [aria-current]")).toHaveCount(0);
   await expect(page.locator(".nav-highlight")).toBeHidden();
   await expect(page.locator(".account-button")).toHaveAttribute(
