@@ -1195,6 +1195,26 @@ test("vinyl artwork supports keyboard dismissal, current choices, and album edit
   if (isMobile) await expect(disc).toBeHidden();
   else {
     await expect(disc).toBeVisible();
+    await expect(disc).toHaveCSS("position", "absolute");
+    await expect(disc).toHaveCSS("border-radius", "50%");
+    const sleeve = await page.locator(".album-sleeve").boundingBox();
+    const record = await disc.boundingBox();
+    const heart = await page.locator(".album-vinyl-wish").boundingBox();
+    expect(record!.width).toBeGreaterThan(0);
+    expect(record!.height).toBeCloseTo(record!.width, 0);
+    expect(record!.x).toBeGreaterThan(sleeve!.x);
+    expect(record!.x).toBeLessThan(sleeve!.x + sleeve!.width);
+    expect(record!.x + record!.width).toBeGreaterThan(
+      sleeve!.x + sleeve!.width,
+    );
+    expect(heart!.x).toBeGreaterThan(sleeve!.x + sleeve!.width);
+    expect(heart!.x + heart!.width).toBeLessThanOrEqual(
+      record!.x + record!.width,
+    );
+    expect(heart!.y + heart!.height / 2).toBeCloseTo(
+      record!.y + record!.height / 2,
+      0,
+    );
     await page.locator(".album-artwork").hover();
     await expect(disc).toHaveCSS("transform", "none");
   }
