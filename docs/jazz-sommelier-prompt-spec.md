@@ -4,7 +4,7 @@ Suggested repository path is `docs/features/jazz-sommelier-prompt-spec.md`.
 
 ## Purpose
 
-Give the listener a fast way to ask ChatGPT for the next album to hear, using their JazzLog collection as context. JazzLog builds a complete prompt in the browser. The listener copies it into their preferred ChatGPT app or website, reads the recommendations there, and uses the existing Add album flow when they choose a record.
+Give the listener a fast way to ask ChatGPT for the next album to hear, using their Sleeve collection as context. Sleeve builds a complete prompt in the browser. The listener copies it into their preferred ChatGPT app or website, reads the recommendations there, and uses the existing Add album flow when they choose a record.
 
 The host is a fictional, older jazz-record café owner. He knows the collection, remembers what the listener enjoyed, and occasionally pulls out something unexpected. His voice should make the experience feel personal and musically specific.
 
@@ -23,33 +23,33 @@ The complete interaction is:
 3. Optionally add a short request for this listen.
 4. Copy the generated prompt.
 5. Paste it into ChatGPT and read the recommendations.
-6. Return to JazzLog and use Add album to search for a chosen record.
+6. Return to Sleeve and use Add album to search for a chosen record.
 
 The initial delivery generates text locally. Recommendation replies remain in the ChatGPT conversation. Adding an album uses the existing search, review, manual-entry, and save behavior.
 
 ## Panel content
 
-| Element | Requirement |
-| --- | --- |
-| Heading | “Behind the Counter” |
-| Introduction | “Take your listening journal to ChatGPT and ask our jazz host for your next three records.” |
-| Listening direction | Three mutually exclusive options, with Something familiar selected initially |
-| Optional request | Multiline field labeled “Anything in mind?” with a 500-character limit |
-| Request placeholder | “Warm electric piano, something for a rainy evening…” |
-| Context summary | Album and listening-entry counts for the complete collection |
-| Sharing explanation | “The prompt includes your album details, ratings, and listening notes.” |
-| Prompt preview | Expandable “Preview prompt” disclosure with a labeled, read-only textarea |
-| Primary action | “Copy prompt” |
-| Instruction | “Paste it into the ChatGPT app or website you normally use.” |
-| Secondary action | “Close” |
+| Element             | Requirement                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Heading             | “Behind the Counter”                                                                        |
+| Introduction        | “Take your listening journal to ChatGPT and ask our jazz host for your next three records.” |
+| Listening direction | Three mutually exclusive options, with Something familiar selected initially                |
+| Optional request    | Multiline field labeled “Anything in mind?” with a 500-character limit                      |
+| Request placeholder | “Warm electric piano, something for a rainy evening…”                                       |
+| Context summary     | Album and listening-entry counts for the complete collection                                |
+| Sharing explanation | “The prompt includes your album details, ratings, and listening notes.”                     |
+| Prompt preview      | Expandable “Preview prompt” disclosure with a labeled, read-only textarea                   |
+| Primary action      | “Copy prompt”                                                                               |
+| Instruction         | “Paste it into the ChatGPT app or website you normally use.”                                |
+| Secondary action    | “Close”                                                                                     |
 
 Use these direction values and meanings:
 
-| Internal value | Visible label | Prompt meaning |
-| --- | --- | --- |
-| `familiar` | Something familiar | Follow musical qualities and records the listener has enjoyed |
-| `explore` | Branch out | Recommend adjacent styles or approaches, explaining the connection |
-| `surprise` | Surprise me | Offer an adventurous selection with a concrete reason the listener might enjoy it |
+| Internal value | Visible label      | Prompt meaning                                                                    |
+| -------------- | ------------------ | --------------------------------------------------------------------------------- |
+| `familiar`     | Something familiar | Follow musical qualities and records the listener has enjoyed                     |
+| `explore`      | Branch out         | Recommend adjacent styles or approaches, explaining the connection                |
+| `surprise`     | Surprise me        | Offer an adventurous selection with a concrete reason the listener might enjoy it |
 
 Keep the initial recommendation count fixed at three. Keep direction and request text in memory while the panel is open. Each new opening starts with the default direction and an empty optional request.
 
@@ -59,15 +59,15 @@ Changes to either control update the generated text immediately. Copy and previe
 
 Use the existing hydrated `Album[]` domain objects. Serialize one compact JSON document with a short introductory description of its rating scale.
 
-| Exported field | Source and handling |
-| --- | --- |
-| `title` | Album title |
-| `artists` | Ordered album artist credits with name and role |
-| `releaseYear` | Original album release year when available |
-| `genres` | Attached genre names, preserving the primary designation |
-| `instruments` | Attached instrument names and album-specific instrument notes |
-| `latestRating` | Rating from the most recent listening event when present |
-| `listeningHistory` | Every listening entry with date, rating, and written notes |
+| Exported field     | Source and handling                                           |
+| ------------------ | ------------------------------------------------------------- |
+| `title`            | Album title                                                   |
+| `artists`          | Ordered album artist credits with name and role               |
+| `releaseYear`      | Original album release year when available                    |
+| `genres`           | Attached genre names, preserving the primary designation      |
+| `instruments`      | Attached instrument names and album-specific instrument notes |
+| `latestRating`     | Rating from the most recent listening event when present      |
+| `listeningHistory` | Every listening entry with date, rating, and written notes    |
 
 Important data behavior:
 
@@ -92,7 +92,7 @@ Keep one versioned template in source. Interpolate the direction instruction, th
 
 Use the following initial template. Text between `{{...}}` markers is supplied by the application.
 
-~~~text
+```text
 You are the fictional host of a small jazz-record café: an older, warm, deeply knowledgeable record collector with a particular affection for groove, melody, and the interplay between musicians. Speak to me as a regular visitor while you pull a few records from behind the counter.
 
 Be conversational, specific, and concise. Ground your explanations in musical qualities and the listening history below. Be welcoming across styles. Use the persona's voice without invented stories about real encounters or personal memories.
@@ -126,7 +126,7 @@ Collection summary
 
 Collection JSON
 {{libraryJson}}
-~~~
+```
 
 Use these exact direction instructions:
 
@@ -205,7 +205,6 @@ Use focused automated checks for the pure builder when needed to cover rating co
 ## Completion
 
 The deliverable is a working prompt panel integrated into the current vanilla TypeScript application, with the exact generated text visible and copyable. The listener's selection and subsequent album logging continue through the existing Add album workflow. A future model connection can use the same collection projection, persona, direction options, and recommendation brief as its starting point.
-
 
 ## Clipboard implementation references
 

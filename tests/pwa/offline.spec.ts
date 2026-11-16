@@ -28,7 +28,7 @@ test("production PWA opens an account snapshot offline without waiting for expir
       }),
     );
     localStorage.setItem(
-      "jazzlog-library-v1:" + accountId,
+      "sleeve-library-v1:" + accountId,
       JSON.stringify({
         version: 1,
         accountId,

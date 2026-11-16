@@ -142,7 +142,7 @@ export class AlbumEditor {
 
   constructor(dependencies: AlbumEditorDependencies) {
     this.dependencies = dependencies;
-    this.mappingKey = `jazzlog:import-mappings:v1:${dependencies.accountId}`;
+    this.mappingKey = `sleeve:import-mappings:v1:${dependencies.accountId}`;
   }
 
   private suggestions(

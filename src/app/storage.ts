@@ -16,7 +16,7 @@ import { mockAlbums } from "../data/mockData.ts";
 import { makeId } from "./id.ts";
 
 // Version the demo separately from both the standalone prototype and future account data.
-const storageKey = "jazzlog-demo-v1";
+const storageKey = "sleeve-demo-v1";
 const object = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 const strings = (value: unknown): value is string[] =>

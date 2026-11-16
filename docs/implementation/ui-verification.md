@@ -10,7 +10,7 @@ The following checks passed at 1440px and 390px viewport widths:
 
 - Initial library: ten albums, eleven listens, and loaded local SVG covers.
 - Library search, combined genre filtering, clear filters, all four sort choices, and list view.
-- Keyboard activation of a library album opens its details; back and JazzLog home links return to the library.
+- Keyboard activation of a library album opens its details; back and Sleeve home links return to the library.
 - Listening history and external music links render on the detail page.
 - Dialog initial focus, forward/reverse Tab wrapping, Escape dismissal, and return to the opener.
 - Arrow-key half-star rating selection; saving a listen updates history and the latest rating.
@@ -27,7 +27,7 @@ Malformed and blocked localStorage both fall back to the fixture library. Unknow
 
 1. Run `npm run dev`, then open the printed local URL.
 2. Repeat the workflows above at desktop and mobile widths, using Tab, Shift+Tab, Enter, Escape, and the rating radio group's arrow keys.
-3. Reload after editing or logging a listen. Clear the `jazzlog-demo-v1` localStorage key to reset the demo.
+3. Reload after editing or logging a listen. Clear the `sleeve-demo-v1` localStorage key to reset the demo.
 4. Run `npm run build` before reviewing or publishing changes.
 
 Real MusicBrainz, Cover Art Archive, and Supabase integration remains separate work. External music links open their destinations only when selected. The fixture catalog does not contact metadata services.
@@ -47,4 +47,4 @@ Verified on 2026-11-07 in desktop and touch-emulated Chromium:
 - Touch dialogs and quick-add actions avoid automatic input focus. Catalog details and edit dialogs fit at 375px and 320px without horizontal overflow.
 - No uncaught browser errors during these workflows. Mobile detail screenshot inspected.
 
-Catalog and album data share the `jazzlog-demo-v1` snapshot; no database writes or schema changes are involved.
+Catalog and album data share the `sleeve-demo-v1` snapshot; no database writes or schema changes are involved.

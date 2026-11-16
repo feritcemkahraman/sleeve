@@ -1,7 +1,7 @@
 export type Layout = "grid" | "list";
 type View = "library" | "artist" | "genre";
 
-const storageKey = (view: View) => `jazzlog:layout:${view}`;
+const storageKey = (view: View) => `sleeve:layout:${view}`;
 
 export function readLayout(view: View): Layout {
   try {

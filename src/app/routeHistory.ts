@@ -11,8 +11,8 @@ export interface RouteHistory {
 // Browser entries are the source of truth, so Back and Forward also move the
 // in-app return stack rather than recording another visit.
 export function createRouteHistory(accountId: string): RouteHistory {
-  const key = "jazzlogRoute";
-  const storageKey = `jazzlog:route-history:${accountId}`;
+  const key = "sleeveRoute";
+  const storageKey = `sleeve:route-history:${accountId}`;
   let session = makeId();
   const entries: { hash: string; scroll: number }[] = [];
   let cursor = -1;

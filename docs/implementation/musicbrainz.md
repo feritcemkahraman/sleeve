@@ -1,8 +1,8 @@
-# JazzLog — MusicBrainz Integration
+# Sleeve — MusicBrainz Integration
 
 ## Objective
 
-Implement a small TypeScript integration layer that allows JazzLog to search MusicBrainz and retrieve album metadata.
+Implement a small TypeScript integration layer that allows Sleeve to search MusicBrainz and retrieve album metadata.
 
 We will call MusicBrainz directly from the browser using `fetch()`.
 
@@ -57,7 +57,7 @@ src/
 
 We will keep MusicBrainz-specific types separate from our application's own types.
 
-The service will be responsible for converting raw API responses into normalized JazzLog data.
+The service will be responsible for converting raw API responses into normalized Sleeve data.
 
 ## 3. Define the API response types
 
@@ -99,9 +99,9 @@ A few details worth understanding:
 - `joinphrase` contains text such as `" feat. "` or `" & "` that connects artist credits.
 - `first-release-date` is a string, commonly something like `"1959-08-17"`.
 
-We preserve both the credited name and canonical name because they serve different purposes in JazzLog.
+We preserve both the credited name and canonical name because they serve different purposes in Sleeve.
 
-## 4. Define JazzLog's normalized album type
+## 4. Define Sleeve's normalized album type
 
 In `src/types/album.ts`, define an application-owned representation of a MusicBrainz search result.
 
@@ -520,4 +520,4 @@ Those will be handled separately, with manual editing remaining important.
 - [ ] Browser CORS access verified.
 - [ ] No unnecessary requests or automatic retry loops.
 
-Once these tests pass, the MusicBrainz integration is ready for use by the rest of JazzLog.
+Once these tests pass, the MusicBrainz integration is ready for use by the rest of Sleeve.

@@ -11,7 +11,7 @@ test("account snapshots isolate owners and tolerate broken or unavailable storag
     const saved = cache.writeLibraryCache("one", data, 123);
     const snapshot = cache.readLibraryCache("one");
     const other = cache.readLibraryCache("two");
-    localStorage.setItem("jazzlog-library-v1:broken", "{broken");
+    localStorage.setItem("sleeve-library-v1:broken", "{broken");
     const broken = cache.readLibraryCache("broken");
     cache.clearLibraryCache("one");
     const cleared = cache.readLibraryCache("one");
@@ -126,7 +126,7 @@ test("saved account library stays browsable offline and refreshes on reconnectio
   expect(
     await page.evaluate(
       () =>
-        JSON.parse(localStorage.getItem("jazzlog-library-v1:offline-account")!)
+        JSON.parse(localStorage.getItem("sleeve-library-v1:offline-account")!)
           .syncedAt,
     ),
   ).toBeGreaterThan(123);
