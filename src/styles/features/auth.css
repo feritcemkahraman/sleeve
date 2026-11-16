@@ -9,7 +9,7 @@
 .auth-text-button {
   border: 0;
   background: transparent;
-  color: var(--sage);
+  color: var(--color-accent-text);
   padding: 10px 0;
   font-size: 13px;
 }
@@ -42,7 +42,7 @@
   width: 31%;
   max-width: 145px;
   aspect-ratio: 1;
-  box-shadow: 0 12px 24px #0005;
+  box-shadow: 0 12px 24px var(--color-shadow);
   transform: rotate(-9deg);
 }
 .auth-records img + img {
@@ -85,7 +85,7 @@
 }
 .auth-tabs button[aria-pressed="true"] {
   color: var(--sage-strong);
-  border-bottom-color: var(--sage);
+  border-bottom-color: var(--color-accent-text);
 }
 .auth-card h2 {
   font: normal 32px/1.2 var(--serif);
@@ -122,14 +122,14 @@
 }
 .auth-status {
   font-size: 13px;
-  color: var(--sage);
+  color: var(--color-accent-text);
   margin-top: 16px;
 }
 .auth-status:empty {
   display: none;
 }
 .auth-error {
-  color: #efb4a4;
+  color: var(--color-error);
 }
 .auth-submit {
   width: 100%;

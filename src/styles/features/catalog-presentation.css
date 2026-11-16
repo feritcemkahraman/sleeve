@@ -8,7 +8,7 @@
   overflow: hidden;
   border-radius: 12px;
   background: var(--line);
-  color: var(--sage);
+  color: var(--color-accent-text);
   font-weight: 600;
 }
 .catalog-image img {

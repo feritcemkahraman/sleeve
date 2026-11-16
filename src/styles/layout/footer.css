@@ -17,5 +17,5 @@
   margin-right: 6px;
   vertical-align: 1px;
   border-radius: 50%;
-  background: #96aa83;
+  background: var(--color-success);
 }

@@ -78,7 +78,7 @@
 }
 .profile-grouping button[aria-pressed="true"] {
   background: var(--sage);
-  color: var(--bg);
+  color: var(--color-accent-foreground);
 }
 .chart-axis,
 .profile-note {
@@ -226,4 +226,19 @@
 .profile-chart-years .chart-column:hover .chart-count,
 .profile-chart-years .chart-column:focus .chart-count {
   display: block;
+}
+
+.theme-picker {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.theme-picker select {
+  max-width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
 }

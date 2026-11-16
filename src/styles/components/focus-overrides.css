@@ -1,10 +1,14 @@
-/* Fields retain their normal borders without an extra focus ring. */
-input:focus,
-textarea:focus,
-select:focus,
+/* Keyboard focus remains visible even when fields have custom borders. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+.category-options input:focus-visible + span {
+  outline: 2px solid var(--color-accent-hover);
+  outline-offset: 3px;
+}
 .search-field:focus-within,
 .select-wrap:focus-within,
-.rating-options label:focus-within,
-.category-options input:focus-visible + span {
-  outline: none;
+.rating-options label:focus-within {
+  outline: 2px solid var(--color-accent-hover);
+  outline-offset: 3px;
 }

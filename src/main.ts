@@ -1,3 +1,4 @@
+import { updateThemeColor } from "./app/theme";
 import "./styles/main.css";
 import {
   cachedAccountId,
@@ -18,6 +19,8 @@ import { initializeApp } from "./app/controller";
 import type { LibraryData } from "./types/library";
 import { initializeMobileHeader } from "./components/header";
 import { renderAuthView, initializeAuthView } from "./views/authView";
+
+updateThemeColor();
 
 const root = document.querySelector<HTMLDivElement>("#app");
 if (!root) throw new Error('Missing "#app" root element.');

@@ -3,15 +3,15 @@ dialog {
   max-width: none;
   max-height: min(88dvh, 800px);
   padding: 0;
-  border: 1px solid #53614b;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: #20261e;
+  background: var(--color-surface-raised);
   color: var(--ink);
-  box-shadow: 0 22px 70px #0b0e0bc9;
-  scrollbar-color: #68785f #20261e;
+  box-shadow: 0 22px 70px var(--color-shadow);
+  scrollbar-color: var(--quiet) var(--panel);
 }
 dialog::backdrop {
-  background: #0a0d0abf;
+  background: var(--color-backdrop);
   backdrop-filter: blur(4px);
 }
 .dialog-heading {
@@ -34,7 +34,7 @@ dialog::backdrop {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #20261e;
+  background: var(--color-surface-raised);
 }
 .dialog-back {
   display: inline-flex;
@@ -45,7 +45,7 @@ dialog::backdrop {
   padding: 4px 0;
   border: 0;
   background: transparent;
-  color: var(--sage);
+  color: var(--color-accent-text);
   font-size: 13px;
 }
 .dialog-back:hover {
@@ -61,7 +61,7 @@ dialog::backdrop {
   font-size: 13px;
 }
 .dialog-search {
-  background: #1a2019;
+  background: var(--color-surface-raised);
 }
 .dialog-footer {
   display: flex;
@@ -71,7 +71,7 @@ dialog::backdrop {
   gap: 8px;
   border-top: 1px solid var(--line);
   padding: 13px 24px;
-  background: #232a21;
+  background: var(--color-hover);
 }
 .dialog-footer.search-footer {
   justify-content: space-between;
@@ -96,8 +96,8 @@ dialog::backdrop {
   gap: 7px;
 }
 .demo-label {
-  color: var(--sage);
-  border: 1px solid #43503d;
+  color: var(--color-accent-text);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 1px 4px;
   font: 550 9px/1.3 var(--mono);
@@ -111,7 +111,7 @@ dialog::backdrop {
   max-height: min(36dvh, 300px);
   min-height: 76px;
   overflow: auto;
-  scrollbar-color: #68785f #20261e;
+  scrollbar-color: var(--quiet) var(--panel);
 }
 .result-row {
   width: 100%;
@@ -120,7 +120,7 @@ dialog::backdrop {
   gap: 10px;
   align-items: center;
   text-align: left;
-  background: #262e24;
+  background: var(--color-hover);
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 6px 9px 6px 6px;
@@ -129,15 +129,15 @@ dialog::backdrop {
   outline-offset: 1px;
 }
 .result-row:hover {
-  background: #313b2d;
-  border-color: #5d6e53;
+  background: var(--color-selected);
+  border-color: var(--color-border);
 }
 .result-row .cover {
   border-radius: 3px;
 }
 .result-row > .icon {
   grid-column: 4;
-  color: var(--sage);
+  color: var(--color-accent-text);
 }
 .result-info {
   display: grid;
@@ -153,7 +153,7 @@ dialog::backdrop {
   font-size: 11px;
 }
 .in-library {
-  color: var(--sage);
+  color: var(--color-accent-text);
   font-size: 10px;
   white-space: nowrap;
 }
@@ -170,7 +170,7 @@ dialog::backdrop {
   padding: 8px;
   border-radius: 7px;
   border: 1px solid var(--line);
-  background: #283026;
+  background: var(--color-selected);
   margin-bottom: 12px;
 }
 .review-preview .cover {
@@ -204,11 +204,11 @@ dialog::backdrop {
 .import-suggestions select {
   min-width: 0;
   width: 100%;
-  border: 1px solid #424d3d;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 8px 10px;
   min-height: 39px;
-  background: #1a2019;
+  background: var(--color-surface-raised);
   color: var(--ink);
   font-size: 13px;
   font-weight: 450;
@@ -279,7 +279,7 @@ dialog::backdrop {
 }
 .apple-music-result:hover,
 .apple-music-result:focus-visible {
-  border-color: var(--sage);
+  border-color: var(--color-accent);
 }
 .apple-music-result strong,
 .apple-music-result small {
@@ -287,7 +287,7 @@ dialog::backdrop {
   overflow-wrap: anywhere;
 }
 .apple-music-result strong {
-  color: var(--sage);
+  color: var(--color-accent-text);
   font-size: 13px;
   margin-bottom: 4px;
 }
@@ -296,7 +296,7 @@ dialog::backdrop {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  color: var(--sage);
+  color: var(--color-accent-text);
 }
 .link-fields .icon-button {
   min-width: 34px;
@@ -305,7 +305,7 @@ dialog::backdrop {
   border-radius: 6px;
 }
 .form-error {
-  color: #f0b1a0;
+  color: var(--color-error);
   margin-top: 11px;
   font-size: 13px;
 }
@@ -351,7 +351,7 @@ dialog::backdrop {
   cursor: pointer;
 }
 .rating-options label:hover {
-  background: #d8c99220;
+  background: var(--color-accent-subtle);
 }
 .rating-options label:focus-within {
   outline: 2px solid var(--sage);
@@ -376,9 +376,9 @@ dialog::backdrop {
   gap: 8px;
   max-width: calc(100% - 42px);
   border-radius: 8px;
-  background: #d3debc;
-  color: #24301e;
-  box-shadow: 0 6px 25px #10150fb5;
+  background: var(--color-accent-hover);
+  color: var(--color-accent-foreground);
+  box-shadow: 0 6px 25px var(--color-shadow);
   padding: 11px 14px;
   font-size: 13px;
   font-weight: 650;

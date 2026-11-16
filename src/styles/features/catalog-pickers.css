@@ -3,14 +3,14 @@
 .extra-fields {
   margin: 1.25rem 0;
   padding: 16px;
-  border: 1px solid #424d3d;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 .instrument-picker > input,
 .catalog-search > input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #424d3d;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   background: transparent;
   color: inherit;
@@ -51,7 +51,7 @@
   gap: 28px;
 }
 .instrument-picker > input {
-  background: #1a2019;
+  background: var(--color-surface);
   font-size: 14px;
   min-height: 40px;
   padding: 9px 12px;
@@ -74,7 +74,7 @@
   margin-top: 10px;
 }
 .catalog-search > input {
-  background: #1a2019;
+  background: var(--color-surface);
   font-size: 14px;
   min-height: 40px;
   padding: 9px 12px;
@@ -89,10 +89,10 @@
   margin-top: 4px;
   max-height: 220px;
   padding: 4px;
-  border: 1px solid #53614b;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  background: #20261e;
-  box-shadow: 0 8px 20px #0b0e0b80;
+  background: var(--color-surface);
+  box-shadow: 0 8px 20px var(--color-shadow);
 }
 .catalog-search.is-open .instrument-results:not(:empty) {
   display: flex;

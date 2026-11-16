@@ -88,7 +88,7 @@
   font-size: 12px;
 }
 .instrument-usage {
-  color: var(--sage);
+  color: var(--color-accent-text);
 }
 .instrument-usage.unused {
   color: var(--gold);
@@ -138,8 +138,8 @@
 }
 .category-options input:checked + span {
   background: var(--sage);
-  color: var(--bg);
-  border-color: var(--sage);
+  color: var(--color-accent-foreground);
+  border-color: var(--color-accent);
 }
 .category-options input:focus-visible + span {
   outline: 2px solid var(--sage);
@@ -150,7 +150,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #1a2019;
+  background: var(--color-surface);
 }
 .inline-instrument-create .category-fields {
   margin: 0 0 12px;
@@ -170,9 +170,9 @@
   font-size: 12px;
 }
 .button.danger:not(:disabled) {
-  color: #f1b8a5;
-  border-color: #845c4f;
-  background: #392a25;
+  color: var(--color-error);
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
 }
 .button:disabled {
   opacity: 0.45;

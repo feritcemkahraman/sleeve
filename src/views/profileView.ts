@@ -1,3 +1,4 @@
+import { currentTheme, themeOptions } from "../app/theme.ts";
 import { libraryUrl } from "../app/libraryUrl.ts";
 import type { Album } from "../types/albums";
 import { escapeHtml } from "../components/html.ts";
@@ -233,6 +234,28 @@ export function renderProfileView(
         </p>
       </section>
     </div>
+    <section class="profile-account" aria-labelledby="appearance-heading">
+      <div>
+        <h2 id="appearance-heading">Appearance</h2>
+        <p>Choose a mood for Sleeve. Saved on this device.</p>
+      </div>
+      <label class="theme-picker">
+        <span>Theme</span>
+        <select id="theme-select" name="theme">
+          ${themeOptions()
+            .map(
+              ({ id, label }) =>
+                /* HTML */ `<option
+                  value="${id}"
+                  ${currentTheme() === id ? "selected" : ""}
+                >
+                  ${escapeHtml(label)}
+                </option>`,
+            )
+            .join("")}
+        </select>
+      </label>
+    </section>
     <section class="profile-account" aria-labelledby="account-heading">
       <div>
         <h2 id="account-heading">Account</h2>
