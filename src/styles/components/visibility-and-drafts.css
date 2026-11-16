@@ -20,8 +20,8 @@
   top: 0;
   z-index: 3;
   padding: 7px 12px;
-  background: #383838;
-  color: #e0e0e0;
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 0.75rem;
   line-height: 1.5;
   text-align: center;

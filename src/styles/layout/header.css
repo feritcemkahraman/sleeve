@@ -20,7 +20,7 @@
   display: block;
 }
 .brand-period {
-  color: var(--sage);
+  color: var(--color-accent-text);
 }
 .top-add {
   margin-left: auto;

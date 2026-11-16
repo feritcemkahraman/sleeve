@@ -19,8 +19,8 @@
   min-width: 20px;
   height: 20px;
   border-radius: 10px;
-  background: var(--accent, #a9bfa7);
-  color: #182017;
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
   font-size: 12px;
 }
 .genre-filter-panel {
@@ -31,10 +31,10 @@
   width: 225px;
   max-width: calc(100vw - 32px);
   padding: 8px 12px;
-  background: var(--panel, #20271e);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 8px 24px #0005;
+  box-shadow: 0 8px 24px var(--color-shadow);
 }
 .genre-filter-panel p {
   margin: 4px 0;
@@ -73,7 +73,7 @@
   line-height: 1.4;
 }
 .genre-filter-dropdown > summary:focus-visible {
-  outline: 2px solid var(--accent, #a9bfa7);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 @media (max-width: 480px) {
@@ -132,7 +132,7 @@
   color: var(--muted);
 }
 .library-filter-controls [aria-invalid="true"] {
-  border-color: #cf867e;
+  border-color: var(--color-error);
 }
 
 .filter-star-bound {
@@ -171,7 +171,7 @@
   cursor: pointer;
 }
 .filter-star-options input:hover:not(:disabled) {
-  background: #d8c99220;
+  background: var(--color-accent-subtle);
 }
 .filter-star-options input:focus-visible {
   outline: 2px solid var(--sage);
@@ -181,7 +181,7 @@
   opacity: 0.5;
 }
 .filter-star-bound:has([aria-invalid="true"]) .filter-star-picker {
-  outline: 1px solid #cf867e;
+  outline: 1px solid var(--color-error);
   border-radius: 3px;
 }
 
@@ -243,8 +243,8 @@
 }
 .numeric-unset-toggle:has(:checked) {
   background: var(--sage);
-  color: var(--panel);
-  border-color: var(--sage);
+  color: var(--color-accent-foreground);
+  border-color: var(--color-accent);
 }
 .numeric-unset-toggle:has(:focus-visible) {
   outline: 2px solid var(--sage);
@@ -355,7 +355,7 @@
   gap: 5px;
 }
 .category-filter-pill.selected {
-  border-color: var(--sage);
+  border-color: var(--color-accent);
 }
 .category-choice-count,
 .category-filter-empty {
@@ -405,8 +405,8 @@
 }
 .vinyl-filter-option:has(:checked) {
   background: var(--sage);
-  border-color: var(--sage);
-  color: var(--panel);
+  border-color: var(--color-accent);
+  color: var(--color-accent-foreground);
 }
 .vinyl-filter-option:has(:focus-visible) {
   outline: 2px solid var(--sage);

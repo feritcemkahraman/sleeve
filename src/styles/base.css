@@ -1,22 +1,3 @@
-:root {
-  color-scheme: dark;
-  --page-top-gap: 30px;
-  --bg: #181b17;
-  --header: #1b1f1a;
-  --panel: #20251e;
-  --panel-hover: #282e25;
-  --line: #343b31;
-  --line-soft: #2b3229;
-  --ink: #f0eddf;
-  --muted: #afb3a6;
-  --quiet: #969e8e;
-  --sage: #c2ceac;
-  --sage-strong: #d3debc;
-  --gold: #e2ba77;
-  --serif: Georgia, "Times New Roman", serif;
-  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-}
 * {
   box-sizing: border-box;
 }
@@ -77,4 +58,24 @@ main:focus,
 #page-title:focus,
 #dialog-title:focus {
   outline: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+}
+html {
+  background: var(--bg);
+  scrollbar-color: var(--quiet) var(--bg);
+  accent-color: var(--color-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

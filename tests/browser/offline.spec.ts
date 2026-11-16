@@ -101,7 +101,7 @@ test("saved account library stays browsable offline and refreshes on reconnectio
     }),
   ).toEqual({
     position: "sticky",
-    background: "rgb(56, 56, 56)",
+    background: "rgb(255, 252, 246)",
     aboveHeader: true,
   });
   await expect(page.locator('[data-action="add"]')).toBeDisabled();

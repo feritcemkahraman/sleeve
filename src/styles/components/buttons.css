@@ -21,10 +21,10 @@
 }
 .button.primary {
   background: var(--sage);
-  color: #1b2418;
+  color: var(--color-accent-foreground);
 }
 .button.primary:hover {
-  background: #d6e0c2;
+  background: var(--color-accent-hover);
 }
 .button.secondary {
   background: var(--panel);
@@ -33,7 +33,7 @@
 }
 .button.secondary:hover {
   background: var(--panel-hover);
-  border-color: #596650;
+  border-color: var(--color-border);
 }
 .button.compact {
   min-height: 36px;

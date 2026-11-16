@@ -81,12 +81,12 @@
   text-align: right;
 }
 .discovery-direction-labels span[data-selected="true"] {
-  color: var(--sage);
+  color: var(--color-accent-text);
   font-weight: 600;
 }
 .discovery summary {
   cursor: pointer;
-  color: var(--sage);
+  color: var(--color-accent-text);
   padding: 8px 0;
 }
 .discovery textarea {

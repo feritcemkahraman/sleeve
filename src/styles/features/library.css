@@ -16,7 +16,7 @@
   border-radius: 5px;
 }
 .layout-toggle .icon-button[aria-pressed="true"] {
-  background: #3b4837;
+  background: var(--color-selected);
   color: var(--sage-strong);
 }
 .toolbar {
@@ -132,7 +132,7 @@
     background 0.16s;
 }
 .album-card:hover {
-  border-color: #65715c;
+  border-color: var(--color-border);
   background: var(--panel-hover);
 }
 .cover {
@@ -142,13 +142,17 @@
   position: relative;
   overflow: hidden;
   min-width: 0;
-  background: radial-gradient(circle at 38% 30%, #435240, #242f26 74%);
+  background: radial-gradient(
+    circle at 38% 30%,
+    var(--color-accent-subtle),
+    var(--color-accent-subtle) 74%
+  );
   isolation: isolate;
 }
 .cover-placeholder {
   display: grid;
   place-items: center;
-  color: #aebf9bb3;
+  color: var(--color-text-muted);
   position: absolute;
   inset: 0;
 }
@@ -225,7 +229,7 @@
   width: 13px;
   height: 13px;
   flex: none;
-  color: #969173;
+  color: var(--color-text-muted);
 }
 .star svg {
   display: block;
@@ -287,12 +291,12 @@
   gap: 9px;
   padding: 40px 16px;
   border-radius: 9px;
-  border: 1px dashed #46523e;
+  border: 1px dashed var(--color-border);
   color: var(--muted);
   text-align: center;
 }
 .empty > .icon {
-  color: var(--sage);
+  color: var(--color-accent-text);
 }
 .empty h3 {
   font: 400 25px/1.15 var(--serif);
@@ -342,7 +346,7 @@
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 8px 24px #0005;
+  box-shadow: 0 8px 24px var(--color-shadow);
 }
 .library-sort-hint {
   margin: 4px 10px;
@@ -386,7 +390,7 @@
 }
 .library-sort-choice[aria-pressed="true"] .library-sort-direction {
   background: var(--sage);
-  color: var(--bg);
+  color: var(--color-accent-foreground);
 }
 .library-sort-direction.ascending .icon {
   transform: rotate(-90deg);

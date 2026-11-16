@@ -1,0 +1,27 @@
+[data-theme="sage"] {
+  color-scheme: dark;
+  --color-bg: #181b17;
+  --color-surface: #20251e;
+  --color-surface-raised: #20261e;
+  --color-text: #f0eddf;
+  --color-text-secondary: #afb3a6;
+  --color-text-muted: #969e8e;
+  --color-accent: #c2ceac;
+  --color-accent-hover: #d3debc;
+  --color-accent-foreground: #1b2418;
+  --color-accent-subtle: #313b2e;
+  --color-border: #343b31;
+  --color-border-subtle: #2b3229;
+  --color-hover: #282e25;
+  --color-selected: #3b4837;
+  --color-rating: #e2ba77;
+  --font-heading: Georgia, "Times New Roman", serif;
+  --font-body:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --color-error: #f1b8a5;
+  --color-error-bg: #392a25;
+  --color-success: #96aa83;
+  --header: #1b1f1a;
+}

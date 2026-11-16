@@ -20,7 +20,7 @@
   padding: 8px 14px;
   transform: translateY(-150%);
   background: var(--sage);
-  color: var(--bg);
+  color: var(--color-accent-foreground);
   border-radius: 5px;
 }
 .skip-link:focus {

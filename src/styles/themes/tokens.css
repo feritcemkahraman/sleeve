@@ -1,0 +1,22 @@
+/* Compatibility aliases let existing components share the semantic theme contract. */
+:root {
+  --page-top-gap: 30px;
+  --bg: var(--color-bg);
+  --panel: var(--color-surface);
+  --panel-hover: var(--color-hover);
+  --line: var(--color-border);
+  --line-soft: var(--color-border-subtle);
+  --ink: var(--color-text);
+  --muted: var(--color-text-secondary);
+  --quiet: var(--color-text-muted);
+  --sage: var(--color-accent);
+  --sage-strong: var(--color-accent-hover);
+  --accent: var(--color-accent);
+  --gold: var(--color-rating);
+  --serif: var(--font-heading);
+  --sans: var(--font-body);
+  --mono: var(--font-mono);
+  --color-accent-text: var(--color-accent-hover);
+  --color-shadow: #0003;
+  --color-backdrop: #0a0d0abf;
+}

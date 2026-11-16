@@ -1,3 +1,4 @@
+import { selectTheme } from "./theme";
 import { isVinylStatus, vinylStatusLabel } from "./vinylStatus";
 import { LibraryConnection } from "./libraryConnection";
 import { AppRouter } from "./appRouter";
@@ -511,6 +512,8 @@ export class AppController {
 
   private onChange(event: Event): void {
     const input = event.target as HTMLInputElement;
+    if (input.id === "theme-select") selectTheme(input.value);
+
     if (input.closest("#discovery-panel")) this.discovery.update();
     this.artistFeature.change(input);
     this.genreFeature.change(input);

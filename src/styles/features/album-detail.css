@@ -7,7 +7,7 @@
   align-items: center;
   font-size: 13px;
   font-weight: 600;
-  color: var(--sage);
+  color: var(--color-accent-text);
   margin-bottom: 23px;
 }
 .back-link:hover {
@@ -20,14 +20,19 @@
   align-items: center;
   gap: clamp(16px, 2vw, 24px);
   padding: 28px;
-  border: 1px solid #394338;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse at 8% 22%, #323f31, transparent 85%), var(--panel);
+    radial-gradient(
+      ellipse at 8% 22%,
+      var(--color-accent-subtle),
+      transparent 85%
+    ),
+    var(--panel);
 }
 .album-sleeve > .cover {
   border-radius: 7px;
-  box-shadow: 0 9px 25px #11171085;
+  box-shadow: 0 9px 25px var(--color-shadow);
 }
 .album-hero h1 {
   font: 400 clamp(37px, 5vw, 69px)/1.03 var(--serif);
@@ -75,10 +80,10 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   padding: 4px 8px;
-  border: 1px solid #495744;
+  border: 1px solid var(--color-border);
   border-radius: 20px;
-  color: #c3ccb8;
-  background: #313b2e;
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
   font-size: 10px;
 }
 .detail-rating {
@@ -110,7 +115,7 @@
   font-size: 12px;
 }
 .album-music-shortcut:hover {
-  border-color: #596650;
+  border-color: var(--color-border);
   background: var(--panel-hover);
 }
 .detail-body {
@@ -134,7 +139,7 @@
   align-items: center;
   gap: 9px;
   margin-bottom: 12px;
-  color: var(--sage);
+  color: var(--color-accent-text);
 }
 .detail-heading h2 {
   color: var(--ink);
@@ -219,7 +224,7 @@
 }
 .external-link:hover {
   background: var(--panel-hover);
-  border-color: #64745a;
+  border-color: var(--color-border);
 }
 .external-link > span:first-child {
   display: flex;
@@ -229,7 +234,7 @@
   overflow-wrap: anywhere;
 }
 .external-link .icon {
-  color: var(--sage);
+  color: var(--color-accent-text);
 }
 
 .album-artwork {
@@ -248,8 +253,8 @@
   z-index: -1;
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 1px solid #55604f;
-  box-shadow: 5px 7px 18px #10180f75;
+  border: 1px solid var(--color-border);
+  box-shadow: 5px 7px 18px var(--color-shadow);
   background:
     radial-gradient(
       circle,
@@ -289,10 +294,10 @@
   width: 24px;
   height: 24px;
   transform: translateY(-50%);
-  border: 1px solid #92998b;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
-  background: #41483c;
-  color: #f1f2e9;
+  background: var(--color-accent-subtle);
+  color: var(--color-text);
 }
 .vinyl-art-button {
   anchor-name: --vinyl-status;
@@ -304,11 +309,11 @@
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid #66715d;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
   background: var(--panel);
   color: var(--sage-strong);
-  box-shadow: 0 3px 9px #11171085;
+  box-shadow: 0 3px 9px var(--color-shadow);
   cursor: pointer;
 }
 .vinyl-art-button:hover {
@@ -340,7 +345,7 @@
   border-radius: 9px;
   background: var(--panel);
   color: var(--ink);
-  box-shadow: 0 8px 25px #11171085;
+  box-shadow: 0 8px 25px var(--color-shadow);
 }
 .vinyl-status-options button {
   display: flex;

@@ -1,0 +1,26 @@
+:root,
+[data-theme="editorial"] {
+  color-scheme: light;
+  --color-bg: #f5f1e8;
+  --color-surface: #fffcf6;
+  --color-surface-raised: #ffffff;
+  --color-text: #252723;
+  --color-text-secondary: #6f7069;
+  --color-text-muted: #6e6f66;
+  --color-accent: #b65f3d;
+  --color-accent-hover: #964b30;
+  --color-accent-foreground: #ffffff;
+  --color-accent-subtle: #f2e0d6;
+  --color-border: #d7d0c2;
+  --color-border-subtle: #e8e2d8;
+  --color-hover: #ebe6dc;
+  --color-selected: #eadbd0;
+  --color-rating: #b65f3d;
+  --font-heading: "Newsreader", Georgia, serif;
+  --font-body: "Inter", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-error: #a43b35;
+  --color-error-bg: #fae8e3;
+  --color-success: var(--color-accent);
+  --header: var(--color-bg);
+}
