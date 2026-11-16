@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "JazzLog — The Listening Room",
-  "short_name": "JazzLog",
-  "description": "Your personal jazz listening journal.",
+  "name": "Sleeve — Your album listening log",
+  "short_name": "Sleeve",
+  "description": "Discover albums, collect records, and reflect on every listen.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

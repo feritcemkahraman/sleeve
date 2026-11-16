@@ -6,9 +6,9 @@ export function renderAuthView(): string {
   return /* HTML */ `
     <a class="skip-link" href="#auth-title">Skip to sign in</a>
     <header class="frame auth-header">
-      <a class="brand" href="./" aria-label="JazzLog home"
+      <a class="brand" href="./" aria-label="Sleeve home"
         ><img src="./favicon.svg" alt="" width="38" height="38" /><span
-          >JazzLog<span class="brand-period">.</span></span
+          >Sleeve<span class="brand-period">.</span></span
         ></a
       >
       <button class="auth-text-button" type="button" id="auth-demo">
@@ -19,8 +19,8 @@ export function renderAuthView(): string {
       <section class="auth-intro" aria-labelledby="auth-intro-title">
         <h1 id="auth-intro-title">Good records.<br />Lasting impressions.</h1>
         <p class="auth-description">
-          A home for the jazz you love. Keep your collection close, capture what
-          you hear, and find your way back to a great record.
+          A home for every album you discover. Build your collection, capture
+          what you hear, and reflect on the records that stay with you.
         </p>
         <div class="auth-records" aria-hidden="true">
           <img src="./art/blue-train.svg" alt="" />
@@ -75,7 +75,7 @@ export function renderAuthView(): string {
       </section>
     </main>
     <footer class="frame auth-footer">
-      JazzLog <span aria-hidden="true">·</span> Made for listening closely.
+      Sleeve <span aria-hidden="true">·</span> Made for listening closely.
     </footer>
   `;
 }

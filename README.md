@@ -1,6 +1,6 @@
-# JazzLog
+# Sleeve
 
-A personal jazz listening journal for cataloging albums, recording ratings and notes, and exploring a personal listening history.
+A personal album listening log for discovering records, building a collection, capturing notes and ratings, and reflecting on your listening history across every genre.
 
 ## Project goals
 
@@ -49,7 +49,7 @@ The offline suite builds the production PWA with a test Supabase URL, then check
 
 ## Offline browsing
 
-After a successful account load, JazzLog keeps a versioned library snapshot in local storage. Later visits show that snapshot immediately while refreshing in the background. Successful refreshes and saves replace it; signing out clears the account snapshot. Browser storage limits or clearing site data can remove offline availability.
+After a successful account load, Sleeve keeps a versioned library snapshot in local storage. Later visits show that snapshot immediately while refreshing in the background. Successful refreshes and saves replace it; signing out clears the account snapshot. Browser storage limits or clearing site data can remove offline availability.
 
 The production service worker caches the app shell and up to 150 previously viewed images. Once installed, it can launch the app without a connection. Offline browsing and failed refreshes show a banner with the last sync time; changes require a connection. Existing editor drafts remain available for later. Background refreshes wait until the editor closes and preserve the save revision checks.
 
@@ -124,7 +124,7 @@ Work through these milestones sequentially. Each will receive its own detailed i
 
 Choose **Discover** beside **Your library** to prepare a recommendation prompt for ChatGPT. Choose how adventurous to be, then optionally describe what you are in the mood for in one field: genres, scenes, eras, instruments, moods, or any combination.
 
-JazzLog generates the prompt locally with up to 20 rated albums, balancing genre metadata matches, favorites, lower ratings, and recent listens. Detailed evidence has a 14,000-character budget and includes only the latest listen, with notes limited to 500 characters. A separate compact list includes every logged title and artist, plus its latest valid rating when available, to provide broader taste evidence and exclude existing albums; this list grows with the library. The preview shows exactly what will be copied.
+Sleeve generates the prompt locally with up to 20 rated albums, balancing genre metadata matches, favorites, lower ratings, and recent listens. Detailed evidence has a 14,000-character budget and includes only the latest listen, with notes limited to 500 characters. A separate compact list includes every logged title and artist, plus its latest valid rating when available, to provide broader taste evidence and exclude existing albums; this list grows with the library. The preview shows exactly what will be copied.
 
 **Copy prompt & open ChatGPT** copies the text and opens ChatGPT; paste it there to request recommendations. A separate copy action works with other chat apps. Clipboard failures reveal a selectable prompt for manual copying. There are no AI API requests, and recommendation replies stay in the external conversation.
 
@@ -173,7 +173,7 @@ Run `npm run format` to format the project with Prettier, or `npm run format:che
 
 The production build includes a web app manifest, Android and Apple icons, and a service worker. Deploy with `npm run deploy` using Cloudflare credentials. Vite embeds `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` at build time; configure them before building. Set the deployed HTTPS URL as the Supabase Authentication Site URL and allow it as a redirect URL for confirmation emails.
 
-On iPhone, open the deployed URL in Safari, choose Share → Add to Home Screen, and enable Open as Web App when offered. On Android, open it in Chrome and choose Install app or Add to Home screen. Launch JazzLog from its icon and sign in; browser and installed-app sessions may be separate.
+On iPhone, open the deployed URL in Safari, choose Share → Add to Home Screen, and enable Open as Web App when offered. On Android, open it in Chrome and choose Install app or Add to Home screen. Launch Sleeve from its icon and sign in; browser and installed-app sessions may be separate.
 
 The app requires an internet connection for account access, album lookup, and saving. Only a standalone offline message is cached; personal library data and API responses are not stored by the service worker. Offline editing and synchronization are not implemented. Existing open pages can retain their current UI while disconnected; saving still requires a connection. Application code is loaded from the network on launch. Service worker updates take over once the previous app windows close; no forced reload interrupts an editor.
 

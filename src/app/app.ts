@@ -8,7 +8,7 @@ export function renderApp(authenticated = false): string {
     <footer class="footer">
       <div class="frame footer-inner">
         <span
-          >JazzLog <span aria-hidden="true">·</span> A personal listening
+          >Sleeve <span aria-hidden="true">·</span> A personal listening
           journal</span
         >
         <span

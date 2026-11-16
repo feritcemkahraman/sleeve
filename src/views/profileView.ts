@@ -237,7 +237,7 @@ export function renderProfileView(
       <div>
         <h2 id="account-heading">Account</h2>
         <p>
-          ${authenticated ? "Signed in to JazzLog" : "You’re exploring the demo library."}
+          ${authenticated ? "Signed in to Sleeve" : "You’re exploring the demo library."}
         </p>
       </div>
       <button
