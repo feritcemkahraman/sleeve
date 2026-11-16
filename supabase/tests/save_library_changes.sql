@@ -19,9 +19,10 @@ set local request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
 select public.save_library_changes('{
     "artists": {"saved": [{"id": "00000000-0000-4000-8000-000000000001", "name": "Artist", "photo_url": "https://example.com/artist.jpg"}]},
     "genres": {"saved": [
-        {"id": "00000000-0000-4000-8000-000000000002", "name": "Child", "parent_genre_id": "00000000-0000-4000-8000-000000000003"},
+        {"id": "00000000-0000-4000-8000-000000000002", "name": "Child"},
         {"id": "00000000-0000-4000-8000-000000000003", "name": "Parent"}
     ]},
+    "genre_parents": {"saved": [{"parent_genre_id": "00000000-0000-4000-8000-000000000003", "child_genre_id": "00000000-0000-4000-8000-000000000002"}]},
     "instruments": {"saved": [{"id": "00000000-0000-4000-8000-000000000004", "name": "Sax", "image_url": "https://example.com/sax.jpg"}]},
     "albums": {"saved": [{"id": "00000000-0000-4000-8000-000000000005", "title": "Album", "record_label": "Blue Note"}]},
     "album_artists": {"saved": [{"album_id": "00000000-0000-4000-8000-000000000005", "artist_id": "00000000-0000-4000-8000-000000000001", "position": 0, "role": "primary"}]},
@@ -118,7 +119,7 @@ begin
     end;
     begin
         perform public.save_library_changes('{
-            "genres": {"saved": [{"id": "00000000-0000-4000-8000-000000000003", "name": "Parent", "parent_genre_id": "00000000-0000-4000-8000-000000000002"}]}
+            "genre_parents": {"saved": [{"child_genre_id": "00000000-0000-4000-8000-000000000003", "parent_genre_id": "00000000-0000-4000-8000-000000000002"}]}
         }'::jsonb);
         raise exception 'Cycle was accepted';
     exception when raise_exception then

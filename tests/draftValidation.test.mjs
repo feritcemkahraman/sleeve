@@ -104,3 +104,21 @@ test("parsing preserves version-one extras and clones nested picker data", () =>
   assert.notEqual(result.data.artists[0].name, value.artists[0].name);
   assert.equal(draftSchema.safeParse({ ...value, links: "1" }).success, false);
 });
+
+test("legacy genre trees upgrade throughout a draft while explicit empty parents stay empty", () => {
+  const genre = { id: "fusion", name: "Jazz House", parentGenreId: "jazz" };
+  const value = draft({ kind: "genre", item: genre });
+  value.genreChoices = [genre];
+  value.genres = [{ ...genre, isPrimary: true }];
+  const parsed = draftSchema.parse(value);
+  for (const item of [
+    parsed.target.item,
+    ...parsed.genreChoices,
+    ...parsed.genres,
+  ]) {
+    assert.deepEqual(item.parentGenreIds, ["jazz"]);
+    assert.equal("parentGenreId" in item, false);
+  }
+  value.genreChoices[0] = { ...genre, parentGenreIds: [] };
+  assert.deepEqual(draftSchema.parse(value).genreChoices[0].parentGenreIds, []);
+});

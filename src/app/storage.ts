@@ -1,3 +1,4 @@
+import { upgradeGenre } from "./genres.ts";
 import {
   isDemoAlbums,
   isDemoInstrumentCatalog,
@@ -156,7 +157,7 @@ export function readGenreCatalog(albums: Album[]): Genre[] {
     const snapshot: unknown = JSON.parse(
       localStorage.getItem(storageKey) ?? "null",
     );
-    if (isDemoGenreCatalog(snapshot)) saved = snapshot.genres;
+    if (isDemoGenreCatalog(snapshot)) saved = snapshot.genres.map(upgradeGenre);
   } catch {
     /* Albums supply the catalog. */
   }
@@ -166,11 +167,7 @@ export function readGenreCatalog(albums: Album[]): Genre[] {
       const existing = [...catalog.values()].find(
         (g) => g.name.toLowerCase() === credit.name.toLowerCase(),
       );
-      const genre = existing ?? {
-        id: credit.id,
-        name: credit.name,
-        parentGenreId: credit.parentGenreId ?? null,
-      };
+      const genre = existing ?? upgradeGenre(credit);
       catalog.set(genre.id, genre);
       Object.assign(credit, genre);
     }

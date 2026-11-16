@@ -303,3 +303,24 @@ test("vinyl status validates stored values while accepting legacy albums", () =>
     );
   }
 });
+
+test("demo catalog and offline cache upgrade legacy parent links", () => {
+  const data = library();
+  const parent = { id: "jazz", name: "Jazz", parentGenreId: null };
+  const child = { id: "fusion", name: "Jazz House", parentGenreId: "jazz" };
+  data.genres = [parent, child];
+  data.albums[0].genres = [{ ...child, isPrimary: true }];
+  storage({ "jazzlog-demo-v1": JSON.stringify(data) });
+  assert.deepEqual(
+    readGenreCatalog(data.albums).find((genre) => genre.id === "fusion")
+      .parentGenreIds,
+    ["jazz"],
+  );
+  assert.equal(writeLibraryCache("legacy", data), true);
+  const cached = readLibraryCache("legacy");
+  assert.deepEqual(
+    cached.data.genres.find((genre) => genre.id === "fusion").parentGenreIds,
+    ["jazz"],
+  );
+  assert.deepEqual(cached.data.albums[0].genres[0].parentGenreIds, ["jazz"]);
+});

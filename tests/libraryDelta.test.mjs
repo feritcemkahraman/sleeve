@@ -116,3 +116,29 @@ test("vinyl status changes send album updates, including explicit null to clear"
     assert.deepEqual(delta.albums.deleted, []);
   }
 });
+
+test("parent changes send edge deltas without rewriting genres or album tags", () => {
+  const before = base();
+  before.genres = [
+    { id: "jazz", name: "Jazz", parentGenreIds: [] },
+    { id: "house", name: "House", parentGenreIds: [] },
+    { id: "fusion", name: "Jazz House", parentGenreIds: ["jazz"] },
+  ];
+  before.albums[0].genres = [
+    { id: "jazz", isPrimary: true },
+    { id: "fusion", isPrimary: false },
+  ];
+  const next = structuredClone(before);
+  next.genres[2].parentGenreIds.push("house");
+  const delta = libraryDelta(before, next);
+  assert.deepEqual(delta.genre_parents, {
+    saved: [{ parent_genre_id: "house", child_genre_id: "fusion" }],
+    deleted: [],
+  });
+  assert.deepEqual(delta.genres, { saved: [], deleted: [] });
+  assert.deepEqual(delta.album_genres, { saved: [], deleted: [] });
+  next.genres[2].parentGenreIds = ["house"];
+  assert.deepEqual(libraryDelta(before, next).genre_parents.deleted, [
+    { parent_genre_id: "jazz", child_genre_id: "fusion" },
+  ]);
+});

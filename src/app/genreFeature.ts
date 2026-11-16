@@ -5,7 +5,13 @@ import type { DraftTarget } from "./editorDrafts";
 import type { LibraryData } from "../types/library";
 import { catalogFormFooter, field } from "../components/formFields";
 import { makeId } from "./id";
-import { ancestors, genreUrl, normalizeGenres } from "./genres";
+import {
+  ancestors,
+  genreDepths,
+  genrePaths,
+  genreUrl,
+  normalizeGenres,
+} from "./genres";
 import type { Genre, AlbumGenre } from "../types/albums";
 import { icon } from "../components/icons";
 import { escapeHtml } from "../components/html";
@@ -49,44 +55,88 @@ function genreChoiceContext(
   const parents = ancestors(genre.id, choices);
   if (!parents.length) return "";
 
-  return ` (${parents.map((parent) => escapeHtml(parent.name)).join(" › ")})`;
+  return ` (${parents.map((parent) => escapeHtml(parent.name)).join(", ")})`;
 }
 
 function renderGenreForm(genres: Genre[], item?: Genre): string {
+  const depths = genreDepths(genres);
+
   return /* HTML */ `<form
     id="catalog-genre-form"
     data-id="${escapeHtml(item?.id ?? "")}"
   >
     <div class="dialog-body">
-      ${field("Genre name", "genreName", item?.name ?? "", { attributes: 'required maxlength="80"' })}<label
-        class="field"
-        ><span>Parent genre (optional)</span
-        ><select name="parentGenreId">
-          <option value="">No parent</option>
+      ${field("Genre name", "genreName", item?.name ?? "", { attributes: 'required maxlength="80"' })}
+      <div
+        class="instrument-picker genre-parent-picker"
+        role="group"
+        aria-labelledby="genre-parents-label"
+      >
+        <label class="field" id="genre-parents-label" for="genre-parent-search"
+          ><span
+            >Broader genres <span class="muted">(optional)</span></span
+          ></label
+        >
+        <p class="form-hint">Select a row to add or remove a broader genre.</p>
+        <div class="catalog-search">
+          <input
+            type="search"
+            id="genre-parent-search"
+            aria-label="Search broader genres"
+            placeholder="Find a broader genre…"
+            aria-controls="genre-parent-options"
+          />
+        </div>
+        <div id="genre-parent-options">
           ${genres
             .filter(
-              (g) =>
-                g.id !== item?.id &&
-                !ancestors(g.id, genres).some((p) => p.id === item?.id),
+              (genre) =>
+                genre.id !== item?.id &&
+                !ancestors(genre.id, genres).some(
+                  (parent) => parent.id === item?.id,
+                ),
             )
-            .sort(
-              (a, b) =>
-                ancestors(a.id, genres).length -
-                  ancestors(b.id, genres).length ||
-                a.name.localeCompare(b.name),
-            )
+            .sort((a, b) => {
+              const aDepth = depths.get(a.id) ?? Infinity;
+              const bDepth = depths.get(b.id) ?? Infinity;
+              return (
+                (aDepth === bDepth ? 0 : aDepth - bDepth) ||
+                a.name.localeCompare(b.name)
+              );
+            })
             .map(
-              (g) =>
-                /* HTML */ `<option
-                  value="${escapeHtml(g.id)}"
-                  ${g.id === item?.parentGenreId ? "selected" : ""}
-                >
-                  ${escapeHtml([...ancestors(g.id, genres), g].map((p) => p.name).join(" › "))}
-                </option>`,
+              (genre) =>
+                /* HTML */ `<label
+                  class="button secondary compact genre-parent-option"
+                  ><input
+                    type="checkbox"
+                    aria-label="${escapeHtml(genre.name)}"
+                    name="parentGenreIds"
+                    id="genre-parent-${escapeHtml(genre.id)}"
+                    value="${escapeHtml(genre.id)}"
+                    ${item?.parentGenreIds.includes(genre.id) ? "checked" : ""}
+                  />
+                  <span class="genre-parent-info"
+                    ><span class="genre-parent-name"
+                      >${escapeHtml(genre.name)}</span
+                    >
+                    <span class="genre-parent-paths"
+                      >${genrePaths(genre.id, genres)
+                        .filter((path) => path.length > 1)
+                        .map(
+                          (path) =>
+                            /* HTML */ `<span class="genre-parent-path"
+                              >${path.map((ancestor) => escapeHtml(ancestor.name)).join(" › ")}</span
+                            >`,
+                        )
+                        .join(", ")}</span
+                    >
+                  </span></label
+                >`,
             )
             .join("")}
-        </select></label
-      >
+        </div>
+      </div>
       <p id="form-error" class="form-error" role="alert" hidden></p>
     </div>
     ${catalogFormFooter("Save genre")}
@@ -102,7 +152,9 @@ function readGenreForm(
   const input = form.querySelector<HTMLInputElement>('[name="genreName"]')!;
   const name = input.value.trim();
   const id = form.dataset.id || makeId();
-  const parentGenreId = String(data.get("parentGenreId") || "") || null;
+  const parentGenreIds = [
+    ...new Set(data.getAll("parentGenreIds").map(String)),
+  ];
 
   if (
     !requiredNameSchema.safeParse(name).success ||
@@ -112,13 +164,16 @@ function readGenreForm(
   )
     return formError("Enter a unique genre name.", input);
   if (
-    parentGenreId &&
-    (parentGenreId === id ||
-      ancestors(parentGenreId, genres).some((g) => g.id === id))
+    parentGenreIds.some(
+      (parentId) =>
+        !genres.some((genre) => genre.id === parentId) ||
+        parentId === id ||
+        ancestors(parentId, genres).some((genre) => genre.id === id),
+    )
   )
     return formError("Choose a parent that does not create a cycle.", input);
 
-  return { id, name, parentGenreId };
+  return { id, name, parentGenreIds };
 }
 
 export class GenreFeature {
@@ -188,7 +243,7 @@ export class GenreFeature {
         this.genreChoices.push({
           id: g.id,
           name: g.name,
-          parentGenreId: g.parentGenreId,
+          parentGenreIds: [...g.parentGenreIds],
         });
 
     return /* HTML */ `<div class="instrument-picker">
@@ -262,15 +317,11 @@ export class GenreFeature {
       choices
         .slice(0, 20)
         .map((g) => {
-          const descendant = this.selectedGenres.find((c) =>
-            ancestors(c.id, this.genreChoices).some((p) => p.id === g.id),
-          );
           return /* HTML */ `<button
             type="button"
             class="button secondary compact"
             data-action="select-genre"
             data-id="${escapeHtml(g.id)}"
-            ${descendant ? "disabled" : ""}
           >
             ${escapeHtml(g.name)}${genreChoiceContext(g, this.selectedGenres, this.genreChoices)}
           </button>`;
@@ -314,8 +365,8 @@ export class GenreFeature {
         );
         if (
           !item ||
-          this.dependencies.library.genres.some(
-            (g) => g.parentGenreId === item.id,
+          this.dependencies.library.genres.some((g) =>
+            g.parentGenreIds.includes(item.id),
           ) ||
           this.dependencies.library.albums.some((a) =>
             a.genres.some((g) => g.id === item.id),
@@ -345,8 +396,8 @@ export class GenreFeature {
       }
       case "confirm-delete-genre":
         if (
-          !this.dependencies.library.genres.some(
-            (g) => g.parentGenreId === button.dataset.id,
+          !this.dependencies.library.genres.some((g) =>
+            g.parentGenreIds.includes(button.dataset.id ?? ""),
           ) &&
           !this.dependencies.library.albums.some((a) =>
             a.genres.some((g) => g.id === button.dataset.id),
@@ -376,31 +427,16 @@ export class GenreFeature {
             (g) => g.name.toLowerCase() === name.toLowerCase(),
           );
           if (!item) {
-            item = { id: makeId(), name, parentGenreId: null };
+            item = { id: makeId(), name, parentGenreIds: [] };
             this.genreChoices.push(item);
           }
         }
-        if (
-          !item ||
-          this.selectedGenres.some(
-            (g) =>
-              g.id === item.id ||
-              ancestors(g.id, this.genreChoices).some((p) => p.id === item!.id),
-          )
-        )
-          break;
+        if (!item || this.selectedGenres.some((g) => g.id === item.id)) break;
 
-        const replaced = this.selectedGenres.filter((g) =>
-          ancestors(item!.id, this.genreChoices).some((p) => p.id === g.id),
-        );
         this.selectedGenres = normalizeGenres(
           [...this.selectedGenres, { ...item, isPrimary: false }],
           this.genreChoices,
         );
-        if (replaced.length)
-          this.dependencies.navigation.announce(
-            `${replaced.map((g) => g.name).join(", ")} replaced by ${item.name}.`,
-          );
         input.value = "";
         this.updateGenres();
         focusForTyping(input);
@@ -428,48 +464,26 @@ export class GenreFeature {
     );
     if (!item) return;
 
-    const { id, name, parentGenreId } = item;
-    const next = this.dependencies.library.genres
-      .filter((g) => g.id !== id)
-      .concat({ id, name, parentGenreId });
-    const affected = this.dependencies.library.albums.filter(
-      (a) => normalizeGenres(a.genres, next).length < a.genres.length,
+    this.dependencies.library.genres = this.dependencies.library.genres
+      .filter((genre) => genre.id !== item.id)
+      .concat(item);
+    this.dependencies.persistence.finishCatalogSave(
+      "Genre saved.",
+      genreUrl(item.id),
     );
-    const apply = () => {
-      this.dependencies.library.genres = next;
-      this.dependencies.persistence.finishCatalogSave(
-        "Genre saved.",
-        genreUrl(id),
-      );
-    };
-
-    if (affected.length) {
-      this.dependencies.dialog.show(
-        "Review genre changes",
-        /* HTML */ `<div class="dialog-body">
-            <p>
-              This change removes redundant parent assignments from these
-              albums, keeping their more specific genres:
-            </p>
-            <ul>
-              ${affected.map((a) => /* HTML */ `<li>${escapeHtml(a.title)}</li>`).join("")}
-            </ul>
-          </div>
-          <div class="dialog-footer">
-            <button class="button secondary" data-action="close">Cancel</button
-            ><button class="button primary" id="apply-genre-change">
-              Apply changes
-            </button>
-          </div>`,
-        "#apply-genre-change",
-      );
-      this.dependencies.dialog.element
-        .querySelector("#apply-genre-change")!
-        .addEventListener("click", apply);
-    } else apply();
   }
 
   public input(input: HTMLInputElement): void {
+    if (input.id === "genre-parent-search") {
+      const query = input.value.trim().toLocaleLowerCase();
+      this.dependencies.dialog.element
+        .querySelectorAll<HTMLElement>(".genre-parent-option")
+        .forEach((option) => {
+          option.hidden = !option.textContent
+            ?.toLocaleLowerCase()
+            .includes(query);
+        });
+    }
     if (input.id === "genre-query") this.updateGenres();
 
     if (input.id === "genres-search") {

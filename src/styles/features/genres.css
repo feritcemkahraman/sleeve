@@ -173,14 +173,34 @@
   margin-bottom: 8px;
 }
 .genre-breadcrumb {
-  margin-bottom: 6px;
+  margin: 6px 0 0;
   font-size: 13px;
   color: var(--muted);
+}
+.genre-breadcrumb a {
+  color: var(--sage);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  border-radius: 3px;
+}
+.genre-breadcrumb a:hover {
+  color: var(--ink);
+  background: var(--panel-hover);
+}
+.genre-breadcrumb a:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 3px;
+}
+.genre-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .genre-breadcrumb:empty {
   display: none;
 }
 .genre-detail .instrument-page-heading {
+  align-items: flex-start;
   margin-bottom: 16px;
   gap: 12px;
 }
@@ -195,4 +215,74 @@
 }
 .genre-subgenres + .genre-albums {
   margin-top: 24px;
+}
+
+#genre-parent-options {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  max-height: 15rem;
+  overflow-y: auto;
+}
+.genre-parent-option.button {
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 14px;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+.genre-parent-option input {
+  margin: 0;
+  accent-color: var(--sage);
+}
+.genre-parent-option.button:hover {
+  border-color: var(--sage);
+  background: var(--panel-hover);
+}
+.genre-parent-option.button:has(input:checked) {
+  border-color: var(--sage);
+  background: var(--panel-hover);
+}
+.genre-parent-option:focus-within {
+  outline: 2px solid var(--sage);
+  outline-offset: -2px;
+}
+.genre-parent-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.genre-parent-name {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.genre-parent-paths {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 11px;
+}
+.genre-parent-paths:empty {
+  display: none;
+}
+.genre-parent-path {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.genre-parent-option[hidden] {
+  display: none;
 }

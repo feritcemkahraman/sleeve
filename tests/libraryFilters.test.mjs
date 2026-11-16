@@ -21,8 +21,8 @@ const album = {
   ],
 };
 const genres = [
-  { id: "jazz", parentGenreId: null },
-  { id: "bebop", parentGenreId: "jazz" },
+  { id: "jazz", parentGenreIds: [] },
+  { id: "bebop", parentGenreIds: ["jazz"] },
 ];
 
 test("numeric comparisons include range endpoints and exclude missing values", () => {

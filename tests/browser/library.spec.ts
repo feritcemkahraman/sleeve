@@ -883,11 +883,11 @@ test("artist roles and order recover from drafts and survive save and removal", 
   ]);
 });
 
-test("genre hierarchy changes review redundant assignments and prevent cycles", async ({
+test("genre graph preserves explicit tags, shares branches, and prevents cycles", async ({
   page,
 }) => {
   const genreHashes: string[] = [];
-  for (const name of ["Hierarchy parent", "Hierarchy child"]) {
+  for (const name of ["Graph Jazz", "Graph House", "Graph Jazz House"]) {
     await page.goto("/#genres");
     await page.locator('[data-action="new-catalog-genre"]').click();
     await page.locator('[name="genreName"]').fill(name);
@@ -899,55 +899,121 @@ test("genre hierarchy changes review redundant assignments and prevent cycles", 
   await page.goto("/#");
   await openAlbum(page);
   const albumHash = new URL(page.url()).hash;
-  await page.locator('[data-action="edit"]').click();
-  for (const name of ["Hierarchy parent", "Hierarchy child"]) {
-    await page.locator("#genre-query").fill(name);
-    await page
-      .locator("#genre-results button")
-      .filter({ hasText: name })
-      .click();
+  for (const names of [["Graph Jazz", "Graph Jazz House"]]) {
+    await page.locator('[data-action="edit"]').click();
+    for (const name of names) {
+      await page.locator("#genre-query").fill(name);
+      await page
+        .locator("#genre-results")
+        .getByRole("button", { name, exact: true })
+        .click();
+    }
+    await page.locator('#album-form button[type="submit"]').click();
+    await expect(page.locator("#editor")).not.toBeVisible();
   }
-  await page.locator('#album-form button[type="submit"]').click();
-  await expect(page.locator("#editor")).not.toBeVisible();
 
-  await page.goto("/" + genreHashes[1]);
+  await page.goto("/" + genreHashes[2]);
   await page.locator('[data-action="edit-catalog-genre"]').click();
+  await page.getByRole("checkbox", { name: "Graph Jazz", exact: true }).check();
   await page
-    .locator('[name="parentGenreId"]')
-    .selectOption({ label: "Hierarchy parent" });
+    .getByRole("checkbox", { name: "Graph House", exact: true })
+    .check();
+  // Both parent selections survive a draft reload.
+  await reloadDemo(page);
+  await expect(
+    page.getByRole("checkbox", { name: "Graph Jazz", exact: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Graph House", exact: true }),
+  ).toBeChecked();
   await page.locator('#catalog-genre-form button[type="submit"]').click();
-  await expect(page.locator("#dialog-title")).toHaveText(
-    "Review genre changes",
-  );
-  await page.locator("#apply-genre-change").click();
   await expect(page.locator("#editor")).not.toBeVisible();
+  await expect(page.locator(".genre-breadcrumb")).toContainText("Graph Jazz");
+  await expect(page.locator(".genre-breadcrumb")).toContainText("Graph House");
+  await expect(page.locator(".genre-breadcrumb-path")).toHaveText([
+    "Graph House › Graph Jazz House",
+    "Graph Jazz › Graph Jazz House",
+  ]);
+  await expect(
+    page.locator(".genre-title h1 + .genre-breadcrumb"),
+  ).toBeVisible();
+  await page
+    .locator(".genre-breadcrumb")
+    .getByRole("link", { name: "Graph House", exact: true })
+    .click();
+  await expect(page.locator("#page-title")).toHaveText("Graph House");
+  await page.goto("/" + genreHashes[2]);
 
   await reloadDemo(page);
   await page.goto("/" + albumHash);
   await page.locator('[data-action="edit"]').click();
   await expect(page.locator("#genre-selected")).toContainText(
-    "Hierarchy child",
+    "Graph Jazz House",
   );
-  await expect(page.locator("#genre-selected")).not.toContainText(
-    "Hierarchy parent",
-  );
-  await page.locator("#genre-query").fill("Hierarchy parent");
   await expect(
-    page
-      .locator("#genre-results button")
-      .filter({ hasText: "Hierarchy parent" }),
-  ).toBeDisabled();
-  await page.keyboard.press("Escape");
-  // The first Escape closes the picker; the second dismisses the unchanged form.
+    page.locator("#genre-selected strong").filter({ hasText: /^Graph Jazz$/ }),
+  ).toHaveCount(1);
   await page.keyboard.press("Escape");
 
-  await page.goto("/" + genreHashes[0]);
-  await page.locator('[data-action="edit-catalog-genre"]').click();
+  for (const hash of genreHashes.slice(0, 2)) {
+    await page.goto("/" + hash);
+    await expect(
+      page.locator(`.genre-albums a[href="${albumHash}"]`),
+    ).toHaveCount(1);
+    await page.locator('[data-action="edit-catalog-genre"]').click();
+    await expect(
+      page.getByRole("checkbox", { name: "Graph Jazz House", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+  }
+
+  await page.goto("/#genres");
+  for (const name of ["Graph Jazz", "Graph House"]) {
+    await page
+      .locator("summary")
+      .filter({ has: page.getByText(name, { exact: true }) })
+      .click();
+  }
   await expect(
-    page
-      .locator('[name="parentGenreId"] option')
-      .filter({ hasText: "Hierarchy child" }),
-  ).toHaveCount(0);
+    page.locator(`.genre-tree a[href="${genreHashes[2]}"]`),
+  ).toHaveCount(2);
+
+  await page.locator('[data-action="new-catalog-genre"]').click();
+  const parentNames = await page
+    .locator(".genre-parent-name")
+    .allTextContents();
+  const roots = parentNames.filter((name) => name !== "Graph Jazz House");
+  expect(parentNames).toEqual([
+    ...roots.sort((a, b) => a.localeCompare(b)),
+    "Graph Jazz House",
+  ]);
+  const fusionOption = page.locator(".genre-parent-option").filter({
+    has: page.getByRole("checkbox", {
+      name: "Graph Jazz House",
+      exact: true,
+    }),
+  });
+  await expect(fusionOption.locator(".genre-parent-path")).toHaveText([
+    "Graph House › Graph Jazz House",
+    "Graph Jazz › Graph Jazz House",
+  ]);
+  await fusionOption.locator(".genre-parent-path").first().click();
+  await expect(fusionOption.getByRole("checkbox")).toBeChecked();
+  await fusionOption.locator(".genre-parent-name").click();
+  await expect(fusionOption.getByRole("checkbox")).not.toBeChecked();
+  await page.locator("#genre-parent-search").fill("Graph");
+  await expect(page.locator(".genre-parent-option:visible")).toHaveCount(3);
+  await page
+    .getByRole("checkbox", { name: "Graph House", exact: true })
+    .check();
+  await page.locator("#genre-parent-search").fill("Graph Jazz");
+  await expect(
+    page.getByRole("checkbox", {
+      name: "Graph House",
+      exact: true,
+      includeHidden: true,
+    }),
+  ).toBeChecked();
 });
 
 test("dedicated instrument editor restores draft categories and commits only on save", async ({

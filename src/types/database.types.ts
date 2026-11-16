@@ -247,37 +247,59 @@ export type Database = {
         };
         Relationships: [];
       };
+      genre_parents: {
+        Row: {
+          user_id: string;
+          parent_genre_id: string;
+          child_genre_id: string;
+        };
+        Insert: {
+          user_id?: string;
+          parent_genre_id: string;
+          child_genre_id: string;
+        };
+        Update: {
+          user_id?: string;
+          parent_genre_id?: string;
+          child_genre_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "genre_parents_parent_genre_id_user_id_fkey";
+            columns: ["parent_genre_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "genres";
+            referencedColumns: ["id", "user_id"];
+          },
+          {
+            foreignKeyName: "genre_parents_child_genre_id_user_id_fkey";
+            columns: ["child_genre_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "genres";
+            referencedColumns: ["id", "user_id"];
+          },
+        ];
+      };
       genres: {
         Row: {
           created_at: string;
           id: string;
           name: string;
-          parent_genre_id: string | null;
           user_id: string;
         };
         Insert: {
           created_at?: string;
           id?: string;
           name: string;
-          parent_genre_id?: string | null;
           user_id?: string;
         };
         Update: {
           created_at?: string;
           id?: string;
           name?: string;
-          parent_genre_id?: string | null;
           user_id?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "genres_parent_genre_id_user_id_fkey";
-            columns: ["parent_genre_id", "user_id"];
-            isOneToOne: false;
-            referencedRelation: "genres";
-            referencedColumns: ["id", "user_id"];
-          },
-        ];
+        Relationships: [];
       };
       instrument_categories: {
         Row: {

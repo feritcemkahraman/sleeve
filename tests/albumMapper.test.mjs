@@ -48,9 +48,15 @@ test("album mapper preserves credit positions, primary genre ordering, instrumen
     },
   }));
   input.album_genres = [
-    { genres: { id: "z", name: "Z", parent_genre_id: null }, is_primary: true },
-    { genres: { id: "b", name: "B", parent_genre_id: "z" }, is_primary: false },
-    { genres: { id: "a", name: "A", parent_genre_id: "z" }, is_primary: false },
+    { genres: { id: "z", name: "Z", genre_parents: [] }, is_primary: true },
+    {
+      genres: { id: "b", name: "B", genre_parents: [{ parent_genre_id: "z" }] },
+      is_primary: false,
+    },
+    {
+      genres: { id: "a", name: "A", genre_parents: [{ parent_genre_id: "z" }] },
+      is_primary: false,
+    },
   ];
   input.album_instruments = ["Z", "A"].map((name) => ({
     notes: `${name} notes`,
@@ -83,7 +89,7 @@ test("album mapper preserves credit positions, primary genre ordering, instrumen
     result.genres.map((genre) => genre.id),
     ["z", "a", "b"],
   );
-  assert.equal(result.genres[1].parentGenreId, "z");
+  assert.deepEqual(result.genres[1].parentGenreIds, ["z"]);
   assert.deepEqual(
     result.instruments.map((instrument) => instrument.name),
     ["A", "Z"],

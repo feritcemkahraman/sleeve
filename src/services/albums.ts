@@ -32,7 +32,7 @@ const ALBUM_SELECT = `
         genres (
             id,
             name,
-            parent_genre_id
+            genre_parents!genre_parents_child_genre_id_user_id_fkey(parent_genre_id)
         )
     ),
     album_instruments (

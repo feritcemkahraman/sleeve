@@ -1,3 +1,4 @@
+import { upgradeGenre } from "./genres.ts";
 import { isLibrarySnapshot } from "./storageValidation.ts";
 import type { LibraryData } from "../types/library";
 
@@ -17,6 +18,12 @@ export function readLibraryCache(
       localStorage.getItem(prefix + accountId) ?? "null",
     );
     if (!isLibrarySnapshot(value) || value.accountId !== accountId) return;
+    value.data.genres = value.data.genres.map(upgradeGenre);
+    for (const album of value.data.albums)
+      album.genres = album.genres.map((genre) => ({
+        ...upgradeGenre(genre),
+        isPrimary: genre.isPrimary,
+      }));
     return value;
   } catch {
     return;

@@ -50,13 +50,15 @@ export interface AlbumArtist {
   position: number;
 }
 
-export type Genre = Omit<AlbumGenre, "isPrimary">;
-
-// A genre attached to an album. At most one genre per album is primary.
-export interface AlbumGenre {
+export interface Genre {
   id: string;
   name: string;
-  parentGenreId: string | null;
+  parentGenreIds: string[];
+}
+
+// An explicit album assignment; inherited membership is derived from the catalog.
+// At most one genre per album is primary.
+export interface AlbumGenre extends Genre {
   isPrimary: boolean;
 }
 
