@@ -244,6 +244,32 @@
   width: 100%;
 }
 .album-artwork .album-vinyl {
+  position: absolute;
+  z-index: -1;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid #55604f;
+  box-shadow: 5px 7px 18px #10180f75;
+  background:
+    radial-gradient(
+      circle,
+      #cfad70 0 2%,
+      #202820 2.5% 4%,
+      #9e6041 4.4% 17%,
+      #20241f 17.4% 22%,
+      transparent 22.5%
+    ),
+    conic-gradient(
+      from 28deg,
+      #0000 7%,
+      #9da59530 12%,
+      #0000 22%,
+      #0000 51%,
+      #a5ae9b25 61%,
+      #0000 74%
+    ),
+    repeating-radial-gradient(circle, #252b25 0 1px, #141914 2px 4px);
+  transition: transform 0.22s;
   top: 3%;
   left: 17%;
   width: 83%;
