@@ -189,9 +189,13 @@ test("sort categories cycle both directions and off, replacing the active catego
   page,
 }) => {
   const titles = page.locator("#library-results .album-title strong");
-  const original = await titles.allTextContents();
   const dropdown = page.locator(".library-sort-dropdown");
   await page.locator(".library-sort").click();
+  await expect(page.locator('[data-sort="updated"]')).toHaveAccessibleName(
+    "Last updated, descending",
+  );
+  await page.locator('[data-sort="updated"]').click();
+  const original = await titles.allTextContents();
 
   for (const category of ["recent", "updated", "title", "rating", "year"]) {
     const choice = page.locator(`[data-sort="${category}"]`);
