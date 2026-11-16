@@ -2,7 +2,7 @@ import { upgradeGenre } from "./genres.ts";
 import { isLibrarySnapshot } from "./storageValidation.ts";
 import type { LibraryData } from "../types/library";
 
-const prefix = "jazzlog-library-v1:";
+const prefix = "sleeve-library-v1:";
 export type LibrarySnapshot = {
   version: 1;
   accountId: string;

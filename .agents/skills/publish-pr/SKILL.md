@@ -1,6 +1,6 @@
 ---
 name: publish-pr
-description: Publish a completed, well-defined JazzLog change as a GitHub pull request using gh api. Use only when the user explicitly asks to create or update a pull request.
+description: Publish a completed, well-defined Sleeve change as a GitHub pull request using gh api. Use only when the user explicitly asks to create or update a pull request.
 ---
 
 Create or update a pull request only when the user explicitly requests it. Completing implementation alone does not trigger this workflow. A request to publish a PR authorizes creating a branch, committing the task's changes, pushing it, and opening or updating the PR; it does not authorize merging or deployment.

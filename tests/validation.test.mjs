@@ -193,7 +193,7 @@ test("demo loading keeps legacy instrumentation upgrades, fallback and catalog i
       instruments: ["  New instrument  ", ""],
     },
   ];
-  const entries = storage({ "jazzlog-demo-v1": JSON.stringify(albums) });
+  const entries = storage({ "sleeve-demo-v1": JSON.stringify(albums) });
   const loaded = readAlbums();
   assert.equal(loaded[0].future, "retained");
   assert.ok(
@@ -210,7 +210,7 @@ test("demo loading keeps legacy instrumentation upgrades, fallback and catalog i
     JSON.parse(JSON.stringify(artists)),
   );
   assert.deepEqual(readGenreCatalog(loaded), genres);
-  entries.set("jazzlog-demo-v1", "{broken");
+  entries.set("sleeve-demo-v1", "{broken");
   assert.deepEqual(readAlbums(), mockAlbums);
   const fallback = readAlbums();
   fallback[0].title = "not shared";
@@ -244,7 +244,7 @@ test("storage schemas reject malformed values while cache preserves its existing
     { data: { albums: [] } },
   ])
     assert.equal(isLibrarySnapshot({ ...snapshot, ...update }), false);
-  storage({ "jazzlog-library-v1:account-a": JSON.stringify(snapshot) });
+  storage({ "sleeve-library-v1:account-a": JSON.stringify(snapshot) });
   assert.equal(readLibraryCache("account-a").extra, "retained");
   assert.equal(readLibraryCache("account-b"), undefined);
   assert.equal(writeLibraryCache("account-b", library(), 2), true);
@@ -310,7 +310,7 @@ test("demo catalog and offline cache upgrade legacy parent links", () => {
   const child = { id: "fusion", name: "Jazz House", parentGenreId: "jazz" };
   data.genres = [parent, child];
   data.albums[0].genres = [{ ...child, isPrimary: true }];
-  storage({ "jazzlog-demo-v1": JSON.stringify(data) });
+  storage({ "sleeve-demo-v1": JSON.stringify(data) });
   assert.deepEqual(
     readGenreCatalog(data.albums).find((genre) => genre.id === "fusion")
       .parentGenreIds,

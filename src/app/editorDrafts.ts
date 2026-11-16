@@ -89,7 +89,7 @@ export class EditorDraftController implements EditorDrafts {
 
   constructor(ops: EditorDraftsDependencies) {
     this.ops = ops;
-    this.draftKey = `jazzlog:editor-draft:v1:${ops.accountId}`;
+    this.draftKey = `sleeve:editor-draft:v1:${ops.accountId}`;
     this.resumeButton.className = "button secondary draft-resume";
     this.resumeButton.textContent = "Resume draft";
     this.resumeButton.hidden = true;

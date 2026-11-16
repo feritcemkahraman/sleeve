@@ -1,8 +1,8 @@
-# JazzLog — Milestone 4: UI Implementation Plan
+# Sleeve — Milestone 4: UI Implementation Plan
 
 ## Objective
 
-Build the complete initial JazzLog interface using vanilla HTML, CSS, and TypeScript.
+Build the complete initial Sleeve interface using vanilla HTML, CSS, and TypeScript.
 
 This milestone is focused exclusively on the visual interface and client-side interaction structure.
 
@@ -10,13 +10,13 @@ This milestone is focused exclusively on the visual interface and client-side in
 
 Use hardcoded mock data to populate the interface. Buttons and navigation may work locally, but nothing should call Supabase, MusicBrainz, Cover Art Archive, or any other external service.
 
-At the end of this milestone, JazzLog should look and feel like a usable application, even though its data is temporary.
+At the end of this milestone, Sleeve should look and feel like a usable application, even though its data is temporary.
 
 ---
 
 # 1. Product and design direction
 
-JazzLog should feel like a personal music journal, not a streaming service or analytics dashboard.
+Sleeve should feel like a personal music journal, not a streaming service or analytics dashboard.
 
 ### Visual direction
 
@@ -50,11 +50,11 @@ These are logical application views, not necessarily separate URLs.
 
 ## View 1: Library (main screen)
 
-This is the default screen and the central experience of JazzLog.
+This is the default screen and the central experience of Sleeve.
 
 ### Header
 
-- JazzLog wordmark.
+- Sleeve wordmark.
 - Main navigation, if needed.
 - Prominent "Add album" action.
 
@@ -434,7 +434,7 @@ Implement the UI incrementally. Do not attempt to build all views at once.
 5. Establish responsive page layout.
 6. Create the basic application state and rendering entry point.
 
-**Completion criteria:** JazzLog opens in the browser with its visual identity and a functioning application shell.
+**Completion criteria:** Sleeve opens in the browser with its visual identity and a functioning application shell.
 
 ## Phase 2 — Library
 

@@ -1,7 +1,7 @@
 // The production build replaces this list with every versioned app asset.
 const PRECACHE = ["/"];
-const CACHE = "jazzlog-app-dev";
-const IMAGES = "jazzlog-images-v1";
+const CACHE = "sleeve-app-dev";
+const IMAGES = "sleeve-images-v1";
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
 });
@@ -13,8 +13,8 @@ self.addEventListener("activate", (event) => {
         keys
           .filter(
             (key) =>
-              (key.startsWith("jazzlog-app-") ||
-                key.startsWith("jazzlog-offline-")) &&
+              (key.startsWith("sleeve-app-") ||
+                key.startsWith("sleeve-offline-")) &&
               key !== CACHE,
           )
           .map((key) => caches.delete(key)),

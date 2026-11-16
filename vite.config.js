@@ -37,8 +37,8 @@ export default defineConfig({
               `const PRECACHE = ${JSON.stringify(shell)};`,
             )
             .replace(
-              "jazzlog-app-dev",
-              `jazzlog-app-${hash.digest("hex").slice(0, 16)}`,
+              "sleeve-app-dev",
+              `sleeve-app-${hash.digest("hex").slice(0, 16)}`,
             ),
         );
       },

@@ -1,18 +1,18 @@
-# JazzLog — Milestone 3: Integrations
+# Sleeve — Milestone 3: Integrations
 
 ## Objective
 
-Connect the JazzLog frontend to Supabase, MusicBrainz, and Cover Art Archive.
+Connect the Sleeve frontend to Supabase, MusicBrainz, and Cover Art Archive.
 
 This milestone focuses on establishing reliable integration boundaries. We are not building the actual library interface yet.
 
-By the end, JazzLog should be able to:
+By the end, Sleeve should be able to:
 
 - Connect to Supabase using the publishable key.
 - Authenticate a user and maintain their session.
 - Read and write user-owned album records.
 - Search MusicBrainz for canonical albums (release groups).
-- Normalize MusicBrainz responses into JazzLog-owned TypeScript types.
+- Normalize MusicBrainz responses into Sleeve-owned TypeScript types.
 - Retrieve album artwork from Cover Art Archive.
 - Complete a basic metadata-to-database round trip.
 
@@ -23,7 +23,7 @@ We will retain our existing architecture:
 - Browser → Supabase for authentication and ordinary database operations.
 - Browser → Cloudflare Worker → MusicBrainz for metadata searches.
 - Browser → Cover Art Archive for artwork URLs.
-- Supabase PostgreSQL remains the source of truth for JazzLog data.
+- Supabase PostgreSQL remains the source of truth for Sleeve data.
 
 The MusicBrainz Worker endpoint is a small exception to our direct-browser-access approach. MusicBrainz requires an identifiable User-Agent, which browser JavaScript cannot freely customize. The Worker can provide that application identity and act as a controlled proxy.
 
@@ -32,7 +32,7 @@ The MusicBrainz Worker endpoint is a small exception to our direct-browser-acces
 We will add files incrementally:
 
 ```text
-jazzlog/
+sleeve/
 ├── src/
 │   ├── lib/
 │   │   └── supabase.ts
@@ -291,7 +291,7 @@ Its responsibilities:
 1. Accept a search query.
 2. Validate that the query is present and reasonably sized.
 3. Construct a request to the MusicBrainz release-group search endpoint.
-4. Include a meaningful User-Agent identifying JazzLog and a contact method.
+4. Include a meaningful User-Agent identifying Sleeve and a contact method.
 5. Request JSON.
 6. Return the response to the browser.
 7. Handle upstream errors without exposing unnecessary internal details.
@@ -324,7 +324,7 @@ We should implement:
 - Sensible handling of HTTP 503 responses.
 - No automatic rapid retry loops.
 
-For this personal application, a single-user request queue is sufficient to start. If we ever turn JazzLog into a multi-user application, we should revisit globally coordinated rate limiting.
+For this personal application, a single-user request queue is sufficient to start. If we ever turn Sleeve into a multi-user application, we should revisit globally coordinated rate limiting.
 
 ### 15. Define MusicBrainz response types
 
@@ -350,7 +350,7 @@ Avoid typing the entire MusicBrainz API response. We should model the subset our
 
 Create `src/types/album.ts`.
 
-Define a normalized `AlbumCandidate` type representing a potential album to add to JazzLog.
+Define a normalized `AlbumCandidate` type representing a potential album to add to Sleeve.
 
 It should contain:
 
@@ -364,7 +364,7 @@ This type should not depend on MusicBrainz's raw response structure.
 
 The distinction is important:
 
-**MusicBrainz response → JazzLog AlbumCandidate → Supabase album record**
+**MusicBrainz response → Sleeve AlbumCandidate → Supabase album record**
 
 If MusicBrainz changes its response format, we should only need to update the integration layer.
 
@@ -508,7 +508,7 @@ git commit -m "Integrate Supabase and music metadata services"
 - [ ] MusicBrainz User-Agent configured.
 - [ ] Rate limiting respected.
 - [ ] Release-group search works.
-- [ ] API response normalized into JazzLog types.
+- [ ] API response normalized into Sleeve types.
 - [ ] Artist credits preserved.
 
 ## Cover Art Archive

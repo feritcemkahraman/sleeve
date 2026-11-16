@@ -555,10 +555,10 @@ test("drafts from another account do not restore in demo mode", async ({
   );
   await page.evaluate(() => {
     localStorage.setItem(
-      "jazzlog:editor-draft:v1:other-account",
-      localStorage.getItem("jazzlog:editor-draft:v1:demo")!,
+      "sleeve:editor-draft:v1:other-account",
+      localStorage.getItem("sleeve:editor-draft:v1:demo")!,
     );
-    localStorage.removeItem("jazzlog:editor-draft:v1:demo");
+    localStorage.removeItem("sleeve:editor-draft:v1:demo");
     // Prevent pagehide from saving the demo edit again.
     document.querySelector<HTMLDialogElement>("#editor")!.close();
   });
@@ -569,7 +569,7 @@ test("drafts from another account do not restore in demo mode", async ({
   ).not.toBeVisible();
   expect(
     await page.evaluate(() =>
-      localStorage.getItem("jazzlog:editor-draft:v1:other-account"),
+      localStorage.getItem("sleeve:editor-draft:v1:other-account"),
     ),
   ).toContain("Private account draft");
 });
@@ -1072,7 +1072,7 @@ test("malformed persisted draft selections do not prevent opening a new editor",
     "Draft saved on this device",
   );
   await page.evaluate(() => {
-    const key = "jazzlog:editor-draft:v1:demo";
+    const key = "sleeve:editor-draft:v1:demo";
     const saved = JSON.parse(localStorage.getItem(key)!);
     saved.artists = [null];
     sessionStorage.setItem("damaged-draft", JSON.stringify(saved));
@@ -1080,7 +1080,7 @@ test("malformed persisted draft selections do not prevent opening a new editor",
   // Install after pagehide so capturing the old editor cannot repair the payload.
   await page.addInitScript(() => {
     const saved = sessionStorage.getItem("damaged-draft");
-    if (saved) localStorage.setItem("jazzlog:editor-draft:v1:demo", saved);
+    if (saved) localStorage.setItem("sleeve:editor-draft:v1:demo", saved);
   });
   await reloadDemo(page);
   await expect(page.getByRole("button", { name: "Resume draft" })).toBeHidden();
