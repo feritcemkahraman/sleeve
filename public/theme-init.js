@@ -6,6 +6,7 @@ window.sleeveThemes = [
   { id: "walnut", label: "Walnut" },
   { id: "prism", label: "Prism" },
   { id: "nocturne", label: "Nocturne" },
+  { id: "retro", label: "Retro" },
 ];
 (() => {
   let theme = "walnut";

@@ -1,0 +1,26 @@
+/* Seventies record sleeves, oatmeal speaker cloth, and amber hi-fi dials. */
+[data-theme="retro"] {
+  color-scheme: light;
+  --color-bg: #eee0c5;
+  --color-surface: #f8edd7;
+  --color-surface-raised: #fff5e2;
+  --color-text: #39291f;
+  --color-text-secondary: #72523c;
+  --color-text-muted: #795b43;
+  --color-accent: #a84724;
+  --color-accent-hover: #853519;
+  --color-accent-foreground: #fff5e2;
+  --color-accent-subtle: #f0d2b6;
+  --color-border: #bda07a;
+  --color-border-subtle: #d7c29f;
+  --color-hover: #e8d4af;
+  --color-selected: #edc8a4;
+  --color-rating: #946509;
+  --font-heading: "Fraunces", "Bookman Old Style", Georgia, serif;
+  --font-body: "Alegreya Sans", "Trebuchet MS", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-error: #a3342b;
+  --color-error-bg: #f8dcd0;
+  --color-success: #4e6537;
+  --header: var(--color-bg);
+}
