@@ -159,6 +159,7 @@ test("Worker preserves asset delivery and fails closed without configuration or 
     SUPABASE_PUBLISHABLE_KEY: "public",
     SUPABASE_SERVICE_ROLE_KEY: "secret",
     IMAGES: {},
+    IMAGE_IMPORT_LIMITER: {},
   });
   const unauthorized = await worker.fetch(
     new Request("https://sleeve.net/api/images/import", {

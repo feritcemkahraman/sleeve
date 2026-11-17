@@ -231,3 +231,15 @@ with the image fields in the save request. The asset must exist in `image_assets
 in the same project, belong to the signed-in user, have `ready_at` set, and have
 `deleting_at` unset. A file in the bucket alone does not prove its registry entry
 is ready. The Worker and frontend must target the same Supabase project.
+
+The Worker validates runtime setting values before importing. When entering a
+secret with `wrangler secret put`, paste only its value, without the variable
+name, surrounding quotes, or line breaks. In particular, `SUPABASE_URL` must be
+`https://YOUR_PROJECT_REF.supabase.co`, not a line copied from an `.env` file.
+
+Unexpected failures identify the stage (authentication, download, processing,
+upload, or registration). Worker logs record only the stage, error class, and
+numeric provider error code; raw exception messages, image URLs, and credentials
+are deliberately excluded. A failure with an intentionally invalid token should
+return HTTP 401; a 502 before authentication indicates a runtime configuration or
+Supabase Auth connection problem, rather than an image-format problem.

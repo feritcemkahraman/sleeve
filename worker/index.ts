@@ -2,6 +2,8 @@ import { ImageImportError } from "./contracts.ts";
 import type { WorkerEnv } from "./contracts.ts";
 import { ImageStorage } from "./imageStorage.ts";
 import { limitedBytes } from "./imageProcessing.ts";
+import { validateImageConfiguration } from "./configuration.ts";
+import { imageImportStep } from "./importErrors.ts";
 
 async function authenticatedUser(
   request: Request,
@@ -31,15 +33,6 @@ async function authenticatedUser(
   return user.id;
 }
 
-function configured(env: WorkerEnv): boolean {
-  return Boolean(
-    env.SUPABASE_URL &&
-    env.SUPABASE_PUBLISHABLE_KEY &&
-    env.SUPABASE_SERVICE_ROLE_KEY &&
-    env.IMAGES,
-  );
-}
-
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
@@ -51,11 +44,7 @@ export default {
       });
 
     try {
-      if (!configured(env))
-        throw new ImageImportError(
-          "Image importing is not configured. See the image storage setup guide.",
-          503,
-        );
+      validateImageConfiguration(env);
       const origin = request.headers.get("origin");
       if (origin && origin !== url.origin)
         throw new ImageImportError(
@@ -65,8 +54,12 @@ export default {
       if (!request.headers.get("content-type")?.startsWith("application/json"))
         throw new ImageImportError("Expected a JSON request.", 415);
 
-      const userId = await authenticatedUser(request, env);
-      const { success } = await env.IMAGE_IMPORT_LIMITER.limit({ key: userId });
+      const userId = await imageImportStep("authentication", () =>
+        authenticatedUser(request, env),
+      );
+      const { success } = await imageImportStep("rate-limit", () =>
+        env.IMAGE_IMPORT_LIMITER.limit({ key: userId }),
+      );
       if (!success)
         throw new ImageImportError(
           "Too many image imports. Wait a minute and retry.",
@@ -106,6 +99,7 @@ export default {
     }
   },
   async scheduled(_event: unknown, env: WorkerEnv): Promise<void> {
-    if (configured(env)) await new ImageStorage(env).cleanup();
+    validateImageConfiguration(env);
+    await new ImageStorage(env).cleanup();
   },
 };

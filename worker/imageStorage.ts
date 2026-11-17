@@ -1,4 +1,5 @@
 import { ImageImportError } from "./contracts.ts";
+import { imageImportStep } from "./importErrors.ts";
 import type { WorkerEnv } from "./contracts.ts";
 import { downloadImage, optimizeImage, sourceUrl } from "./imageProcessing.ts";
 
@@ -77,50 +78,62 @@ export class ImageStorage {
   public async import(userId: string, value: unknown): Promise<string> {
     const url = sourceUrl(value).href;
     const existing =
-      (await this.reuse(userId, "public_url", url)) ??
-      (await this.reuse(userId, "source_url", url));
+      (await imageImportStep("asset-lookup", () =>
+        this.reuse(userId, "public_url", url),
+      )) ??
+      (await imageImportStep("asset-lookup", () =>
+        this.reuse(userId, "source_url", url),
+      ));
     if (existing) return existing.public_url;
 
-    const bytes = await downloadImage(url);
-    const optimized = await optimizeImage(bytes, this.env.IMAGES);
+    const bytes = await imageImportStep("download", () => downloadImage(url));
+    const optimized = await imageImportStep("image-processing", () =>
+      optimizeImage(bytes, this.env.IMAGES),
+    );
     const id = crypto.randomUUID();
     const path = `${userId}/${id}.webp`;
     const publicUrl = `${this.env.SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/${BUCKET}/${path}`;
     // Register first: every uploaded object has cleanup metadata even if a
     // response is lost. Pending assets cannot be reused or attached to a row.
-    await this.write("/rest/v1/image_assets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        user_id: userId,
-        source_url: url,
-        public_url: publicUrl,
-        storage_path: path,
-        byte_size: optimized.bytes.byteLength,
-        width: optimized.width,
-        height: optimized.height,
-        pipeline_version: VERSION,
+    await imageImportStep("asset-registration", () =>
+      this.write("/rest/v1/image_assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          user_id: userId,
+          source_url: url,
+          public_url: publicUrl,
+          storage_path: path,
+          byte_size: optimized.bytes.byteLength,
+          width: optimized.width,
+          height: optimized.height,
+          pipeline_version: VERSION,
+        }),
       }),
-    });
-    await this.write(`/storage/v1/object/${BUCKET}/${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "image/webp",
-        "Cache-Control": "max-age=31536000",
-        "x-upsert": "false",
-      },
-      body: new Blob([new Uint8Array(optimized.bytes)]),
-    });
+    );
+    await imageImportStep("upload", () =>
+      this.write(`/storage/v1/object/${BUCKET}/${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "image/webp",
+          "Cache-Control": "max-age=31536000",
+          "x-upsert": "false",
+        },
+        body: new Blob([new Uint8Array(optimized.bytes)]),
+      }),
+    );
     const query = new URLSearchParams({
       id: `eq.${id}`,
       deleting_at: "is.null",
     });
-    await this.write(`/rest/v1/image_assets?${query}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ready_at: new Date().toISOString() }),
-    });
+    await imageImportStep("asset-ready", () =>
+      this.write(`/rest/v1/image_assets?${query}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ready_at: new Date().toISOString() }),
+      }),
+    );
     return publicUrl;
   }
 
