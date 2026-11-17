@@ -33,4 +33,4 @@ Rating gradients span the entire five-star row, including gaps. Each filled star
 
 Nocturne takes its cues from a classical concert hall: burgundy velvet surfaces, ivory text, champagne gold controls and ratings, Cormorant Garamond headings, and Source Serif 4 body text. It uses solid accents and the shared layout, with Walnut remaining the default.
 
-Retro evokes seventies soul and funk record sleeves and vintage hi-fi equipment. Oatmeal backgrounds and cream panels pair with espresso text, burnt-orange controls, and darker mustard ratings for contrast. Rounded Fraunces headings and Alegreya Sans body text supply character through typography while preserving the shared layout.
+Retro evokes seventies soul and funk record sleeves and vintage hi-fi equipment. Caramel backgrounds and warm toffee panels pair with espresso text, burnt-orange controls, and dark amber ratings. Stacked olive, orange, and brown header stripes, heavier Fraunces headings and album titles, and Alegreya Sans body text give it a bolder soul/funk character.

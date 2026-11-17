@@ -6,7 +6,7 @@ const palettes = {
   walnut: "rgb(35, 26, 21)",
   prism: "rgb(16, 17, 24)",
   nocturne: "rgb(33, 19, 28)",
-  retro: "rgb(238, 224, 197)",
+  retro: "rgb(213, 164, 91)",
 };
 
 test("themes switch immediately, style every page, and persist through refresh", async ({
@@ -91,6 +91,23 @@ test("themes switch immediately, style every page, and persist through refresh",
         ),
       ).toBe(true);
     }
+    if (theme === "retro") {
+      await page
+        .getByRole("button", { name: "List view", exact: true })
+        .click();
+      await expect(page.locator(".album-list .album-card").first()).toHaveCSS(
+        "background-color",
+        "rgb(223, 183, 121)",
+      );
+      await page.screenshot({
+        path: `test-results/theme-retro-list-${test.info().project.name}.png`,
+        fullPage: true,
+      });
+      await page
+        .getByRole("button", { name: "Grid view", exact: true })
+        .click();
+    }
+
     await page.locator('a[href^="#album/"]').first().click();
     await expect(page.locator(".album-artwork")).toBeVisible();
     const starFill = page.locator(".detail-rating .star-fill").first();
