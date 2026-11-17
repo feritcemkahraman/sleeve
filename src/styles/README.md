@@ -25,7 +25,7 @@ Add styles to the owning file where its cascade position is appropriate. Any reo
 
 Newsreader, Inter, Alegreya Sans, Space Grotesk, Cormorant Garamond, Source Serif 4, Fraunces, and IBM Plex Mono load through Google Fonts with `display=swap`; named local fallbacks keep the app usable offline or when fonts are blocked. Sage retains the original system font stacks. Muted text in the light themes is slightly darker than the initial palette proposal for readability. Decorative vinyl artwork keeps its own colors, just like album images.
 
-Walnut uses Alegreya Sans with slightly open letter spacing for body text alongside Newsreader headings. It pairs warm brown surfaces and cream text with moss green accents and amber ratings, inspired by a warmly lit wood listening room. Editorial, Sage, Walnut, Prism, Nocturne, and Soul are the available themes; saved Midnight and Modern preferences fall back to Walnut.
+Walnut uses Alegreya Sans with slightly open letter spacing for body text alongside Newsreader headings. It pairs warm brown surfaces and cream text with deep forest green controls and lighter leaf green links and amber ratings, inspired by a warmly lit wood listening room. Editorial, Sage, Walnut, Prism, Nocturne, and Soul are the available themes; saved Midnight and Modern preferences fall back to Walnut.
 
 Walnut is the default palette, including the CSS fallback before initialization. Prism pairs near-black surfaces with cyan controls and Space Grotesk typography. Its optional `--color-accent-spectrum` gradient adds thin static rainbow accents to the masthead, primary buttons, chart bars, and filled rating stars; other themes default to `none`. Keep gradients decorative and use solid semantic colors for text, focus rings, and control contrast.
 
@@ -36,3 +36,5 @@ Nocturne takes its cues from a classical concert hall: burgundy velvet surfaces,
 Soul evokes seventies soul and funk record sleeves and vintage hi-fi equipment. Light honey backgrounds and warm peach-cream panels pair with espresso text, burnt-orange controls, and dark amber ratings. Stacked olive, orange, and brown header stripes, heavier Fraunces headings and album titles, and Alegreya Sans body text give it a bolder soul/funk character.
 
 Saved preferences using Soul’s former `retro` ID continue to load Soul.
+
+Themes can provide `--color-accent-readable` when their control accent is too dark for text against the page background. Walnut uses this for its deep forest green controls, keeping links and focus indicators readable.

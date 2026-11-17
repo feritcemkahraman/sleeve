@@ -10,13 +10,13 @@
   --muted: var(--color-text-secondary);
   --quiet: var(--color-text-muted);
   --sage: var(--color-accent);
-  --sage-strong: var(--color-accent-hover);
+  --sage-strong: var(--color-accent-text);
   --accent: var(--color-accent);
   --gold: var(--color-rating);
   --serif: var(--font-heading);
   --sans: var(--font-body);
   --mono: var(--font-mono);
-  --color-accent-text: var(--color-accent-hover);
+  --color-accent-text: var(--color-accent-readable, var(--color-accent-hover));
   --color-shadow: #0003;
   --color-backdrop: #0a0d0abf;
 }

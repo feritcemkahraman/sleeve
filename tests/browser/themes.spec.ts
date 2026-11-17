@@ -16,12 +16,12 @@ test("themes switch immediately, style every page, and persist through refresh",
   await expect(page.locator("html")).toHaveAttribute("data-theme", "walnut");
   await page.locator("#auth-demo").click();
   await expect(page.locator("#theme-select option")).toHaveText([
-    "Editorial",
-    "Sage",
     "Walnut",
+    "Sage",
     "Prism",
-    "Nocturne",
     "Soul",
+    "Nocturne",
+    "Editorial",
   ]);
 
   for (const [theme, background] of Object.entries(palettes)) {
