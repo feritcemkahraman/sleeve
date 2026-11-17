@@ -1,8 +1,23 @@
+import { escapeHtml } from "./html";
 import { starPath } from "./icons";
 import { displayRating } from "./presentation";
 
+const starMask = `url("data:image/svg+xml,${encodeURIComponent(
+  /* HTML */ `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path
+      d="${starPath}"
+      stroke="black"
+      stroke-width="1.65"
+      stroke-linejoin="round"
+    />
+  </svg>`,
+)}")`;
+
 export function stars(rating: number): string {
-  return /* HTML */ `<span class="stars" aria-hidden="true"
+  return /* HTML */ `<span
+    class="stars"
+    aria-hidden="true"
+    style="--star-mask:${escapeHtml(starMask)}"
     >${Array.from({ length: 5 }, (_, i) => {
       const fill = Math.max(0, Math.min(2, rating - i * 2));
 

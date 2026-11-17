@@ -19,3 +19,16 @@
   background-position: top;
   background-size: 100% 2px;
 }
+
+/* Keep the existing fill clipping so half-star ratings stay precise. */
+[data-theme="prism"] .star-fill svg {
+  visibility: hidden;
+}
+
+[data-theme="prism"] .star-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--color-accent-spectrum);
+  mask: var(--star-mask) center / contain no-repeat;
+}

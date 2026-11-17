@@ -89,6 +89,23 @@ test("themes switch immediately, style every page, and persist through refresh",
     }
     await page.locator('a[href^="#album/"]').first().click();
     await expect(page.locator(".album-artwork")).toBeVisible();
+    const starFill = page.locator(".detail-rating .star-fill").first();
+    await expect(starFill).toBeVisible();
+    const starGradient = await starFill.evaluate(
+      (el) => getComputedStyle(el, "::after").backgroundImage,
+    );
+    if (theme === "prism") {
+      expect(starGradient).toMatch(/linear-gradient/);
+      expect(
+        await starFill.evaluate(
+          (el) => getComputedStyle(el, "::after").maskImage,
+        ),
+      ).toContain("data:image/svg+xml");
+    } else expect(starGradient).toBe("none");
+    await page.screenshot({
+      path: `test-results/theme-${theme}-ratings-${test.info().project.name}.png`,
+      fullPage: true,
+    });
     await page.locator('[data-action="edit"]').click();
     await expect(page.locator("#editor")).toBeVisible();
     const expected = await page.locator("html").evaluate((el) => {
