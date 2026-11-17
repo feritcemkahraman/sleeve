@@ -1,4 +1,4 @@
-export type Theme = "editorial" | "sage" | "walnut" | "prism";
+export type Theme = "editorial" | "sage" | "walnut" | "prism" | "nocturne";
 
 interface ThemeOption {
   id: Theme;

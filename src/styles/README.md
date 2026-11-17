@@ -23,10 +23,12 @@ Add styles to the owning file where its cascade position is appropriate. Any reo
 
 `theme-init.js` runs synchronously before rendering and reads `sleeve-theme` from local storage. Invalid or unavailable storage falls back to Walnut. Preferences stay on this browser and do not change account data. The production service worker includes the script in its app shell.
 
-Newsreader, Inter, Alegreya Sans, Space Grotesk, and IBM Plex Mono load through Google Fonts with `display=swap`; named local fallbacks keep the app usable offline or when fonts are blocked. Sage retains the original system font stacks. Muted text in the light themes is slightly darker than the initial palette proposal for readability. Decorative vinyl artwork keeps its own colors, just like album images.
+Newsreader, Inter, Alegreya Sans, Space Grotesk, Cormorant Garamond, Source Serif 4, and IBM Plex Mono load through Google Fonts with `display=swap`; named local fallbacks keep the app usable offline or when fonts are blocked. Sage retains the original system font stacks. Muted text in the light themes is slightly darker than the initial palette proposal for readability. Decorative vinyl artwork keeps its own colors, just like album images.
 
-Walnut uses Alegreya Sans with slightly open letter spacing for body text alongside Newsreader headings. It pairs warm brown surfaces and cream text with moss green accents and amber ratings, inspired by a warmly lit wood listening room. Editorial, Sage, Walnut, and Prism are the available themes; saved Midnight and Modern preferences fall back to Walnut.
+Walnut uses Alegreya Sans with slightly open letter spacing for body text alongside Newsreader headings. It pairs warm brown surfaces and cream text with moss green accents and amber ratings, inspired by a warmly lit wood listening room. Editorial, Sage, Walnut, Prism, and Nocturne are the available themes; saved Midnight and Modern preferences fall back to Walnut.
 
 Walnut is the default palette, including the CSS fallback before initialization. Prism pairs near-black surfaces with cyan controls and Space Grotesk typography. Its optional `--color-accent-spectrum` gradient adds thin static rainbow accents to the masthead, primary buttons, chart bars, and filled rating stars; other themes default to `none`. Keep gradients decorative and use solid semantic colors for text, focus rings, and control contrast.
 
 Rating gradients span the entire five-star row, including gaps. Each filled star reveals its segment of that shared spectrum; half and empty stars retain the existing clipping.
+
+Nocturne takes its cues from a classical concert hall: burgundy velvet surfaces, ivory text, champagne gold controls and ratings, Cormorant Garamond headings, and Source Serif 4 body text. It uses solid accents and the shared layout, with Walnut remaining the default.

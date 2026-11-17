@@ -5,6 +5,7 @@ const palettes = {
   sage: "rgb(24, 27, 23)",
   walnut: "rgb(35, 26, 21)",
   prism: "rgb(16, 17, 24)",
+  nocturne: "rgb(33, 19, 28)",
 };
 
 test("themes switch immediately, style every page, and persist through refresh", async ({
@@ -18,6 +19,7 @@ test("themes switch immediately, style every page, and persist through refresh",
     "Sage",
     "Walnut",
     "Prism",
+    "Nocturne",
   ]);
 
   for (const [theme, background] of Object.entries(palettes)) {
@@ -60,7 +62,7 @@ test("themes switch immediately, style every page, and persist through refresh",
     await expect(page.locator("#theme-select")).toHaveValue(theme);
     await expect(page.locator("#page-title")).toHaveCSS(
       "font-family",
-      /^("?Newsreader"?|Georgia|"?Inter"?|"?Space Grotesk"?)/,
+      /^("?Newsreader"?|Georgia|"?Inter"?|"?Space Grotesk"?|"?Cormorant Garamond"?)/,
     );
     await page.screenshot({
       path: `test-results/theme-${theme}-${test.info().project.name}.png`,

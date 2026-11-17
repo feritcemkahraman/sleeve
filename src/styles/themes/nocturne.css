@@ -1,0 +1,26 @@
+/* Burgundy velvet, ivory concert programs, and champagne brass. */
+[data-theme="nocturne"] {
+  color-scheme: dark;
+  --color-bg: #21131c;
+  --color-surface: #2d1c27;
+  --color-surface-raised: #392531;
+  --color-text: #f5ecdc;
+  --color-text-secondary: #cdbbaa;
+  --color-text-muted: #b6a294;
+  --color-accent: #d9bd83;
+  --color-accent-hover: #ecd6a4;
+  --color-accent-foreground: #291b18;
+  --color-accent-subtle: #443329;
+  --color-border: #60464f;
+  --color-border-subtle: #49303e;
+  --color-hover: #3c2835;
+  --color-selected: #4c3740;
+  --color-rating: #e1c48b;
+  --font-heading: "Cormorant Garamond", "Palatino Linotype", Georgia, serif;
+  --font-body: "Source Serif 4", "Palatino Linotype", Georgia, serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-error: #f2b4b0;
+  --color-error-bg: #492630;
+  --color-success: var(--color-accent);
+  --header: var(--color-bg);
+}
