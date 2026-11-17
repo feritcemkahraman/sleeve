@@ -218,9 +218,10 @@
   white-space: nowrap;
 }
 .stars {
+  --star-gap: 2px;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--star-gap);
   flex: none;
 }
 .star {

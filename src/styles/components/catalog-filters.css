@@ -145,8 +145,8 @@
   color: var(--gold);
 }
 .filter-star-picker .stars {
+  --star-gap: 0px;
   display: flex;
-  gap: 0;
 }
 .filter-star-picker .star {
   width: 20%;
@@ -288,7 +288,7 @@
   display: inline-flex;
 }
 .filter-chip-rating .stars {
-  gap: 0;
+  --star-gap: 0px;
 }
 .filter-chip-rating .star {
   width: 11px;

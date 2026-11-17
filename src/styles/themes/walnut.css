@@ -1,0 +1,32 @@
+/* Walnut wood, lamplight, and the green of a listening room's trailing vines. */
+:root:not([data-theme]),
+[data-theme="walnut"] {
+  color-scheme: dark;
+  --color-bg: #231a15;
+  --color-surface: #2e231c;
+  --color-surface-raised: #392c23;
+  --color-text: #f2e5ce;
+  --color-text-secondary: #c8b59d;
+  --color-text-muted: #b29d84;
+  --color-accent: #0c4a03;
+  --color-accent-hover: #17620a;
+  --color-accent-readable: #8fbb74;
+  --color-accent-foreground: #f2e5ce;
+  --color-accent-subtle: #23351e;
+  --color-border: #594534;
+  --color-border-subtle: #443327;
+  --color-hover: #403125;
+  --color-selected: #2d4825;
+  --color-rating: #dfb16b;
+  --font-heading: "Newsreader", Georgia, serif;
+  --font-body: "Alegreya Sans", "Trebuchet MS", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-error: #efb09a;
+  --color-error-bg: #482a23;
+  --color-success: var(--color-accent);
+  --header: var(--color-bg);
+}
+
+[data-theme="walnut"] body {
+  letter-spacing: 0.015em;
+}

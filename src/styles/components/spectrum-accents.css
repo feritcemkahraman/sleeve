@@ -1,0 +1,38 @@
+/* Optional decoration stays separate from solid, readable semantic colors. */
+.masthead {
+  background-image: var(--color-accent-spectrum, none);
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 1px;
+}
+
+.button.primary {
+  background-image: var(--color-accent-spectrum, none);
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 3px;
+}
+
+.chart-bar {
+  background-image: var(--color-accent-spectrum, none);
+  background-repeat: no-repeat;
+  background-position: top;
+  background-size: 100% 2px;
+}
+
+/* Keep the existing fill clipping so half-star ratings stay precise. */
+[data-theme="prism"] .star-fill svg {
+  visibility: hidden;
+}
+
+[data-theme="prism"] .star-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--color-accent-spectrum);
+  /* Each star reveals its segment of one gradient spanning all five stars. */
+  background-size: calc(500% + 4 * var(--star-gap)) 100%;
+  background-position: calc(var(--star-index) * 25%) 0;
+  background-repeat: no-repeat;
+  mask: var(--star-mask) center / contain no-repeat;
+}

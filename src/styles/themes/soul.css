@@ -1,0 +1,48 @@
+/* Seventies record sleeves, oatmeal speaker cloth, and amber hi-fi dials. */
+[data-theme="soul"] {
+  color-scheme: light;
+  --color-bg: #e2bb82;
+  --color-surface: #edce9c;
+  --color-surface-raised: #f6dfb7;
+  --color-text: #352015;
+  --color-text-secondary: #604027;
+  --color-text-muted: #65432b;
+  --color-accent: #87391e;
+  --color-accent-hover: #682a16;
+  --color-accent-foreground: #ffe7b9;
+  --color-accent-subtle: #e5b886;
+  --color-border: #b58755;
+  --color-border-subtle: #cfab7c;
+  --color-hover: #e5be88;
+  --color-selected: #dfaf79;
+  --color-rating: #704509;
+  --font-heading: "Fraunces", "Bookman Old Style", Georgia, serif;
+  --font-body: "Alegreya Sans", "Trebuchet MS", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-error: #a3342b;
+  --color-error-bg: #ecc092;
+  --color-success: #3e5028;
+  --header: var(--color-bg);
+}
+
+/* Stacked sleeve stripes and heavier lettering supply the soul/funk character. */
+[data-theme="soul"] .masthead {
+  box-shadow:
+    inset 0 -3px #68341e,
+    inset 0 -6px #b54d24,
+    inset 0 -9px #697039;
+}
+
+[data-theme="soul"] :is(h1, h2, h3, h4) {
+  font-weight: 700;
+}
+
+[data-theme="soul"] .album-text strong {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+[data-theme="soul"] :is(.album-card, .profile-panel) {
+  border-color: var(--color-border);
+  box-shadow: 0 1px 2px #35201514;
+}

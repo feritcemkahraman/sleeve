@@ -1,4 +1,5 @@
-export type Theme = "editorial" | "midnight" | "modern" | "sage";
+export type Theme =
+  "editorial" | "sage" | "walnut" | "prism" | "nocturne" | "soul";
 
 interface ThemeOption {
   id: Theme;
@@ -21,7 +22,7 @@ export function isTheme(value: string | undefined): value is Theme {
 
 export function currentTheme(): Theme {
   const value = document.documentElement.dataset.theme;
-  return isTheme(value) ? value : "editorial";
+  return isTheme(value) ? value : "walnut";
 }
 
 export function selectTheme(value: string): void {

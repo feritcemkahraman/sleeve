@@ -332,7 +332,7 @@ dialog::backdrop {
   min-height: 40px;
 }
 .rating-picker .stars {
-  gap: 0;
+  --star-gap: 0px;
 }
 .rating-picker .star {
   width: 39px;
