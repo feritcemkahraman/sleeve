@@ -2,12 +2,12 @@
  * Add theme IDs and labels here; put their visual tokens in styles/themes/. */
 window.sleeveThemes = [
   { id: "editorial", label: "Editorial" },
-  { id: "midnight", label: "Midnight" },
-  { id: "modern", label: "Modern" },
-  { id: "sage", label: "Sage (original)" },
+  { id: "sage", label: "Sage" },
+  { id: "walnut", label: "Walnut" },
+  { id: "prism", label: "Prism" },
 ];
 (() => {
-  let theme = "editorial";
+  let theme = "walnut";
   try {
     const saved = localStorage.getItem("sleeve-theme");
     if (window.sleeveThemes.some(({ id }) => id === saved)) theme = saved;

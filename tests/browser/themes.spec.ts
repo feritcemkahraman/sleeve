@@ -2,17 +2,24 @@ import { test, expect } from "@playwright/test";
 
 const palettes = {
   editorial: "rgb(245, 241, 232)",
-  midnight: "rgb(30, 32, 36)",
-  modern: "rgb(248, 248, 246)",
   sage: "rgb(24, 27, 23)",
+  walnut: "rgb(35, 26, 21)",
+  prism: "rgb(16, 17, 24)",
 };
 
 test("themes switch immediately, style every page, and persist through refresh", async ({
   page,
 }) => {
   await page.goto("/#profile");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "editorial");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "walnut");
   await page.locator("#auth-demo").click();
+  await expect(page.locator("#theme-select option")).toHaveText([
+    "Editorial",
+    "Sage",
+    "Walnut",
+    "Prism",
+  ]);
+
   for (const [theme, background] of Object.entries(palettes)) {
     await page.locator("#theme-select").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
@@ -32,6 +39,13 @@ test("themes switch immediately, style every page, and persist through refresh",
           return `rgb(${[0, 2, 4].map((i) => parseInt(color.slice(i, i + 2), 16)).join(", ")})`;
         }),
     );
+    for (const selector of [".masthead", ".button.primary", ".chart-bar"]) {
+      await expect(page.locator(selector).first()).toHaveCSS(
+        "background-image",
+        theme === "prism" ? /linear-gradient/ : "none",
+      );
+    }
+
     expect(
       await page.evaluate(() => localStorage.getItem("sleeve-theme")),
     ).toBe(theme);
@@ -46,7 +60,7 @@ test("themes switch immediately, style every page, and persist through refresh",
     await expect(page.locator("#theme-select")).toHaveValue(theme);
     await expect(page.locator("#page-title")).toHaveCSS(
       "font-family",
-      /^("?Newsreader"?|Georgia|"?Inter"?)/,
+      /^("?Newsreader"?|Georgia|"?Inter"?|"?Space Grotesk"?)/,
     );
     await page.screenshot({
       path: `test-results/theme-${theme}-${test.info().project.name}.png`,
@@ -102,7 +116,7 @@ test("invalid stored themes and unavailable storage use a usable default", async
     localStorage.setItem("sleeve-theme", "invalid"),
   );
   await page.goto("/");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "editorial");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "walnut");
   await page.addInitScript(() => {
     Storage.prototype.getItem = () => {
       throw new Error("Storage blocked");
@@ -113,6 +127,23 @@ test("invalid stored themes and unavailable storage use a usable default", async
   });
   await page.goto("/#profile");
   await page.locator("#auth-demo").click();
-  await page.locator("#theme-select").selectOption("midnight");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "midnight");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "walnut");
+  await page.locator("#theme-select").selectOption("prism");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "prism");
 });
+
+for (const removedTheme of ["midnight", "modern"]) {
+  test(`removed ${removedTheme} preference falls back to Walnut`, async ({
+    page,
+  }) => {
+    await page.addInitScript((theme) => {
+      localStorage.setItem("sleeve-theme", theme);
+    }, removedTheme);
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "walnut");
+    await expect(page.locator("body")).toHaveCSS(
+      "background-color",
+      palettes.walnut,
+    );
+  });
+}

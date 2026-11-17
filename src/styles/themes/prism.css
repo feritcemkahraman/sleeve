@@ -1,0 +1,34 @@
+[data-theme="prism"] {
+  color-scheme: dark;
+  --color-bg: #101118;
+  --color-surface: #191b25;
+  --color-surface-raised: #222532;
+  --color-text: #f0f2fa;
+  --color-text-secondary: #b7bdd1;
+  --color-text-muted: #989fb8;
+  --color-accent: #81e9ef;
+  --color-accent-hover: #b3f6fa;
+  --color-accent-foreground: #101820;
+  --color-accent-subtle: #20343e;
+  --color-border: #41465d;
+  --color-border-subtle: #2c3042;
+  --color-hover: #262b3b;
+  --color-selected: #263e4c;
+  --color-rating: #e5b2ff;
+  --font-heading: "Space Grotesk", "Inter", Arial, sans-serif;
+  --font-body: "Space Grotesk", "Inter", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-error: #ffb4bc;
+  --color-error-bg: #40232f;
+  --color-success: var(--color-accent);
+  --header: var(--color-bg);
+  --color-accent-spectrum: linear-gradient(
+    90deg,
+    #81e9ef,
+    #8d9aff 23%,
+    #df94ff 45%,
+    #ff8eaf 65%,
+    #f6d777 83%,
+    #a2efb0
+  );
+}
