@@ -30,5 +30,9 @@
   position: absolute;
   inset: 0;
   background-image: var(--color-accent-spectrum);
+  /* Each star reveals its segment of one gradient spanning all five stars. */
+  background-size: calc(500% + 4 * var(--star-gap)) 100%;
+  background-position: calc(var(--star-index) * 25%) 0;
+  background-repeat: no-repeat;
   mask: var(--star-mask) center / contain no-repeat;
 }

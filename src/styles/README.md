@@ -28,3 +28,5 @@ Newsreader, Inter, Alegreya Sans, Space Grotesk, and IBM Plex Mono load through 
 Walnut uses Alegreya Sans with slightly open letter spacing for body text alongside Newsreader headings. It pairs warm brown surfaces and cream text with moss green accents and amber ratings, inspired by a warmly lit wood listening room. Editorial, Sage, Walnut, and Prism are the available themes; saved Midnight and Modern preferences fall back to Walnut.
 
 Walnut is the default palette, including the CSS fallback before initialization. Prism pairs near-black surfaces with cyan controls and Space Grotesk typography. Its optional `--color-accent-spectrum` gradient adds thin static rainbow accents to the masthead, primary buttons, chart bars, and filled rating stars; other themes default to `none`. Keep gradients decorative and use solid semantic colors for text, focus rings, and control contrast.
+
+Rating gradients span the entire five-star row, including gaps. Each filled star reveals its segment of that shared spectrum; half and empty stars retain the existing clipping.

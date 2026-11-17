@@ -21,7 +21,7 @@ export function stars(rating: number): string {
     >${Array.from({ length: 5 }, (_, i) => {
       const fill = Math.max(0, Math.min(2, rating - i * 2));
 
-      return /* HTML */ `<span class="star"
+      return /* HTML */ `<span class="star" style="--star-index:${i}"
         ><svg viewBox="0 0 24 24"><path d="${starPath}" /></svg
         ><span class="star-fill" style="--fill:${fill * 50}%"
           ><svg viewBox="0 0 24 24"><path d="${starPath}" /></svg></span

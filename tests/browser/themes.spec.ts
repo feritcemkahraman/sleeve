@@ -96,6 +96,14 @@ test("themes switch immediately, style every page, and persist through refresh",
     );
     if (theme === "prism") {
       expect(starGradient).toMatch(/linear-gradient/);
+      const positions = await page
+        .locator(".detail-rating .star-fill")
+        .evaluateAll((stars) =>
+          stars.map(
+            (star) => getComputedStyle(star, "::after").backgroundPositionX,
+          ),
+        );
+      expect(positions).toEqual(["0%", "25%", "50%", "75%", "100%"]);
       expect(
         await starFill.evaluate(
           (el) => getComputedStyle(el, "::after").maskImage,
