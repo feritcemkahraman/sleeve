@@ -327,6 +327,54 @@ export type Database = {
           },
         ];
       };
+      image_assets: {
+        Row: {
+          byte_size: number;
+          created_at: string;
+          deleting_at: string | null;
+          height: number;
+          id: string;
+          last_used_at: string;
+          pipeline_version: number;
+          public_url: string;
+          ready_at: string | null;
+          source_url: string;
+          storage_path: string;
+          user_id: string | null;
+          width: number;
+        };
+        Insert: {
+          byte_size: number;
+          created_at?: string;
+          deleting_at?: string | null;
+          height: number;
+          id: string;
+          last_used_at?: string;
+          pipeline_version: number;
+          public_url: string;
+          ready_at?: string | null;
+          source_url: string;
+          storage_path: string;
+          user_id?: string | null;
+          width: number;
+        };
+        Update: {
+          byte_size?: number;
+          created_at?: string;
+          deleting_at?: string | null;
+          height?: number;
+          id?: string;
+          last_used_at?: string;
+          pipeline_version?: number;
+          public_url?: string;
+          ready_at?: string | null;
+          source_url?: string;
+          storage_path?: string;
+          user_id?: string | null;
+          width?: number;
+        };
+        Relationships: [];
+      };
       instruments: {
         Row: {
           created_at: string;
@@ -415,6 +463,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      claim_unused_image_assets: {
+        Args: Record<PropertyKey, never>;
+        Returns: { id: string; storage_path: string }[];
+      };
       save_library_changes: { Args: { changes: Json }; Returns: Json };
     };
     Enums: {

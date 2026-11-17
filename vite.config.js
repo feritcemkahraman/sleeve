@@ -2,7 +2,9 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { relative } from "node:path";
 import { createHash } from "node:crypto";
 import { defineConfig } from "vite";
+import { imageProxy } from "./server/imageProxy.js";
 export default defineConfig({
+  server: { proxy: { "/api/images": imageProxy } },
   plugins: [
     {
       name: "offline-app-shell",

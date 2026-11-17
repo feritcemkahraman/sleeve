@@ -40,6 +40,14 @@ Restart the dev server after changing `.env`. Without Supabase configuration, yo
 
 To host your instance on Cloudflare Workers, configure your own Worker name in [wrangler.jsonc](wrangler.jsonc), authenticate Wrangler with your Cloudflare account, and run `npm run deploy`. The Supabase environment variables must be available when building; they are embedded in the frontend bundle.
 
+## Image storage
+
+Signed-in saves import new album art, artist photos, and instrument images into
+Supabase Storage as optimized WebP files (768px maximum, 50 KB target, 100 KB
+ceiling). Before using image imports, follow the [image storage setup guide](docs/image-storage.md)
+to run the migration and configure the Cloudflare Worker's Supabase credentials.
+The guide explains image processing, migration of existing URLs, caching, and cleanup.
+
 ## Install the app
 
 Open [Sleeve](https://sleeve.lukedigiovanna.workers.dev) or your own HTTPS deployment:

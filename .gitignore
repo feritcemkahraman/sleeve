@@ -35,3 +35,7 @@ dist-ssr
 playwright-report/
 test-results/
 test-results-offline/
+
+# Worker secrets
+.dev.vars
+.dev.vars.*
