@@ -1,5 +1,5 @@
 export type Theme =
-  "editorial" | "sage" | "walnut" | "prism" | "nocturne" | "retro";
+  "editorial" | "sage" | "walnut" | "prism" | "nocturne" | "soul";
 
 interface ThemeOption {
   id: Theme;

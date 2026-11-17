@@ -6,12 +6,13 @@ window.sleeveThemes = [
   { id: "walnut", label: "Walnut" },
   { id: "prism", label: "Prism" },
   { id: "nocturne", label: "Nocturne" },
-  { id: "retro", label: "Retro" },
+  { id: "soul", label: "Soul" },
 ];
 (() => {
   let theme = "walnut";
   try {
-    const saved = localStorage.getItem("sleeve-theme");
+    const stored = localStorage.getItem("sleeve-theme");
+    const saved = stored === "retro" ? "soul" : stored;
     if (window.sleeveThemes.some(({ id }) => id === saved)) theme = saved;
   } catch {
     // Storage may be unavailable; the default still works.

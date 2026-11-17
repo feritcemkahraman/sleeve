@@ -3,7 +3,7 @@
 @import "./themes/walnut.css";
 @import "./themes/prism.css";
 @import "./themes/nocturne.css";
-@import "./themes/retro.css";
+@import "./themes/soul.css";
 @import "./themes/tokens.css";
 /* Keep imports in cascade order; see README.md before moving rules. */
 @import "./base.css";

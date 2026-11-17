@@ -6,7 +6,7 @@ const palettes = {
   walnut: "rgb(35, 26, 21)",
   prism: "rgb(16, 17, 24)",
   nocturne: "rgb(33, 19, 28)",
-  retro: "rgb(213, 164, 91)",
+  soul: "rgb(226, 187, 130)",
 };
 
 test("themes switch immediately, style every page, and persist through refresh", async ({
@@ -21,7 +21,7 @@ test("themes switch immediately, style every page, and persist through refresh",
     "Walnut",
     "Prism",
     "Nocturne",
-    "Retro",
+    "Soul",
   ]);
 
   for (const [theme, background] of Object.entries(palettes)) {
@@ -91,16 +91,16 @@ test("themes switch immediately, style every page, and persist through refresh",
         ),
       ).toBe(true);
     }
-    if (theme === "retro") {
+    if (theme === "soul") {
       await page
         .getByRole("button", { name: "List view", exact: true })
         .click();
       await expect(page.locator(".album-list .album-card").first()).toHaveCSS(
         "background-color",
-        "rgb(223, 183, 121)",
+        "rgb(237, 206, 156)",
       );
       await page.screenshot({
-        path: `test-results/theme-retro-list-${test.info().project.name}.png`,
+        path: `test-results/theme-soul-list-${test.info().project.name}.png`,
         fullPage: true,
       });
       await page
@@ -193,3 +193,13 @@ for (const removedTheme of ["midnight", "modern"]) {
     );
   });
 }
+
+test("saved Retro preferences load Soul", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("sleeve-theme", "retro"));
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "soul");
+  await expect(page.locator("body")).toHaveCSS(
+    "background-color",
+    palettes.soul,
+  );
+});
