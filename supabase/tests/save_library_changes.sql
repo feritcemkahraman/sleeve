@@ -13,6 +13,16 @@ $$;
 insert into auth.users (id) values
     ('11111111-1111-4111-8111-111111111111'),
     ('22222222-2222-4222-8222-222222222222');
+-- Simulate Worker-created assets for the save RPC's image selections.
+insert into public.image_assets (id, user_id, storage_path, public_url, source_url, byte_size, width, height, pipeline_version, ready_at)
+select asset_id, '11111111-1111-4111-8111-111111111111',
+    '11111111-1111-4111-8111-111111111111/' || asset_id::text || '.webp',
+    url, url, 40000, 512, 512, 1, now()
+from (values
+    ('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 'https://example.com/artist.jpg'),
+    ('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 'https://example.com/sax.jpg'),
+    ('aaaaaaaa-0000-4000-8000-000000000003'::uuid, 'https://example.com/new.jpg')
+) as assets(asset_id, url);
 set local role authenticated;
 set local request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
 

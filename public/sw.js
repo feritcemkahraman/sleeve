@@ -29,9 +29,16 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin === self.location.origin && request.mode === "navigate") {
     event.respondWith(
-      caches
-        .open(CACHE)
-        .then(async (cache) => (await cache.match("/")) || fetch(request)),
+      (async () => {
+        try {
+          const response = await fetch(request);
+          if (response.ok) return response;
+        } catch {
+          // Fall back to the last completely precached build when offline.
+        }
+        const cache = await caches.open(CACHE);
+        return (await cache.match("/")) || Response.error();
+      })(),
     );
   } else if (
     url.origin === self.location.origin &&
