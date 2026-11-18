@@ -64,7 +64,7 @@ export function renderLibraryView(
     <div id="library-filter-chips" class="library-filter-chips">
       ${renderFilterChips(state.filters, data)}
     </div>
-    <p class="result-count" id="library-count" aria-live="polite"></p>
+    <p id="library-count" class="result-count" role="status"></p>
     <div id="library-results"></div>
   </section>`;
 }
