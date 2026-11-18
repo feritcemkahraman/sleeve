@@ -1017,6 +1017,23 @@ test("artist roles and order recover from drafts and survive save and removal", 
   ]);
 });
 
+test("genres show the catalog count and update it during search", async ({
+  page,
+}) => {
+  await page.goto("/#genres");
+  const count = page.locator("#genres-count");
+  await expect(count).toHaveText(/^[1-9]\d* genres$/, { useInnerText: true });
+  const total = await count.innerText();
+
+  const search = page.getByRole("searchbox", { name: "Search genres" });
+  await search.fill("Japanese Fusion");
+  await expect(count).toHaveText("1 genre");
+  await search.fill("no-such-genre-xyz");
+  await expect(count).toHaveText("0 genres");
+  await search.clear();
+  await expect(count).toHaveText(total);
+});
+
 test("genre graph preserves explicit tags, shares branches, and prevents cycles", async ({
   page,
 }) => {

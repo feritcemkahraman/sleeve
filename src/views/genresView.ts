@@ -114,6 +114,9 @@ export function renderGenresView(
           value="${e(query)}" /></label
       >${renderCatalogFilters(/* HTML */ `<label><input id="genres-alphabetical" type="checkbox" ${alphabetical ? "checked" : ""} /> Alphabetical view</label><label><input id="genres-unused" type="checkbox" ${unused ? "checked" : ""} /> Unused only</label>`, Number(alphabetical) + Number(unused))}
     </div>
+    <p id="genres-count" class="result-count" role="status">
+      ${results.length} ${results.length === 1 ? "genre" : "genres"}
+    </p>
     <div class="genre-tree">
       ${
         query || alphabetical || unused
