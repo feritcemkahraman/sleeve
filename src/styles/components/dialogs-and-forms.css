@@ -314,7 +314,7 @@ dialog::backdrop {
 }
 .rate-field {
   border: 0;
-  margin: 13px 0 10px;
+  margin: 13px 0 8px;
   padding: 0;
   min-width: 0;
 }
@@ -328,8 +328,11 @@ dialog::backdrop {
   position: relative;
   display: grid;
   align-items: center;
-  margin: 4px 0;
+  margin-top: 4px;
   min-height: 40px;
+}
+#rating-stars {
+  display: flex;
 }
 .rating-picker .stars {
   --star-gap: 0px;
@@ -337,6 +340,17 @@ dialog::backdrop {
 .rating-picker .star {
   width: 39px;
   height: 30px;
+}
+#rating-stars .star-fill {
+  --hover-fill: clamp(
+    0%,
+    calc((var(--rating-hover) - var(--star-index) * 2) * 50%),
+    100%
+  );
+  clip-path: inset(0 calc(100% - var(--hover-fill, var(--fill))) 0 0);
+}
+#rating-stars[style*="--rating-hover"] .star-fill {
+  opacity: 0.65;
 }
 .rating-options {
   position: absolute;
@@ -349,12 +363,7 @@ dialog::backdrop {
   position: relative;
   border-radius: 3px;
   cursor: pointer;
-}
-.rating-options label:hover {
-  background: var(--color-accent-subtle);
-}
-.rating-options label:focus-within {
-  outline: 2px solid var(--sage);
+  -webkit-tap-highlight-color: transparent;
 }
 .rating-options input {
   position: absolute;

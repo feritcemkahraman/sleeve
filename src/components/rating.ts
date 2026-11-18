@@ -30,7 +30,7 @@ export function stars(rating: number): string {
   >`;
 }
 
-export function renderRating(rating: number | undefined): string {
+export function renderRating(rating: number | null | undefined): string {
   return rating
     ? /* HTML */ `<span
         class="rating"

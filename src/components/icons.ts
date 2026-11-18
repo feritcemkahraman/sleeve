@@ -42,6 +42,8 @@ const paths: Record<string, string> = {
   play: '<rect x="3" y="6" width="18" height="12" rx="4"/><path d="m10 9 5 3-5 3Z" fill="currentColor" stroke="none"/>',
   link: '<path d="m10 13 4-4m-6 5-1 1a3 3 0 0 0 4 4l4-4a3 3 0 0 0 0-4M9 13a3 3 0 0 1 0-4l4-4a3 3 0 0 1 4 4l-1 1"/>',
   history: '<path d="M3 11a9 9 0 1 1 2 7m-2-12v5h5m4-4v5l3 2"/>',
+  draft:
+    '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h5"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
   bars: '<path d="M4 10v4m4-7v10m4-13v16m4-13v10m4-7v4"/>',
   sort: '<path d="M8 4v16m-3-3 3 3 3-3m5 3V4m-3 3 3-3 3 3"/>',

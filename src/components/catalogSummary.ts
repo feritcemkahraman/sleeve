@@ -1,6 +1,6 @@
 import { instrumentCategoryIcon } from "../app/instruments.ts";
 import type { Album, InstrumentCategory } from "../types/albums";
-import { latest, webUrl } from "./presentation.ts";
+import { latest, latestRatedListen, webUrl } from "./presentation.ts";
 import { escapeHtml as e } from "./html.ts";
 import { icon } from "./icons.ts";
 import {
@@ -18,8 +18,8 @@ export interface CatalogStats {
 }
 
 export function catalogStats(albums: Album[]): CatalogStats {
-  const entries = albums.flatMap((album) => {
-    const entry = latest(album);
+  const ratedEntries = albums.flatMap((album) => {
+    const entry = latestRatedListen(album);
     return entry ? [entry] : [];
   });
   return {
@@ -29,14 +29,14 @@ export function catalogStats(albums: Album[]): CatalogStats {
         .map((album) => album.updatedAt)
         .sort()
         .at(-1) ?? "",
-    rated: entries.length,
-    average: entries.length
-      ? entries.reduce((sum, entry) => sum + entry.rating / 2, 0) /
-        entries.length
+    rated: ratedEntries.length,
+    average: ratedEntries.length
+      ? ratedEntries.reduce((sum, entry) => sum + entry.rating / 2, 0) /
+        ratedEntries.length
       : null,
     recent:
-      entries
-        .map((entry) => entry.listenedAt)
+      albums
+        .map((album) => latest(album)?.listenedAt ?? "")
         .sort()
         .at(-1) ?? "",
   };

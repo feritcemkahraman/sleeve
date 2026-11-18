@@ -43,7 +43,7 @@ const albumInstrumentSchema = instrumentSchema.extend({
 });
 const listeningEntrySchema = z.looseObject({
   id: z.string(),
-  rating: z.number().int().min(1).max(10),
+  rating: z.number().int().min(1).max(10).nullable(),
   listenedAt: z.string(),
   notes: z.string().nullable(),
   createdAt: z.string(),

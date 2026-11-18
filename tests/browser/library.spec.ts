@@ -338,6 +338,136 @@ test("new listening entry survives reload", async ({ page }) => {
   await expect(page.locator('[name="rating"][value="8"]')).toBeChecked();
 });
 
+test("listening stars preview half-star ratings with a mouse", async ({
+  page,
+  isMobile,
+}) => {
+  await openAlbum(page);
+  await page.locator('[data-action="listen"]').first().click();
+
+  const threeAndAHalf = page.locator('[name="rating"][value="7"]');
+  const fills = page.locator("#rating-stars .star-fill");
+  if (isMobile) {
+    await threeAndAHalf.tap();
+  } else {
+    await threeAndAHalf.hover();
+    await expect(threeAndAHalf).not.toBeChecked();
+    await expect(fills.nth(0)).toHaveCSS("clip-path", "inset(0px 0% 0px 0px)");
+    await expect(fills.nth(3)).toHaveCSS("clip-path", "inset(0px 50% 0px 0px)");
+    await expect(fills.nth(4)).toHaveCSS(
+      "clip-path",
+      "inset(0px 100% 0px 0px)",
+    );
+    await expect(fills.nth(3)).toHaveCSS("opacity", "0.65");
+    await threeAndAHalf.click();
+    await expect(fills.nth(3)).toHaveCSS("opacity", "1");
+    const twoStars = page.locator('[name="rating"][value="4"]');
+    await twoStars.hover();
+    await expect(fills.nth(3)).toHaveCSS(
+      "clip-path",
+      "inset(0px 100% 0px 0px)",
+    );
+    await page.locator('[name="notes"]').hover();
+  }
+
+  await expect(threeAndAHalf).toBeChecked();
+  await expect(fills.nth(3)).toHaveCSS("clip-path", "inset(0px 50% 0px 0px)");
+  await expect(fills.nth(3)).toHaveCSS("opacity", "1");
+});
+
+test("listening draft status appears on hover or tap", async ({
+  page,
+  isMobile,
+}) => {
+  await openAlbum(page);
+  await page.locator('[data-action="listen"]').first().click();
+  const row = page.locator(".listen-intro");
+  const icon = row.getByRole("button", { name: "Draft status" });
+  const message = row.locator("[data-draft-status]");
+  const notes = page.locator('[name="notes"]');
+  await notes.fill("An unfinished listening note");
+  await expect(message).toHaveText("Draft saved on this device");
+  await expect(message).toHaveCSS("opacity", "0");
+
+  if (isMobile) {
+    await icon.tap();
+    await expect(message).toHaveCSS("opacity", "1");
+    await icon.tap();
+  } else {
+    await icon.hover();
+    await expect(message).toHaveCSS("opacity", "1");
+    await notes.hover();
+    await expect(message).toHaveCSS("opacity", "0");
+    await page.locator("#dialog-title").focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(icon).toBeFocused();
+    await expect(message).toHaveCSS("opacity", "1");
+    await page.keyboard.press("Tab");
+  }
+
+  await expect(message).toHaveCSS("opacity", "0");
+});
+
+test("note-only listens survive reload and preserve the latest rating", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Add album", exact: true }).click();
+  await page.locator('[data-action="manual"]').click();
+  await page.locator('[name="title"]').fill("Notes-only regression album");
+  await page.locator('#album-form button[type="submit"]').click();
+  await page.locator('[data-action="listen"]').first().click();
+  await page.locator('[name="date"]').fill("2026-01-15");
+  await page.locator('[name="rating"][value="8"]').check();
+  await page.getByRole("button", { name: "Save listen" }).click();
+
+  await page.locator('[data-action="listen"]').first().click();
+  const selectedRating = page.locator('[name="rating"]:checked');
+  await expect(page.locator('[name="rating"]')).toHaveCount(10);
+  await expect(selectedRating).toHaveCount(0);
+  await page.locator('[name="notes"]').fill("A thought about this album");
+  await page.getByRole("button", { name: "Save listen" }).click();
+  await reloadDemo(page);
+
+  const entry = page
+    .locator('[data-action="edit-listen"]')
+    .filter({ hasText: "A thought about this album" });
+  await expect(entry.locator(".rating")).toHaveAttribute(
+    "aria-label",
+    "Unrated",
+  );
+  await expect(page.locator(".detail-rating .rating")).toHaveAttribute(
+    "aria-label",
+    "4 out of 5 stars",
+  );
+
+  await entry.click();
+  await expect(selectedRating).toHaveCount(0);
+  await page.locator('[name="rating"][value="10"]').check();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".detail-rating .rating")).toHaveAttribute(
+    "aria-label",
+    "5 out of 5 stars",
+  );
+
+  await entry.click();
+  const fiveStars = page.locator('[name="rating"][value="10"]');
+  await fiveStars.press("Space");
+  await expect(selectedRating).toHaveCount(0);
+  await fiveStars.check();
+  await fiveStars.click();
+  await expect(selectedRating).toHaveCount(0);
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(entry.locator(".rating")).toHaveAttribute(
+    "aria-label",
+    "Unrated",
+  );
+  await expect(page.locator(".detail-rating .rating")).toHaveAttribute(
+    "aria-label",
+    "4 out of 5 stars",
+  );
+});
+
 test("unchanged dialog dismisses with Escape and restores focus", async ({
   page,
 }) => {

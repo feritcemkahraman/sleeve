@@ -38,7 +38,7 @@ const demoAlbumSchema = z.looseObject({
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}/)
         .refine((value) => Number.isFinite(Date.parse(value))),
-      rating: z.number().refine(Number.isInteger).min(1).max(10),
+      rating: z.number().refine(Number.isInteger).min(1).max(10).nullable(),
       notes: optionalStringSchema,
     }),
   ),

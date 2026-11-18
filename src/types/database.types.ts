@@ -406,7 +406,7 @@ export type Database = {
           id: string;
           listened_at: string;
           notes: string | null;
-          rating: number;
+          rating: number | null;
           updated_at: string;
           user_id: string;
         };
@@ -416,7 +416,7 @@ export type Database = {
           id?: string;
           listened_at?: string;
           notes?: string | null;
-          rating: number;
+          rating?: number | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -426,7 +426,7 @@ export type Database = {
           id?: string;
           listened_at?: string;
           notes?: string | null;
-          rating?: number;
+          rating?: number | null;
           updated_at?: string;
           user_id?: string;
         };

@@ -1,6 +1,6 @@
 import { vinylStatusIcon, vinylStatusLabel } from "../app/vinylStatus";
 import type { Album } from "../types/albums";
-import { cover, artistText, albumUrl, latest } from "./presentation";
+import { cover, artistText, albumUrl, latestRatedListen } from "./presentation";
 import { escapeHtml } from "./html";
 import { renderRating } from "./rating";
 import { icon } from "./icons";
@@ -20,7 +20,7 @@ export function renderAlbumCard(album: Album): string {
       <span class="album-genre"
         >${escapeHtml(album.genres[0]?.name ?? "")}</span
       >
-      ${renderRating(latest(album)?.rating)}
+      ${renderRating(latestRatedListen(album)?.rating)}
       <span class="card-arrow">${icon("chevron", 16)}</span>
     </a>
   </li>`;

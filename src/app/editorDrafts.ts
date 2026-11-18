@@ -15,7 +15,7 @@ import { createLifecycle } from "./lifecycle";
 
 export interface EditorDraftsDependencies {
   setBaseline: (value: string) => void;
-  updateRating: (value: number) => void;
+  updateRating: (value: number | null) => void;
   editor: HTMLDialogElement;
   accountId: string;
   isSaving: () => boolean;
@@ -253,7 +253,8 @@ export class EditorDraftController implements EditorDrafts {
     const rating = this.ops.editor.querySelector<HTMLInputElement>(
       '[name="rating"]:checked',
     );
-    if (rating) this.ops.updateRating(Number(rating.value));
+    if (this.ops.editor.querySelector("#listen-form"))
+      this.ops.updateRating(rating?.value ? Number(rating.value) : null);
     this.lifecycle.queue(() => {
       this.ops.setBaseline(saved.baseline);
       this.state.source = saved.source;

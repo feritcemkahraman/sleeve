@@ -7,7 +7,8 @@ import { makeId } from "./id";
 import type { Album, ListeningEntry } from "../types/albums";
 import { ratingLabels } from "../data/mockData";
 import { escapeHtml } from "../components/html";
-import { artistText, displayRating } from "../components/presentation";
+import { icon } from "../components/icons";
+import { artistText } from "../components/presentation";
 import { stars } from "../components/rating";
 
 export interface ListeningDependencies {
@@ -20,14 +21,14 @@ export interface ListeningDependencies {
 
 export interface Listening {
   openListen: (album: Album, entry?: ListeningEntry) => void;
-  updateRating: (rating: number) => void;
+  updateRating: (rating: number | null) => void;
   saveListenForm: (form: HTMLFormElement) => void;
   today: () => string;
   click: (button: HTMLButtonElement, album?: Album) => boolean;
 }
 
 export function createListening(ops: ListeningDependencies): Listening {
-  function openListen(album: Album, entry?: ListeningEntry) {
+  function openListen(album: Album, entry?: ListeningEntry): void {
     if (!ops.beginDraft({ kind: "listen", item: album, entry })) return;
     ops.showDialog(
       entry ? "Edit listen" : "Log a listen",
@@ -37,22 +38,38 @@ export function createListening(ops: ListeningDependencies): Listening {
         data-entry-id="${escapeHtml(entry?.id ?? "")}"
       >
         <div class="dialog-body">
-          <p class="dialog-intro">
-            ${escapeHtml(album.title)}
-            <span class="separator">·</span> ${escapeHtml(artistText(album))}
-          </p>
+          <div class="listen-intro">
+            <p class="dialog-intro">
+              ${escapeHtml(album.title)}
+              <span class="separator">·</span> ${escapeHtml(artistText(album))}
+            </p>
+            <div class="listen-draft-status">
+              <button
+                class="icon-button listen-draft-button"
+                type="button"
+                aria-label="Draft status"
+                aria-describedby="listen-draft-message"
+                aria-controls="listen-draft-message"
+                aria-expanded="false"
+              >
+                ${icon("draft", 17)}
+              </button>
+              <span
+                id="listen-draft-message"
+                role="status"
+                data-draft-status
+              ></span>
+            </div>
+          </div>
           ${field("Date listened", "date", entry?.listenedAt.slice(0, 10) ?? today(), { type: "date", attributes: 'required min="1900-01-01" max="' + today() + '"' })}
           <fieldset class="rate-field">
-            <legend>Rating</legend>
+            <legend>Rating (optional)</legend>
             <div class="rating-picker">
               <span id="rating-stars">${stars(entry?.rating ?? 0)}</span>
               <div class="rating-options">
-                ${ratingLabels.map((label, i) => /* HTML */ `<label><input name="rating" type="radio" value="${i + 1}" ${entry?.rating === i + 1 ? "checked" : ""} required aria-label="${(i + 1) / 2} out of 5 stars: ${escapeHtml(label)}" /></label>`).join("")}
+                ${ratingLabels.map((label, i) => /* HTML */ `<label><input name="rating" type="radio" value="${i + 1}" ${entry?.rating === i + 1 ? "checked" : ""} aria-label="${(i + 1) / 2} out of 5 stars: ${escapeHtml(label)}" /></label>`).join("")}
               </div>
             </div>
-            <p id="rating-description" class="form-hint" aria-live="polite">
-              Select a rating. Half stars are available.
-            </p>
           </fieldset>
           <label class="field"
             ><span>Listening notes</span
@@ -95,17 +112,60 @@ ${escapeHtml(entry?.notes ?? "")}</textarea>
       </form>`,
       entry ? '[name="notes"]' : '[name="date"]',
     );
+    const draftButton = ops.editor.querySelector<HTMLButtonElement>(
+      ".listen-draft-button",
+    )!;
+    draftButton.addEventListener("click", () => {
+      const expanded = draftButton.getAttribute("aria-expanded") === "true";
+      draftButton.setAttribute("aria-expanded", String(!expanded));
+    });
+    draftButton.addEventListener("blur", () => {
+      draftButton.setAttribute("aria-expanded", "false");
+    });
+
+    const preview = ops.editor.querySelector<HTMLElement>("#rating-stars")!;
+    const options = ops.editor.querySelector(".rating-options")!;
+
+    // A radio is already checked by the time its click handler runs.
+    function clearSelectedRating(event: Event): void {
+      const input = event.target;
+      if (
+        !(input instanceof HTMLInputElement) ||
+        input.value !== preview.dataset.rating
+      )
+        return;
+      if (event instanceof KeyboardEvent) {
+        if (event.key !== " ") return;
+        event.preventDefault();
+      }
+
+      input.checked = false;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    options.addEventListener("pointerover", (event) => {
+      if (!(event instanceof PointerEvent) || event.pointerType !== "mouse")
+        return;
+      const input = event.target;
+      if (input instanceof HTMLInputElement)
+        preview.style.setProperty("--rating-hover", input.value);
+    });
+    options.addEventListener("pointerleave", () => {
+      preview.style.removeProperty("--rating-hover");
+    });
+    options.addEventListener("click", clearSelectedRating);
+    options.addEventListener("keydown", clearSelectedRating);
     if (entry) updateRating(entry.rating);
   }
 
-  function updateRating(rating: number) {
-    document.querySelector<HTMLElement>("#rating-stars")!.innerHTML =
-      stars(rating);
-    document.querySelector<HTMLElement>("#rating-description")!.textContent =
-      `${displayRating(rating)} / 5 · ${ratingLabels[rating - 1]}`;
+  function updateRating(rating: number | null): void {
+    const preview = ops.editor.querySelector<HTMLElement>("#rating-stars")!;
+    preview.style.removeProperty("--rating-hover");
+    preview.innerHTML = stars(rating ?? 0);
+    preview.dataset.rating = rating === null ? "" : String(rating);
   }
 
-  function saveListenForm(form: HTMLFormElement) {
+  function saveListenForm(form: HTMLFormElement): void {
     const data = new FormData(form);
     const album = ops.albums().find((item) => item.id === form.dataset.id);
     if (!album) return;
@@ -113,9 +173,10 @@ ${escapeHtml(entry?.notes ?? "")}</textarea>
       (item) => item.id === form.dataset.entryId,
     );
     if (form.dataset.entryId && !entry) return;
+    const rating = data.get("rating");
     const parsed = listeningSubmissionSchema.safeParse({
       date: String(data.get("date")),
-      rating: Number(data.get("rating")),
+      rating: rating ? Number(rating) : null,
       notes: String(data.get("notes")),
     });
     if (!parsed.success) return;
@@ -138,7 +199,7 @@ ${escapeHtml(entry?.notes ?? "")}</textarea>
     ops.finishSave(album.id, entry ? "Listen updated." : "Listen saved.");
   }
 
-  function click(button: HTMLButtonElement, album?: Album) {
+  function click(button: HTMLButtonElement, album?: Album): boolean {
     switch (button.dataset.action) {
       case "edit-listen": {
         const entry = album?.listeningEntries.find(
