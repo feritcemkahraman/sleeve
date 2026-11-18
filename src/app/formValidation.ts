@@ -36,7 +36,7 @@ export const listeningSubmissionSchema = z.object({
         value >= "1900-01-01" &&
         value <= today(),
     ),
-  rating: z.number().int().min(1).max(10),
+  rating: z.number().int().min(1).max(10).nullable(),
   notes: z
     .string()
     .max(3000)

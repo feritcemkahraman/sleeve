@@ -85,7 +85,7 @@ export interface AlbumLink {
 // A single listening event for an album.
 export interface ListeningEntry {
   id: string;
-  rating: number;
+  rating: number | null;
   listenedAt: string;
   notes: string | null;
   createdAt: string;

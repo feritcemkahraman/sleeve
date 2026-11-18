@@ -49,6 +49,15 @@ export function latest(album: Album): ListeningEntry | undefined {
   return orderedListens(album)[0];
 }
 
+export function latestRatedListen(
+  album: Album,
+): (ListeningEntry & { rating: number }) | undefined {
+  return orderedListens(album).find(
+    (entry): entry is ListeningEntry & { rating: number } =>
+      typeof entry.rating === "number",
+  );
+}
+
 export function displayRating(rating: number): number {
   return rating / 2;
 }

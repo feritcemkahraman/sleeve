@@ -2,7 +2,12 @@ import { vinylStatusIcon } from "../app/vinylStatus";
 import { genreUrl } from "../app/genres";
 import { artistUrl, roleLabel } from "./artistsView";
 import type { Album, AlbumLink, ListeningEntry } from "../types/albums";
-import { cover, orderedListens, webUrl } from "../components/presentation";
+import {
+  cover,
+  latestRatedListen,
+  orderedListens,
+  webUrl,
+} from "../components/presentation";
 import { escapeHtml } from "../components/html";
 import { instrumentUrl } from "../app/instruments";
 import { icon } from "../components/icons";
@@ -201,6 +206,7 @@ function renderVinylControl(album: Album): string {
 
 export function renderAlbumDetailView(album: Album): string {
   const listens = orderedListens(album);
+  const rating = latestRatedListen(album)?.rating;
   const credits = [...album.artists].sort((a, b) => a.position - b.position);
   const primaryArtists = credits.filter((artist) => artist.role === "primary");
   const additionalArtists = credits.filter(
@@ -232,7 +238,7 @@ export function renderAlbumDetailView(album: Album): string {
           ${album.recordLabel ? /* HTML */ `<span class="detail-year"> · ${escapeHtml(album.recordLabel)}</span>` : ""}
         </p>
         ${album.genres.length ? /* HTML */ `<div class="tags">${album.genres.map((g) => /* HTML */ `<a class="chip" href="${genreUrl(g.id)}">${escapeHtml(g.name)}</a>`).join("")}</div>` : ""}
-        ${listens[0]?.rating ? /* HTML */ `<div class="detail-rating">${renderRating(listens[0].rating)}</div>` : ""}
+        ${rating !== undefined ? /* HTML */ `<div class="detail-rating">${renderRating(rating)}</div>` : ""}
         <div class="detail-actions">
           <button type="button" class="button secondary" data-action="edit">
             ${icon("edit", 17)} Edit album

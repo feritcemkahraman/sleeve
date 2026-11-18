@@ -1,5 +1,5 @@
 import type { LibrarySort } from "../components/sortOptions.ts";
-import { latest } from "../components/presentation.ts";
+import { latest, latestRatedListen } from "../components/presentation.ts";
 import type { Album } from "../types/albums.ts";
 
 export interface LibrarySortSelection {
@@ -30,7 +30,7 @@ function sortValue(
     case "title":
       return album.sortTitle || album.title;
     case "rating":
-      return latest(album)?.rating ?? null;
+      return latestRatedListen(album)?.rating ?? null;
     case "year":
       return album.releaseYear;
   }

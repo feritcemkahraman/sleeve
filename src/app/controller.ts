@@ -137,11 +137,13 @@ export class AppController {
       },
       onRendered: () => {
         if (this.drafts.state.target && this.editor.querySelector("form")) {
-          const status = document.createElement("p");
-          status.className = "form-hint draft-status";
-          status.dataset.draftStatus = "";
-          status.setAttribute("role", "status");
-          this.editor.querySelector(".dialog-body")?.prepend(status);
+          if (!this.editor.querySelector("[data-draft-status]")) {
+            const status = document.createElement("p");
+            status.className = "form-hint draft-status";
+            status.dataset.draftStatus = "";
+            status.setAttribute("role", "status");
+            this.editor.querySelector(".dialog-body")?.prepend(status);
+          }
           this.drafts.captureDraft();
         }
       },
@@ -521,7 +523,7 @@ export class AppController {
     this.router.change(input);
 
     if (input.name === "rating")
-      this.listening.updateRating(Number(input.value));
+      this.listening.updateRating(input.checked ? Number(input.value) : null);
   }
 
   private onSubmit(event: SubmitEvent): void {

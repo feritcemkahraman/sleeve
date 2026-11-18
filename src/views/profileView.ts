@@ -3,7 +3,7 @@ import { libraryUrl } from "../app/libraryUrl.ts";
 import type { Album } from "../types/albums";
 import { escapeHtml } from "../components/html.ts";
 import { icon } from "../components/icons.ts";
-import { latest } from "../components/presentation.ts";
+import { latestRatedListen } from "../components/presentation.ts";
 
 export type YearGrouping = "decade" | "year";
 
@@ -41,7 +41,7 @@ export function profileStatistics(
   for (const album of albums) {
     album.artists.forEach((artist) => artists.add(artist.id));
     listens += album.listeningEntries.length;
-    const rating = latest(album)?.rating;
+    const rating = latestRatedListen(album)?.rating;
     if (
       rating !== undefined &&
       Number.isInteger(rating) &&

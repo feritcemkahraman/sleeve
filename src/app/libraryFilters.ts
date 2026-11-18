@@ -1,4 +1,5 @@
 import type { Album, Genre, VinylStatus } from "../types/albums";
+import { latestRatedListen } from "../components/presentation.ts";
 import { includesGenre } from "./genres.ts";
 
 export type NumericOperator = "eq" | "gte" | "lte" | "between" | "unset";
@@ -71,19 +72,20 @@ export function matchesCategory(
   }
 }
 
+function matchesRating(album: Album, filter?: NumericFilter): boolean {
+  if (!filter) return true;
+
+  const listen = latestRatedListen(album);
+  return matchesNumeric(listen ? listen.rating / 2 : null, filter);
+}
+
 export function matchesLibraryFilters(
   album: Album,
   filters: LibraryFilters,
   genres: Genre[],
 ): boolean {
-  let latest: Album["listeningEntries"][number] | undefined;
-  for (const entry of album.listeningEntries) {
-    if (!latest || entry.listenedAt > latest.listenedAt) latest = entry;
-  }
-
   return (
-    (!filters.rating ||
-      matchesNumeric(latest ? latest.rating / 2 : null, filters.rating)) &&
+    matchesRating(album, filters.rating) &&
     (!filters.releaseYear ||
       matchesNumeric(album.releaseYear, filters.releaseYear)) &&
     (!filters.genres ||
