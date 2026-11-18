@@ -117,7 +117,7 @@
   gap: 6px;
   margin-top: 8px;
 }
-.library-filter-chips:empty {
+.library-filter-chips:not(:has(> .filter-chip)) {
   display: none;
 }
 .library-filter-controls [hidden] {

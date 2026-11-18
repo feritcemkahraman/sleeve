@@ -10,6 +10,7 @@ test("numeric filters validate ranges, combine with search, and can be removed",
   page,
 }) => {
   const original = await page.locator("#library-count").textContent();
+  await expect(page.locator("#library-filter-chips")).toBeHidden();
   await page
     .locator(".library-toolbar .genre-filter-dropdown > summary")
     .click();
